@@ -1,3 +1,10 @@
-# Kel-1-Manajement-Kost
+# Kel-1-Sistem-Manajement-Kost
+Backend menggunakan Laravel.
 
-## Sistem Manajemen kost ini mempermudah dalam mengelola kos terutama pemilik kos
+## Requirements
+- PHP
+- Composer
+- Laravel
+- MySQL
+
+## Instalasi
