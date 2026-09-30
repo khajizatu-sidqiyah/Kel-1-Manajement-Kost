@@ -1,0 +1,321 @@
+/* =========================
+   RESET
+========================= */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f7f8fc;
+    color: #1f2937;
+}
+
+
+/* =========================
+   HEADER
+========================= */
+
+.header {
+    width: 100%;
+    min-height: 70px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 0 40px;
+
+    background-color: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+
+/* Logo dan nama sistem */
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    flex-shrink: 0;
+}
+
+.logo {
+    width: 35px;
+    height: 35px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background-color: #2563eb;
+    color: white;
+
+    border-radius: 8px;
+    font-weight: bold;
+}
+
+.brand-text h1 {
+    font-size: 16px;
+}
+
+.brand-text span {
+    font-size: 10px;
+    color: #6b7280;
+}
+
+
+/* =========================
+   NAVIGATION
+========================= */
+
+.navigation {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+}
+
+.navigation a {
+    text-decoration: none;
+    color: #6b7280;
+    font-size: 14px;
+    white-space: nowrap;
+}
+
+.navigation a:hover,
+.navigation a.active {
+    color: #2563eb;
+    font-weight: 600;
+}
+
+
+/* =========================
+   PROFILE
+========================= */
+
+.profile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    flex-shrink: 0;
+}
+
+.profile-name {
+    font-size: 14px;
+}
+
+.profile-icon {
+    width: 34px;
+    height: 34px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background-color: #2563eb;
+    color: white;
+
+    border-radius: 50%;
+}
+
+
+/* =========================
+   MAIN CONTENT
+========================= */
+
+.main-content {
+    min-height: calc(100vh - 120px);
+
+    padding: 40px;
+}
+
+.content {
+    width: 100%;
+    max-width: 1200px;
+
+    margin: 0 auto;
+
+    background-color: white;
+
+    padding: 40px;
+
+    border-radius: 12px;
+
+    border: 1px solid #e5e7eb;
+}
+
+.content h2 {
+    margin-bottom: 10px;
+}
+
+.content p {
+    color: #6b7280;
+}
+
+
+/* =========================
+   FOOTER
+========================= */
+
+.footer {
+    min-height: 50px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    color: #6b7280;
+    font-size: 12px;
+}
+
+
+/* =================================================
+   BREAKPOINT 360px
+   Tampilan Mobile
+================================================= */
+
+@media (min-width: 360px) and (max-width: 767px) {
+
+    /* Header mobile */
+
+    .header {
+        min-height: auto;
+
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+
+        gap: 15px;
+
+        padding: 15px 20px;
+    }
+
+
+    /* Brand */
+
+    .brand {
+        justify-content: flex-start;
+    }
+
+    .brand-text h1 {
+        font-size: 15px;
+    }
+
+    .brand-text span {
+        font-size: 9px;
+    }
+
+
+    /* Navigation */
+
+    .navigation {
+        width: 100%;
+
+        display: flex;
+
+        gap: 10px;
+
+        overflow-x: auto;
+
+        padding-bottom: 5px;
+    }
+
+    .navigation a {
+        font-size: 12px;
+
+        padding: 7px 10px;
+
+        background-color: #f3f4f6;
+
+        border-radius: 6px;
+    }
+
+    .navigation a.active {
+        background-color: #2563eb;
+        color: white;
+    }
+
+
+    /* Profile */
+
+    .profile {
+        justify-content: space-between;
+
+        width: 100%;
+    }
+
+    .profile-name {
+        font-size: 13px;
+    }
+
+
+    /* Main */
+
+    .main-content {
+        min-height: calc(100vh - 220px);
+
+        padding: 20px 15px;
+    }
+
+    .content {
+        padding: 25px 20px;
+
+        border-radius: 10px;
+    }
+
+    .content h2 {
+        font-size: 20px;
+    }
+
+    .content p {
+        font-size: 13px;
+
+        line-height: 1.6;
+    }
+
+
+    /* Footer */
+
+    .footer {
+        padding: 15px;
+
+        text-align: center;
+
+        font-size: 11px;
+    }
+}
+
+
+/* =================================================
+   BREAKPOINT 1024px
+   Tampilan Desktop
+================================================= */
+
+@media (min-width: 1024px) {
+
+    .header {
+        padding: 0 40px;
+    }
+
+    .navigation {
+        gap: 30px;
+    }
+
+    .navigation a {
+        font-size: 14px;
+    }
+
+    .main-content {
+        padding: 40px;
+    }
+
+    .content {
+        max-width: 1200px;
+        padding: 40px;
+    }
+}
