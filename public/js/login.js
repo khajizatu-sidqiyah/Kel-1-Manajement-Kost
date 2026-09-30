@@ -34,9 +34,6 @@ function clearLoginError() {
 // Hapus tanda error begitu pengguna mengetik ulang
 ["email", "password"].forEach((id) => $(id).addEventListener("input", clearLoginError));
 
-// Sementara: cegah reload saat submit (logika login menyusul)
-$("login-form").addEventListener("submit", (e) => e.preventDefault());
-
 // Pratinjau tanpa backend: /login?state=error  atau  /login/penghuni?state=error
 if (new URLSearchParams(location.search).get("state") === "error") {
   $("email").value = "adminkos@gmail.com";
