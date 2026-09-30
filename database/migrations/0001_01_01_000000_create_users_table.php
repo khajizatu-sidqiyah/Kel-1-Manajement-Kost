@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('password');
 
             // Role pengguna
-            $table->enum('role', ['user', 'admin', 'pemilik'])
+            $table->enum('role', ['user', 'pemilik'])
                   ->default('user');
 
             $table->rememberToken();
