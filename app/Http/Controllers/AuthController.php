@@ -2,50 +2,66 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
-    // Menampilkan halaman login
+    /**
+     * Menampilkan halaman login Pemilik
+     */
     public function showLogin()
     {
-        return view('login');
+        return view('login', [
+            'role' => 'pemilik'
+        ]);
     }
 
-    // Proses login
+    /**
+     * Memproses login
+     */
     public function login(Request $request)
     {
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
+        $credentials = $request->validate([
+            'email' => ['required', 'string'],
+            'password' => ['required', 'string'],
         ]);
 
-        $user = User::where('email', $request->email)->first();
+        // Verifikasi email dan password terhadap tabel users.
+        // Password diverifikasi terhadap hash menggunakan Auth::attempt().
+        if (Auth::attempt($credentials, $request->boolean('remember'))) {
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
-            return back()
-                ->withInput($request->only('email'))
-                ->withErrors([
-                    'login' => 'Email atau password salah.',
-                ]);
-        }
+            $request->session()->regenerate();
 
-        Auth::login($user);
+            // Pastikan akun memiliki role pemilik
+            if (Auth::user()->role !== 'pemilik') {
+                Auth::logout();
 
-        $request->session()->regenerate();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
 
-        // Jika user adalah pemilik
-        if ($user->role === 'pemilik') {
+                return back()
+                    ->withInput($request->only('email'))
+                    ->withErrors([
+                        'email' => 'Email atau kata sandi tidak sesuai.',
+                    ]);
+            }
+
             return redirect()->route('dashboard');
         }
 
-        return redirect('/');
+        // Pesan error dibuat generik agar tidak membocorkan
+        // apakah email atau password yang salah.
+        return back()
+            ->withInput($request->only('email'))
+            ->withErrors([
+                'email' => 'Email atau kata sandi tidak sesuai.',
+            ]);
     }
 
-    // Proses logout
+    /**
+     * Logout
+     */
     public function logout(Request $request)
     {
         Auth::logout();
@@ -53,7 +69,6 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect('/login')
-            ->with('success', 'Logout berhasil.');
+        return redirect()->route('login');
     }
 }
