@@ -106,17 +106,7 @@
                 </div>
             </section>
 
-            <!-- Pindah peran (tidak ada di mockup; hapus blok ini bila tidak diperlukan) -->
-            <p class="switch-role">
-                @if ($isPemilik)
-                    Penghuni kos? <a href="{{ route('login.penghuni') }}" class="link">Masuk sebagai Penghuni</a>
-                @else
-                    Pemilik kos? <a href="{{ route('login') }}" class="link">Masuk sebagai Pemilik</a>
-                @endif
-            </p>
-
-        </div>
-    </main>
+            </div>
 
     <script src="{{ asset('js/login.js') }}"></script>
 </body>
