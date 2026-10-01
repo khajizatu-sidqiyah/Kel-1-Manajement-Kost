@@ -34,7 +34,7 @@
 
             <h1 class="login-title">Login {{ $roleName }}</h1>
 
-            <form id="login-form" class="login-form" method="POST" action="{{ route('login') }}">
+            <form id="login-form" class="login-form" method="POST" action="{{ route('login.process') }}">
                 @csrf
                 <input type="hidden" name="role" value="{{ $role ?? 'pemilik' }}">
 
