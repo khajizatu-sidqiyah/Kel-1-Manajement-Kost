@@ -1,16 +1,27 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AuthController;
 
-Route::get('/', function () {
-    return view('index');
+// Login Pemilik
+Route::get('/login', [AuthController::class, 'showLogin'])
+    ->name('login');
+
+// Login Penghuni
+Route::get('/login/penghuni', [AuthController::class, 'showLoginPenghuni'])
+    ->name('login.penghuni');
+
+// Proses login
+Route::post('/login', [AuthController::class, 'login'])
+    ->name('login.process');
+
+// Logout
+Route::post('/logout', [AuthController::class, 'logout'])
+    ->middleware('auth');
+
+// Dashboard Pemilik
+Route::middleware(['auth', 'pemilik'])->group(function () {
+    Route::get('/dashboard', function () {
+        return view('dashboard');
+    })->name('dashboard');
 });
-
-// Login Pemilik (default) dan Login Penghuni memakai satu view yang sama
-Route::get('/login', function () {
-    return view('login', ['role' => 'pemilik']);
-})->name('login');
-
-Route::get('/login/penghuni', function () {
-    return view('login', ['role' => 'penghuni']);
-})->name('login.penghuni');
