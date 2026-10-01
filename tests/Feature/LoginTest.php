@@ -46,7 +46,7 @@ class LoginTest extends TestCase
             'password' => 'password_salah',
         ]);
 
-        $response->assertSessionHasErrors('login');
+        $response->assertSessionHasErrors('email');
 
         $this->assertGuest();
     }
