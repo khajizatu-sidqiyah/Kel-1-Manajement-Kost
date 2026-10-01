@@ -37,6 +37,7 @@ class AuthController extends Controller
 
         $request->session()->regenerate();
 
+        // Jika user adalah pemilik
         if ($user->role === 'pemilik') {
             return redirect()->route('dashboard');
         }
@@ -44,7 +45,7 @@ class AuthController extends Controller
         return redirect('/');
     }
 
-    // Logout
+    // Proses logout
     public function logout(Request $request)
     {
         Auth::logout();
