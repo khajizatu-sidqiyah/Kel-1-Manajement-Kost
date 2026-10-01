@@ -29,7 +29,7 @@
         <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h16m-6-6 6 6-6 6"/></symbol>
     </svg>
 
-    <main class="login" id="login" data-role="{{ $role ?? 'pemilik' }}">
+    <main class="login" id="login" data-role="{{ $role ?? 'pemilik' }}" data-error="{{ $errors->first() }}">
         <div class="login-panel">
 
             <h1 class="login-title">Login {{ $roleName }}</h1>
@@ -46,7 +46,7 @@
                     </label>
                     <div class="input-wrap">
                         <svg class="ic ic-left"><use href="#i-mail"/></svg>
-                        <input type="text" id="email" name="email" placeholder="adminkos@gmail.com" autocomplete="username" required>
+                        <input type="text" id="email" name="email" value="{{ old('email') }}" placeholder="adminkos@gmail.com" autocomplete="username" required>
                         <svg class="ic ic-right ic-error" aria-hidden="true"><use href="#i-xcircle"/></svg>
                     </div>
                 </div>
@@ -106,7 +106,8 @@
                 </div>
             </section>
 
-            </div>
+        </div>
+    </main>
 
     <script src="{{ asset('js/login.js') }}"></script>
 </body>

@@ -34,6 +34,11 @@ function clearLoginError() {
 // Hapus tanda error begitu pengguna mengetik ulang
 ["email", "password"].forEach((id) => $(id).addEventListener("input", clearLoginError));
 
+// BARU: Error dari server (Laravel) -> tampilkan state merah seperti mockup
+if (login.dataset.error) {
+  showLoginError({ message: login.dataset.error });
+}
+
 // Pratinjau tanpa backend: /login?state=error  atau  /login/penghuni?state=error
 if (new URLSearchParams(location.search).get("state") === "error") {
   $("email").value = "adminkos@gmail.com";
