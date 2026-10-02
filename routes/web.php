@@ -10,36 +10,36 @@ use App\Http\Controllers\AuthController;
 */
 
 Route::get('/', function () {
-    return view('login');
+    return redirect()->route('login');
 });
 
 
 /*
 |--------------------------------------------------------------------------
-| Halaman Login
+| Authentication
 |--------------------------------------------------------------------------
 */
 
-Route::get('/login', [AuthController::class, 'showLogin'])
-    ->name('login');
+Route::middleware('guest')->group(function () {
 
-Route::post('/login', [AuthController::class, 'login'])
-    ->name('login.process');
+    // Login Pemilik
+    Route::get('/login', [AuthController::class, 'showLogin'])
+        ->name('login');
+
+    // Proses Login
+    Route::post('/login', [AuthController::class, 'login'])
+        ->name('login.process');
+
+    // Login Penghuni - sementara untuk UI
+    Route::get('/login/penghuni', function () {
+        return view('login', ['role' => 'penghuni']);
+    })->name('login.penghuni');
+});
 
 
 /*
 |--------------------------------------------------------------------------
-| Logout
-|--------------------------------------------------------------------------
-*/
-
-Route::post('/logout', [AuthController::class, 'logout'])
-    ->middleware('auth');
-
-
-/*
-|--------------------------------------------------------------------------
-| Halaman Pemilik
+| Area Pemilik
 |--------------------------------------------------------------------------
 */
 
@@ -48,5 +48,12 @@ Route::middleware(['auth', 'pemilik'])->group(function () {
     Route::get('/dashboard', function () {
         return view('dashboard');
     })->name('dashboard');
+
+    Route::get('/denah', function () {
+        return view('denah');
+    })->name('denah');
+
+    Route::post('/logout', [AuthController::class, 'logout'])
+        ->name('logout');
 
 });
