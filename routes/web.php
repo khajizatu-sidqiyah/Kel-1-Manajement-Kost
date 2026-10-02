@@ -10,21 +10,30 @@ use App\Http\Controllers\AuthController;
 */
 
 Route::get('/', function () {
-    return view('index');
+    return view('login');
 });
 
 
 /*
 |--------------------------------------------------------------------------
-| Halaman Login
+| Halaman Login (Tampilan FE)
 |--------------------------------------------------------------------------
 */
 
-Route::get('/login', [AuthController::class, 'showLogin'])
-    ->name('login');
+// 1. Tampilan Login Pemilik (Default)
+Route::get('/login', function () {
+    return view('login', ['role' => 'pemilik']);
+})->name('login');
 
-Route::post('/login', [AuthController::class, 'login'])
-    ->name('login.process');
+// 2. Tampilan Login Penghuni (Untuk cek UI)
+Route::get('/login/penghuni', function () {
+    return view('login', ['role' => 'penghuni']);
+})->name('login.penghuni');
+
+// 3. Simulasi Submit Form Login -> Langsung Direct ke Dashboard
+Route::post('/login', function () {
+    return redirect()->route('dashboard');
+})->name('login.process');
 
 
 /*
@@ -33,20 +42,18 @@ Route::post('/login', [AuthController::class, 'login'])
 |--------------------------------------------------------------------------
 */
 
-Route::post('/logout', [AuthController::class, 'logout'])
-    ->middleware('auth');
+Route::post('/logout', function () {
+    return redirect()->route('login');
+})->name('logout');
 
 
 /*
 |--------------------------------------------------------------------------
-| Halaman Pemilik
+| Halaman Pemilik (Bypass Middleware Sementara)
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'pemilik'])->group(function () {
-
-    Route::get('/dashboard', function () {
-        return view('dashboard');
-    })->name('dashboard');
-
-});
+// Middleware 'auth' & 'pemilik' dilepas sementara agar kamu bisa cek UI Dashboard
+Route::get('/dashboard', function () {
+    return view('dashboard');
+})->name('dashboard');

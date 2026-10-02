@@ -13,6 +13,7 @@
 
     <!-- Sprite ikon -->
     <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+        <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
         <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9H4zM10 20v-6h4v6"/></symbol>
         <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
         <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
@@ -53,7 +54,8 @@
 
             <p class="nav-label">OPERASIONAL KOS</p>
             <nav class="nav">
-                <a href="{{ route('dashboard') }}" class="nav-item is-active"><svg class="i"><use href="#i-grid"/></svg>Denah &amp; Status Kamar</a>
+                <a href="{{ route('dashboard') }}" class="nav-item {{ request()->routeIs('dashboard') ? 'is-active' : '' }}"><svg class="i"><use href="#i-chart"/></svg>Dashboard</a>
+                <a href="{{ route('denah') }}" class="nav-item {{ request()->routeIs('denah') ? 'is-active' : '' }}"><svg class="i"><use href="#i-grid"/></svg>Denah &amp; Status Kamar</a>
                 <a href="#" class="nav-item"><svg class="i"><use href="#i-receipt"/></svg>Pembayaran &amp; Tagihan</a>
                 <a href="#" class="nav-item"><svg class="i"><use href="#i-tools"/></svg>Komplain &amp; Kerusakan</a>
                 <a href="#" class="nav-item"><svg class="i"><use href="#i-idcard"/></svg>Data Penyewa &amp; Arsip</a>
