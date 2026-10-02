@@ -106,6 +106,15 @@
                 </div>
             </section>
 
+            <!-- Pindah peran -->
+            <p class="switch-role">
+                @if ($isPemilik)
+                    Penghuni kos? <a href="{{ route('login.penghuni') }}" class="link">Masuk sebagai Penghuni</a>
+                @else
+                    Pemilik kos? <a href="{{ route('login') }}" class="link">Masuk sebagai Pemilik</a>
+                @endif
+            </p>
+
         </div>
     </main>
 
