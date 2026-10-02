@@ -26,11 +26,12 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'password' => 'hashed',
         ];
     }
 
     public function penghuni()
     {
-        return $this->hasOne(Penghuni::class, 'user_id', 'id');
+        return $this->hasOne(Penghuni::class, 'user_id');
     }
 }
