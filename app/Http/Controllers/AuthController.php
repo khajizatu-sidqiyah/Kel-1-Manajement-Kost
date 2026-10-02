@@ -34,7 +34,7 @@ class AuthController extends Controller
             $request->session()->regenerate();
 
             // Pastikan akun memiliki role pemilik
-            if (Auth::user()->role !== 'pemilik') {
+            if (!in_array(Auth::user()->role, ['pemilik', 'penghuni'])) {
                 Auth::logout();
 
                 $request->session()->invalidate();
@@ -47,7 +47,14 @@ class AuthController extends Controller
                     ]);
             }
 
-            return redirect()->route('dashboard');
+            // Arahkan pengguna sesuai role
+            if (Auth::user()->role === 'pemilik') {
+                return redirect()->route('dashboard');
+            }
+
+            if (Auth::user()->role === 'penghuni') {
+                return redirect()->route('penghuni.dashboard');
+            }
         }
 
         // Pesan error dibuat generik agar tidak membocorkan

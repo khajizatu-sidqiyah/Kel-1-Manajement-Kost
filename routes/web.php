@@ -1,3 +1,4 @@
+```php
 <?php
 
 use Illuminate\Support\Facades\Route;
@@ -48,5 +49,19 @@ Route::middleware(['auth', 'pemilik'])->group(function () {
     Route::get('/dashboard', function () {
         return view('dashboard');
     })->name('dashboard');
+
+});
+
+/*
+|--------------------------------------------------------------------------
+| Halaman Penghuni
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['auth', 'penghuni'])->group(function () {
+
+    Route::get('/penghuni', function () {
+        return view('penghuni.dashboard');
+    })->name('penghuni.dashboard');
 
 });

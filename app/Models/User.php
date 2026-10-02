@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use App\Models\Penghuni;
 
 class User extends Authenticatable
 {
@@ -26,5 +27,10 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
         ];
+    }
+
+    public function penghuni()
+    {
+        return $this->hasOne(Penghuni::class, 'user_id', 'id');
     }
 }
