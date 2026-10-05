@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\PenghuniController;
 
 /*
 |--------------------------------------------------------------------------
@@ -20,21 +21,19 @@ Route::get('/', function () {
 |--------------------------------------------------------------------------
 */
 
-Route::middleware('guest')->group(function () {
-
     // Login Pemilik
     Route::get('/login', [AuthController::class, 'showLogin'])
         ->name('login');
 
-    // Proses Login
     Route::post('/login', [AuthController::class, 'login'])
         ->name('login.process');
 
-    // Login Penghuni - sementara untuk UI
-    Route::get('/login/penghuni', function () {
-        return view('login', ['role' => 'penghuni']);
-    })->name('login.penghuni');
-});
+    // Login Penghuni
+    Route::get('/login/penghuni', [AuthController::class, 'showLoginPenghuni'])
+        ->name('login.penghuni');
+
+    Route::post('/login/penghuni', [AuthController::class, 'loginPenghuni'])
+        ->name('login.penghuni.process');
 
 
 /*
@@ -52,8 +51,32 @@ Route::middleware(['auth', 'pemilik'])->group(function () {
     Route::get('/denah', function () {
         return view('denah');
     })->name('denah');
-
-    Route::post('/logout', [AuthController::class, 'logout'])
-        ->name('logout');
-
 });
+
+
+/*
+|--------------------------------------------------------------------------
+| Area Penghuni
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['auth', 'penghuni'])->group(function () {
+
+    Route::get('/penghuni/dashboard', function () {
+        return view('penghuni.dashboard');
+    })->name('penghuni.dashboard');
+
+    Route::get('/penghuni/{id}', [PenghuniController::class, 'show'])
+        ->name('penghuni.show');
+});
+
+
+/*
+|--------------------------------------------------------------------------
+| Logout
+|--------------------------------------------------------------------------
+*/
+
+Route::post('/logout', [AuthController::class, 'logout'])
+    ->middleware('auth')
+    ->name('logout');
