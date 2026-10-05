@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 class KamarController extends Controller
 {
     /**
-     * GET /kamar
+     * GET /api/kamar
      * Menampilkan semua data kamar.
      */
     public function index()
@@ -23,13 +23,15 @@ class KamarController extends Controller
     }
 
     /**
-     * POST /kamar
+     * POST /api/kamar
      * Menambahkan data kamar.
      */
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'nomor_kamar' => ['required', 'string'],
+            'id_kost' => ['required', 'exists:kos,id_kost'],
+            'no_kamar' => ['required', 'string', 'max:20'],
+            'tipe_kamar' => ['nullable', 'string', 'max:50'],
             'harga' => ['required', 'numeric'],
             'status' => ['required', 'in:kosong,terisi'],
         ]);
@@ -44,7 +46,7 @@ class KamarController extends Controller
     }
 
     /**
-     * PUT /kamar/{id}
+     * PUT /api/kamar/{id}
      * Mengubah data kamar.
      */
     public function update(Request $request, $id)
@@ -59,7 +61,9 @@ class KamarController extends Controller
         }
 
         $validated = $request->validate([
-            'nomor_kamar' => ['required', 'string'],
+            'id_kost' => ['required', 'exists:kos,id_kost'],
+            'no_kamar' => ['required', 'string', 'max:20'],
+            'tipe_kamar' => ['nullable', 'string', 'max:50'],
             'harga' => ['required', 'numeric'],
             'status' => ['required', 'in:kosong,terisi'],
         ]);

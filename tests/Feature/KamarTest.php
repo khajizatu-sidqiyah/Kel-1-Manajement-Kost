@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Models\Kamar;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class KamarTest extends TestCase
@@ -11,12 +11,40 @@ class KamarTest extends TestCase
     use RefreshDatabase;
 
     /**
+     * Membuat data pemilik dan kos untuk kebutuhan testing.
+     */
+    private function buatKos()
+    {
+        $idPemilik = DB::table('pemilik')->insertGetId([
+            'nama_pemilik' => 'Pemilik Test',
+            'no_telepon' => '08123456789',
+            'email' => 'pemilik@test.com',
+            'alamat' => 'Alamat Test',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return DB::table('kos')->insertGetId([
+            'nama_kost' => 'Kost Test',
+            'alamat' => 'Alamat Kost Test',
+            'deskripsi' => 'Kost untuk testing',
+            'fasilitas' => 'WiFi',
+            'id_pemilik' => $idPemilik,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
+    /**
      * Test POST kamar berhasil jika data valid.
      */
     public function test_kamar_berhasil_dibuat_dengan_data_valid()
     {
+        $idKost = $this->buatKos();
+
         $response = $this->postJson('/api/kamar', [
-            'nomor_kamar' => 'A01',
+            'id_kost' => $idKost,
+            'no_kamar' => 'A01',
             'harga' => 750000,
             'status' => 'kosong',
         ]);
@@ -28,7 +56,8 @@ class KamarTest extends TestCase
             ]);
 
         $this->assertDatabaseHas('kamar', [
-            'nomor_kamar' => 'A01',
+            'id_kost' => $idKost,
+            'no_kamar' => 'A01',
             'harga' => 750000,
             'status' => 'kosong',
         ]);
@@ -44,7 +73,8 @@ class KamarTest extends TestCase
         $response->assertStatus(422);
 
         $response->assertJsonValidationErrors([
-            'nomor_kamar',
+            'id_kost',
+            'no_kamar',
             'harga',
             'status',
         ]);
@@ -55,8 +85,11 @@ class KamarTest extends TestCase
      */
     public function test_harga_harus_numerik()
     {
+        $idKost = $this->buatKos();
+
         $response = $this->postJson('/api/kamar', [
-            'nomor_kamar' => 'A01',
+            'id_kost' => $idKost,
+            'no_kamar' => 'A01',
             'harga' => 'bukan angka',
             'status' => 'kosong',
         ]);
@@ -73,10 +106,13 @@ class KamarTest extends TestCase
      */
     public function test_status_hanya_boleh_kosong_atau_terisi()
     {
+        $idKost = $this->buatKos();
+
         $response = $this->postJson('/api/kamar', [
-            'nomor_kamar' => 'A01',
+            'id_kost' => $idKost,
+            'no_kamar' => 'A01',
             'harga' => 750000,
-            'status' => 'booking',
+            'status' => 'tersedia',
         ]);
 
         $response->assertStatus(422);
