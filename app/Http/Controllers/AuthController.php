@@ -4,37 +4,102 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Models\User;
 
 class AuthController extends Controller
 {
     /**
-     * Menampilkan halaman login Pemilik
+     * Menampilkan halaman login pemilik.
      */
     public function showLogin()
     {
         return view('login', [
-            'role' => 'pemilik'
+            'role' => 'pemilik',
         ]);
     }
 
     /**
-     * Memproses login
+     * Menampilkan halaman login penghuni.
+     */
+    public function showLoginPenghuni()
+    {
+        return view('login', [
+            'role' => 'penghuni',
+        ]);
+    }
+
+    /**
+     * Login pemilik.
      */
     public function login(Request $request)
-{
-    $credentials = $request->validate([
-        'email' => ['required', 'string'],
-        'password' => ['required', 'string'],
-    ]);
+    {
+        $credentials = $request->validate([
+            'email' => ['required', 'email'],
+            'password' => ['required', 'string'],
+        ]);
 
-    if (Auth::attempt($credentials, $request->boolean('remember'))) {
+        $credentials['role'] = 'pemilik';
+
+        if (Auth::attempt(
+            $credentials,
+            $request->boolean('remember')
+        )) {
+            $request->session()->regenerate();
+
+            return redirect()->route('dashboard');
+        }
+
+        return back()
+            ->withInput($request->only('email'))
+            ->withErrors([
+                'email' => 'Email atau kata sandi tidak sesuai.',
+            ]);
+    }
+
+    /**
+     * Login penghuni.
+     */
+    public function loginPenghuni(Request $request)
+    {
+        $credentials = $request->validate([
+            'email' => ['required', 'email'],
+            'password' => ['required', 'string'],
+        ]);
+
+        // Cari akun penghuni berdasarkan email
+        $user = User::where('email', $credentials['email'])
+            ->where('role', 'penghuni')
+            ->first();
+
+        // Akun penghuni belum dibuat
+        if (!$user) {
+            return back()
+                ->withInput($request->only('email'))
+                ->withErrors([
+                    'email' => 'Akun penghuni belum dibuatkan oleh pemilik.',
+                ]);
+        }
+
+        // Coba login
+        if (!Auth::attempt(
+            [
+                'email' => $credentials['email'],
+                'password' => $credentials['password'],
+                'role' => 'penghuni',
+            ],
+            $request->boolean('remember')
+        )) {
+            return back()
+                ->withInput($request->only('email'))
+                ->withErrors([
+                    'email' => 'Email atau kata sandi tidak sesuai.',
+                ]);
+        }
 
         $request->session()->regenerate();
 
-        $user = Auth::user();
-
-        // Pastikan role akun valid
-        if (!in_array($user->role, ['pemilik', 'penghuni'])) {
+        // Pastikan akun memiliki data penghuni
+        if (!$user->penghuni) {
             Auth::logout();
 
             $request->session()->invalidate();
@@ -43,45 +108,18 @@ class AuthController extends Controller
             return back()
                 ->withInput($request->only('email'))
                 ->withErrors([
-                    'email' => 'Email atau kata sandi tidak sesuai.',
+                    'email' => 'Akun penghuni belum memiliki data penghuni.',
                 ]);
         }
 
-        // Login sebagai pemilik
-        if ($user->role === 'pemilik') {
-            return redirect()->route('dashboard');
-        }
-
-        // Login sebagai penghuni
-        if ($user->role === 'penghuni') {
-
-            // Cek apakah akun sudah memiliki data penghuni
-            if (!$user->penghuni) {
-                Auth::logout();
-
-                $request->session()->invalidate();
-                $request->session()->regenerateToken();
-
-                return back()
-                    ->withInput($request->only('email'))
-                    ->withErrors([
-                        'email' => 'Akun penghuni belum memiliki data penghuni.',
-                    ]);
-            }
-
-            return redirect()->route('penghuni.dashboard');
-        }
+        return redirect()->route(
+            'penghuni.show',
+            ['id' => $user->penghuni->id_penghuni]
+        );
     }
 
-    return back()
-        ->withInput($request->only('email'))
-        ->withErrors([
-            'email' => 'Email atau kata sandi tidak sesuai.',
-        ]);
-}
-
     /**
-     * Logout
+     * Logout.
      */
     public function logout(Request $request)
     {

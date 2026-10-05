@@ -105,7 +105,7 @@ small { display: block; }
 .floor-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
 .floor-head h2 { font-size: 14px; } .floor-head h2 span { font-weight: 400; color: var(--muted); font-size: 13px; }
 .floor-count { padding: 4px 10px; border-radius: 6px; background: #eef2f7; font-size: 11px; color: #475569; }
-.rooms { display: grid; grid-template-columns: 1fr; gap: 14px; }
+.rooms { display: grid; grid-template-columns: 1fr; gap: 14px; align-items: start; }
 
 /* Kartu kamar */
 .room { overflow: hidden; display: flex; flex-direction: column; }
@@ -116,7 +116,7 @@ small { display: block; }
 .room-title { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
 .room-title b { font-size: 16px; } .room-lt { padding: 1px 8px; border-radius: 6px; background: #f1f5f9; font-size: 10px; color: var(--muted); }
 .room-type { margin-top: -6px; font-size: 12px; color: var(--muted); }
-.room-box { display: grid; gap: 4px; padding: 10px 12px; border-radius: 8px; font-size: 12px; margin-top: auto; }
+.room-box { display: grid; gap: 4px; padding: 10px 12px; border-radius: 8px; font-size: 12px; }
 .room-box div { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 8px; color: var(--muted); } .room-box div b { color: var(--ink); text-align: right; }
 .room--kosong .room-box { background: var(--green-soft); } .room--kosong .room-box div b { color: var(--green-d); }
 .room--terisi .room-box { background: var(--red-soft); } .room-box .late { color: var(--red); }
@@ -163,3 +163,22 @@ small { display: block; }
     .topbar-info { display: inline-flex; }
     .rooms { grid-template-columns: repeat(4, 1fr); }
 }
+
+/* ---------- Dashboard ringkas ---------- */
+.mini { display: grid; grid-template-columns: 1fr; gap: 12px; }
+.panels { display: grid; grid-template-columns: 1fr; gap: 16px; }
+.panel { padding: 16px; }
+.panel-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px; }
+.panel-head h2 { font-size: 15px; }
+.panel-head a { font-size: 12px; font-weight: 600; color: var(--blue); }
+.list { list-style: none; display: grid; gap: 8px; }
+.list li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 10px; background: #f8fafc; }
+.list li b { display: block; font-size: 13px; }
+.list li small { font-size: 11px; color: var(--muted); }
+.list .end { flex-shrink: 0; text-align: right; font-size: 12px; font-weight: 600; }
+.list .late { color: var(--red); }
+.list .price { color: var(--green-d); }
+.list .list-empty { justify-content: center; color: var(--muted); font-size: 12px; }
+.note { font-size: 11px; color: var(--muted); text-align: center; }
+@media (min-width: 600px) { .mini { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 1024px) { .panels { grid-template-columns: 1fr 1fr; } }

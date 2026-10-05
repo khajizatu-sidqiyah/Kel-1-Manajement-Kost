@@ -11,42 +11,37 @@ use App\Http\Controllers\PenghuniController;
 */
 
 Route::get('/', function () {
-    return view('login');
+    return redirect()->route('login');
 });
 
 
 /*
 |--------------------------------------------------------------------------
-| Halaman Login
+| Authentication
 |--------------------------------------------------------------------------
 */
 
-Route::get('/login', [AuthController::class, 'showLogin']) 
-    ->name('login'); 
+Route::middleware('guest')->group(function () {
 
-Route::get('/login/penghuni', [AuthController::class, 'showLoginPenghuni']) 
-    ->name('login.penghuni'); 
-    
-Route::post('/login', [AuthController::class, 'login']) 
-    ->name('login.process'); 
-    
-Route::post('/login/penghuni', [AuthController::class, 'loginPenghuni']) 
-    ->name('login.penghuni.process');
+    // Login Pemilik
+    Route::get('/login', [AuthController::class, 'showLogin'])
+        ->name('login');
+
+    Route::post('/login', [AuthController::class, 'login'])
+        ->name('login.process');
+
+    // Login Penghuni
+    Route::get('/login/penghuni', [AuthController::class, 'showLoginPenghuni'])
+        ->name('login.penghuni');
+
+    Route::post('/login/penghuni', [AuthController::class, 'loginPenghuni'])
+        ->name('login.penghuni.process');
+});
 
 
 /*
 |--------------------------------------------------------------------------
-| Logout
-|--------------------------------------------------------------------------
-*/
-
-Route::post('/logout', [AuthController::class, 'logout'])
-    ->middleware('auth');
-
-
-/*
-|--------------------------------------------------------------------------
-| Halaman Pemilik
+| Area Pemilik
 |--------------------------------------------------------------------------
 */
 
@@ -56,20 +51,31 @@ Route::middleware(['auth', 'pemilik'])->group(function () {
         return view('dashboard');
     })->name('dashboard');
 
+    Route::get('/denah', function () {
+        return view('denah');
+    })->name('denah');
 });
+
 
 /*
 |--------------------------------------------------------------------------
-| Halaman Penghuni
+| Area Penghuni
 |--------------------------------------------------------------------------
 */
 
 Route::middleware(['auth', 'penghuni'])->group(function () {
 
-    Route::get('/penghuni', [PenghuniController::class, 'index'])
-        ->name('penghuni.dashboard');
-
     Route::get('/penghuni/{id}', [PenghuniController::class, 'show'])
         ->name('penghuni.show');
-
 });
+
+
+/*
+|--------------------------------------------------------------------------
+| Logout
+|--------------------------------------------------------------------------
+*/
+
+Route::post('/logout', [AuthController::class, 'logout'])
+    ->middleware('auth')
+    ->name('logout');
