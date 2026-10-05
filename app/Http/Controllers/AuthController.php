@@ -66,12 +66,11 @@ class AuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        // Cari akun penghuni berdasarkan email
+        // Cek apakah akun penghuni sudah dibuat
         $user = User::where('email', $credentials['email'])
             ->where('role', 'penghuni')
             ->first();
 
-        // Akun penghuni belum dibuat
         if (!$user) {
             return back()
                 ->withInput($request->only('email'))
@@ -80,15 +79,13 @@ class AuthController extends Controller
                 ]);
         }
 
-        // Coba login
-        if (!Auth::attempt(
-            [
-                'email' => $credentials['email'],
-                'password' => $credentials['password'],
-                'role' => 'penghuni',
-            ],
-            $request->boolean('remember')
-        )) {
+        // Login penghuni
+        if (!Auth::attempt([
+            'email' => $credentials['email'],
+            'password' => $credentials['password'],
+            'role' => 'penghuni',
+        ], $request->boolean('remember'))) {
+
             return back()
                 ->withInput($request->only('email'))
                 ->withErrors([
@@ -98,8 +95,12 @@ class AuthController extends Controller
 
         $request->session()->regenerate();
 
-        // Pastikan akun memiliki data penghuni
+        // Ambil user yang sedang login
+        $user = Auth::user();
+
+        // Pastikan akun mempunyai data penghuni
         if (!$user->penghuni) {
+
             Auth::logout();
 
             $request->session()->invalidate();
@@ -112,6 +113,7 @@ class AuthController extends Controller
                 ]);
         }
 
+        // Masuk ke data/profil penghuni sendiri
         return redirect()->route(
             'penghuni.show',
             ['id' => $user->penghuni->id_penghuni]

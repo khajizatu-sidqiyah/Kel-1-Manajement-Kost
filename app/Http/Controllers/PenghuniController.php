@@ -8,18 +8,19 @@ use Illuminate\Support\Facades\Auth;
 class PenghuniController extends Controller
 {
     /**
-     * Mengakses data penghuni berdasarkan ID.
-     * Penghuni hanya boleh mengakses data miliknya sendiri.
+     * Penghuni hanya boleh melihat data miliknya sendiri.
      */
     public function show($id)
     {
         $penghuni = Penghuni::findOrFail($id);
 
-        // Pastikan data tersebut milik user yang sedang login
-        if ($penghuni->user_id !== Auth::id()) {
+        if ((int) $penghuni->user_id !== (int) Auth::id()) {
             abort(403, 'Anda tidak memiliki akses ke data penghuni ini.');
         }
 
-        return response()->json($penghuni);
+        return response()->json([
+            'message' => 'Data penghuni berhasil diakses.',
+            'data' => $penghuni,
+        ]);
     }
 }

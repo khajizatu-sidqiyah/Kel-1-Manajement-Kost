@@ -21,8 +21,6 @@ Route::get('/', function () {
 |--------------------------------------------------------------------------
 */
 
-Route::middleware('guest')->group(function () {
-
     // Login Pemilik
     Route::get('/login', [AuthController::class, 'showLogin'])
         ->name('login');
@@ -36,7 +34,6 @@ Route::middleware('guest')->group(function () {
 
     Route::post('/login/penghuni', [AuthController::class, 'loginPenghuni'])
         ->name('login.penghuni.process');
-});
 
 
 /*
@@ -64,6 +61,10 @@ Route::middleware(['auth', 'pemilik'])->group(function () {
 */
 
 Route::middleware(['auth', 'penghuni'])->group(function () {
+
+    Route::get('/penghuni/dashboard', function () {
+        return view('penghuni.dashboard');
+    })->name('penghuni.dashboard');
 
     Route::get('/penghuni/{id}', [PenghuniController::class, 'show'])
         ->name('penghuni.show');
