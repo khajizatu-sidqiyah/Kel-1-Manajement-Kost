@@ -146,7 +146,7 @@ class PenghunianSeeder extends Seeder
             [
                 'id_kamar' => 23,
                 'id_penghuni' => 13,
-                'tanggal_mulai' => '20-08-2025',
+                'tanggal_mulai' => '2025-08-20',
                 'tanggal_selesai' => null,
                 'status' => 'aktif',
                 'created_at' => now(),
