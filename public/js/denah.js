@@ -10,13 +10,13 @@ function roomCard(r) {
     ? `<div class="room-box"><div>Harga Sewa <b>${rp(r.harga)}</b></div><span class="room-ok">${icon("check")}Siap Huni Bersih</span></div>
        <button type="button" class="room-btn">${icon("key")}Check-in / Isi Kamar</button>`
     : `<div class="room-box"><div>Penghuni <b>${esc(r.penghuni || "-")}</b></div>
-       <div>Jatuh Tempo <b class="${r.mendesak ? "late" : ""}">${esc(r.jatuh_tempo)}${r.catatan ? " " + esc(r.catatan) : ""}</b></div></div>
+       <div>Jatuh Tempo <b class="${r.mendesak ? "late" : ""}">${esc(r.jatuh_tempo || "-")}${r.catatan ? " " + esc(r.catatan) : ""}</b></div></div>
        <button type="button" class="room-btn">${icon("clip")}Detail Sewa</button>`;
   return `<article class="card room room--${free ? "kosong" : "terisi"}" data-idx="${idx}" tabindex="0" role="button" aria-label="Ubah Kamar ${esc(r.no_kamar)}">
     <div class="room-top"><span><i class="dot"></i>${free ? "KOSONG" : "TERISI"}</span><span>Kamar ${esc(r.no_kamar)}</span></div>
     <div class="room-body">
       <div class="room-title"><b>Kamar ${esc(r.no_kamar)}</b><span class="room-lt">Lt. ${esc(r.lantai)}</span></div>
-      <p class="room-type">${esc(r.tipe_kamar)} • ${esc(r.fasilitas)}</p>${body}
+      <p class="room-type">${esc([r.tipe_kamar, r.fasilitas].filter(Boolean).join(" • "))}</p>${body}
     </div></article>`;
 }
 
@@ -138,7 +138,7 @@ async function saveForm() {
     const saved = await saveRoom(payload, editing);
     if (editing) rooms[rooms.indexOf(editing)] = saved; else rooms.push(saved);
   } catch (e) {
-    showErr("Gagal menyimpan data kamar. Periksa koneksi Anda lalu coba lagi.");
+    showErr(e.userMessage || "Gagal menyimpan data kamar. Periksa koneksi Anda lalu coba lagi.");
     return;
   } finally {
     btn.disabled = false; btn.textContent = "Simpan";
