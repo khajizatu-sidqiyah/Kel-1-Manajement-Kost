@@ -11,7 +11,7 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // Akun pemilik
+     // Akun pemilik
         $pemilik = User::create([
             'name' => 'Pemilik Kost',
             'email' => 'pemilik@gmail.com',
@@ -34,6 +34,13 @@ class DatabaseSeeder extends Seeder
             'no_telepon' => '081234567890',
             'email' => 'penghuni@gmail.com',
             'alamat' => 'Cirebon',
+        ]);
+        // 4. Data kos
+        $this->call([
+            KostSeeder::class,
+            KamarSeeder::class,
+            PenghuniSeeder::class,
+            PenghunianSeeder::class,
         ]);
     }
 }

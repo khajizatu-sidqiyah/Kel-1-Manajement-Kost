@@ -8,9 +8,13 @@ class Kamar extends Model
 {
     protected $table = 'kamar';
 
+    protected $primaryKey = 'id_kamar';
+
     protected $fillable = [
         'no_kamar',
+        'tipe_kamar',
         'harga',
         'status',
+        'id_kost',
     ];
 }
