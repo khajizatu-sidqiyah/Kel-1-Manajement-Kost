@@ -46,6 +46,27 @@ async function loadRooms() {
   return (await res.json()).data;
 }
 
+// Simpan kamar (tambah / ubah). Mengembalikan data kamar terbaru.
+// `old` = kamar lama saat mode ubah, `null` saat mode tambah.
+async function saveRoom(payload, old) {
+  if (USE_MOCK) {
+    if (new URLSearchParams(location.search).get("mock") === "saveerror") throw new Error("mock save error");
+    const busy = payload.status === "terisi";
+    return { ...(old || {}), ...payload,
+      penghuni: busy ? (old?.penghuni || "Belum diisi") : undefined,
+      jatuh_tempo: busy ? (old?.jatuh_tempo || "-") : undefined,
+      mendesak: busy ? !!old?.mendesak : false, catatan: busy ? old?.catatan : undefined };
+  }
+  const res = await fetch(old ? `${API_URL}/${old.id}` : API_URL, {
+    method: old ? "PUT" : "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json",
+      "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]')?.content || "" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  return { ...(old || {}), ...payload, ...((await res.json()).data || {}) };
+}
+
 // ---------- Helper ----------
 const $ = (id) => document.getElementById(id);
 const set = (id, html) => { const el = $(id); if (el) el.innerHTML = html; };

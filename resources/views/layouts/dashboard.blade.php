@@ -33,6 +33,7 @@
         <symbol id="i-userplus" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6M19 8v6M16 11h6"/></symbol>
         <symbol id="i-snow" viewBox="0 0 24 24"><path d="M12 3v18M4 7.5l16 9M20 7.5l-16 9"/></symbol>
         <symbol id="i-shower" viewBox="0 0 24 24"><path d="M5 13a7 7 0 0 1 14 0zM8 17v2M12 17v2M16 17v2"/></symbol>
+        <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
         <symbol id="i-logout" viewBox="0 0 24 24"><path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10"/></symbol>
     </svg>
 
