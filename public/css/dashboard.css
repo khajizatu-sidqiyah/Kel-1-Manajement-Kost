@@ -216,3 +216,7 @@ body.modal-open { overflow: hidden; }
     .field-top { align-items: start; }
     .modal-box { padding: 24px; }
 }
+
+/* Peringatan kosongkan kamar */
+.form-warn { margin-bottom: 12px; padding: 10px 12px; border-radius: 8px; background: #fff7ed; color: #9a3412; font-size: 12px; line-height: 1.5; }
+.form-warn b { font-weight: 600; }

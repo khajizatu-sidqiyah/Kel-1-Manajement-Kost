@@ -80,6 +80,7 @@
                     </select>
                 </div>
 
+                <p class="form-warn" id="form-warn" role="status" hidden></p>
                 <p class="form-error" id="form-error" role="alert" hidden></p>
 
                 <div class="form-actions">
