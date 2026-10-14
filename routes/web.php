@@ -51,6 +51,8 @@ Route::middleware(['auth', 'pemilik'])->group(function () {
     Route::get('/denah', function () {
         return view('denah');
     })->name('denah');
+
+    Route::view('/manajemen-penghuni', 'penghuni.index')->name('manajemen-penghuni');
 });
 
 

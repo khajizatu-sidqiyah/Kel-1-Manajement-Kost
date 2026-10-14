@@ -23,4 +23,10 @@ class Penghuni extends Model
     {
         return $this->belongsTo(User::class, 'user_id', 'id');
     }
+
+    public function penghunianAktif()
+    {
+        return $this->hasMany(Penghunian::class, 'id_penghuni', 'id_penghuni')
+            ->where('status', 'aktif');
+    }
 }
