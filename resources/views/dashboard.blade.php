@@ -11,7 +11,7 @@
             <p>Informasi cepat Kost Griya Harmoni</p>
         </div>
         <div class="page-head-actions">
-            <a href="{{ route('denah') }}" class="btn-main"><svg class="i i-sm"><use href="#i-grid"/></svg>Lihat Denah Lengkap</a>
+            <a href="{{ route('denah') }}" class="btn-main" id="btn-denah"><svg class="i i-sm"><use href="#i-grid"/></svg>Lihat Denah Lengkap</a>
         </div>
     </section>
 

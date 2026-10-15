@@ -10,12 +10,14 @@ function roomCard(r) {
     ? `<div class="room-box"><div>Harga Sewa <b>${rp(r.harga)}</b></div><span class="room-ok">${icon("check")}Siap Huni Bersih</span></div>
        <button type="button" class="room-btn">${icon("key")}Check-in / Isi Kamar</button>`
     : `<div class="room-box"><div>Penghuni <b>${esc(r.penghuni || "-")}</b></div>
-       <div>Jatuh Tempo <b class="${r.mendesak ? "late" : ""}">${esc(r.jatuh_tempo || "-")}${r.catatan ? " " + esc(r.catatan) : ""}</b></div></div>
+       ${r.jatuh_tempo || !r.mulai
+         ? `<div>Jatuh Tempo <b class="${r.mendesak ? "late" : ""}">${esc(r.jatuh_tempo || "-")}${r.catatan ? " " + esc(r.catatan) : ""}</b></div>`
+         : `<div>Mulai Huni <b>${esc(fmtTanggal(r.mulai))}</b></div>`}</div>
        <button type="button" class="room-btn">${icon("clip")}Detail Sewa</button>`;
-  return `<article class="card room room--${free ? "kosong" : "terisi"}" data-idx="${idx}" tabindex="0" role="button" aria-label="Ubah Kamar ${esc(r.no_kamar)}">
-    <div class="room-top"><span><i class="dot"></i>${free ? "KOSONG" : "TERISI"}</span><span>Kamar ${esc(r.no_kamar)}</span></div>
+  return `<article class="card room room--${free ? "kosong" : "terisi"}" data-idx="${idx}" tabindex="0" role="button" aria-label="Ubah Kamar ${esc(fmtNo(r.no_kamar))}">
+    <div class="room-top"><span><i class="dot"></i>${free ? "KOSONG" : "TERISI"}</span><span>Kamar ${esc(fmtNo(r.no_kamar))}</span></div>
     <div class="room-body">
-      <div class="room-title"><b>Kamar ${esc(r.no_kamar)}</b><span class="room-lt">Lt. ${esc(r.lantai)}</span></div>
+      <div class="room-title"><b>Kamar ${esc(fmtNo(r.no_kamar))}</b><span class="room-lt">Lt. ${esc(r.lantai)}</span></div>
       <p class="room-type">${esc([r.tipe_kamar, r.fasilitas].filter(Boolean).join(" • "))}</p>${body}
     </div></article>`;
 }
@@ -84,13 +86,35 @@ function fillForm(r) {
   extraFas = [];
   $("f-no").value = r ? r.no_kamar : "";
   $("f-lantai").value = r ? r.lantai : 1;
-  if (r && !TIPE.includes(r.tipe_kamar)) $("f-tipe").insertAdjacentHTML("beforeend", `<option>${esc(r.tipe_kamar)}</option>`);
-  $("f-tipe").value = r ? r.tipe_kamar : TIPE[0];
+  // Daftar tipe dibuat ulang tiap kali form diisi (jangan ditambah terus). Tipe dari database yang
+  // tidak ada di daftar bawaan (mis. "Standard") dimasukkan satu kali saja.
+  const tipeList = r && r.tipe_kamar && !TIPE.includes(r.tipe_kamar) ? [r.tipe_kamar, ...TIPE] : TIPE;
+  set("f-tipe", tipeList.map((t) => `<option>${esc(t)}</option>`).join(""));
+  $("f-tipe").value = r && r.tipe_kamar ? r.tipe_kamar : TIPE[0];
   const have = r ? String(r.fasilitas || "").split(",").map((x) => x.trim()).filter(Boolean) : [];
   extraFas = have.filter((x) => !FASILITAS.includes(x)); // fasilitas lama yang tidak ada di daftar tetap dipertahankan
   document.querySelectorAll("#f-fas input").forEach((c) => (c.checked = have.includes(c.value)));
   $("f-harga").value = r ? fmtRp(r.harga) : "";
   $("f-status").value = r ? (String(r.status).toLowerCase() === "terisi" ? "terisi" : "kosong") : "kosong";
+  updateWarn();
+}
+
+// Peringatan saat kamar terisi diubah jadi Kosong: penghuni diarsipkan (riwayat disimpan, data penghuni tidak dihapus)
+let confirmEmpty = false;
+const willEmpty = () => mode === "edit" && editing && editing.status === "terisi" && $("f-status").value === "kosong";
+function updateWarn() {
+  confirmEmpty = false;
+  $("btn-save").textContent = "Simpan";
+  let w = $("form-warn");
+  if (!w) { // jaga-jaga jika denah.blade.php belum diperbarui: buat elemennya sendiri
+    w = document.createElement("p");
+    w.id = "form-warn"; w.className = "form-warn"; w.setAttribute("role", "status"); w.hidden = true;
+    $("form-error").before(w);
+  }
+  w.hidden = !willEmpty();
+  if (w.hidden) return;
+  const who = editing.penghuni ? ` (${esc(editing.penghuni)})` : "";
+  w.innerHTML = `<b>Kamar akan dikosongkan.</b> Penghuni${who} otomatis diarsipkan: riwayat hunian disimpan, data penghuni tidak dihapus.`;
 }
 
 function setMode(m, room = null) {
@@ -104,7 +128,7 @@ function setMode(m, room = null) {
   } else {
     $("form-title").textContent = "Detail Kamar";
     pickWrap.hidden = !!room && pickedFromCard;
-    set("f-pick", `<option value="">— Pilih kamar —</option>` + rooms.map((r, i) => `<option value="${i}">Kamar ${esc(r.no_kamar)} (Lt. ${esc(r.lantai)})</option>`).join(""));
+    set("f-pick", `<option value="">— Pilih kamar —</option>` + rooms.map((r, i) => `<option value="${i}">Kamar ${esc(fmtNo(r.no_kamar))} (Lt. ${esc(r.lantai)})</option>`).join(""));
     $("f-pick").value = room ? String(rooms.indexOf(room)) : "";
     fillForm(room);
   }
@@ -133,6 +157,11 @@ async function saveForm() {
   const payload = { no_kamar: no, lantai: Number($("f-lantai").value), tipe_kamar: $("f-tipe").value, fasilitas: fas.join(", "), harga, status: $("f-status").value };
 
   const btn = $("btn-save");
+  if (willEmpty() && !confirmEmpty) { // klik pertama = minta konfirmasi
+    confirmEmpty = true; showErr("");
+    btn.textContent = "Ya, kosongkan kamar";
+    return;
+  }
   btn.disabled = true; btn.textContent = "Menyimpan…";
   try {
     const saved = await saveRoom(payload, editing);
@@ -141,7 +170,7 @@ async function saveForm() {
     showErr(e.userMessage || "Gagal menyimpan data kamar. Periksa koneksi Anda lalu coba lagi.");
     return;
   } finally {
-    btn.disabled = false; btn.textContent = "Simpan";
+    btn.disabled = false; updateWarn();
   }
   closeModal();
   renderStats(rooms); renderTabs(); renderFloors(); // perbarui denah tanpa reload halaman
@@ -158,6 +187,7 @@ document.querySelectorAll(".seg-btn").forEach((b) => b.addEventListener("click",
   if (b.dataset.mode === "add") setMode("add"); else { pickedFromCard = false; setMode("edit", null); }
 }));
 $("f-pick").addEventListener("change", (e) => { const r = rooms[e.target.value]; editing = r || null; fillForm(r || null); });
+$("f-status").addEventListener("change", updateWarn);
 $("f-harga").addEventListener("input", (e) => { const n = readRp(); e.target.value = n ? fmtRp(n) : ""; });
 $("room-form").addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target.tagName === "INPUT" && e.target.type === "text") saveForm(); });
 

@@ -37,22 +37,39 @@ const FLOOR_INFO = { 1: "Akses Parkir & Area Depan", 2: "Area Balkon & Rooftop" 
 // Simulasi kondisi untuk uji (SQA/demo): ?mock=empty | ?mock=error | ?mock=saveerror
 const mockMode = () => new URLSearchParams(location.search).get("mock");
 
+// Nomor kamar untuk tampilan: "1" -> "01" (data di database tetap apa adanya).
+const fmtNo = (no) => (/^\d+$/.test(String(no)) ? String(no).padStart(2, "0") : String(no));
+
+// Pembagian lantai sesuai denah: Lantai 1 = kamar 01-09 + 21 (10 kamar), Lantai 2 = kamar 10-20 + 22, 23 (13 kamar).
+// Dipakai sementara selama BE belum menyimpan kolom `lantai`.
+const lantaiDariNomor = (no) => { const n = Number(no); return n >= 1 && n <= 9 || n === 21 ? 1 : 2; };
+
 // Ubah satu baris dari BE (id_kamar, no_kamar, tipe_kamar, harga, status, id_kost, ...) ke bentuk yang dipakai tampilan.
-// BE belum punya kolom lantai & fasilitas -> lantai diturunkan dari nomor kamar (1-10 = Lt.1, selebihnya Lt.2).
+// BE belum punya kolom lantai & fasilitas -> lantai diturunkan dari nomor kamar (lihat lantaiDariNomor).
 function normalizeRoom(k) {
   const no = String(k.no_kamar ?? "");
+  // Penghuni aktif dari tabel penghunian (relasi penghunian_aktif.penghuni di BE). Boleh lebih dari satu orang.
+  const aktif = Array.isArray(k.penghunian_aktif) ? k.penghunian_aktif : [];
+  const nama = aktif.map((p) => p.penghuni?.nama_penghuni).filter(Boolean);
+  const mulai = aktif.map((p) => String(p.tanggal_mulai || "").slice(0, 10)).filter(Boolean).sort()[0];
   return {
     id: k.id_kamar ?? k.id,
     id_kost: k.id_kost,
     no_kamar: no,
-    lantai: Number(k.lantai) || (Number(no) <= 10 ? 1 : 2),
+    lantai: Number(k.lantai) || lantaiDariNomor(no),
     tipe_kamar: k.tipe_kamar || "",
     fasilitas: k.fasilitas || "",
     harga: Number(k.harga) || 0, // BE mengirim decimal sebagai string, mis. "750000.00"
     status: String(k.status).toLowerCase() === "terisi" ? "terisi" : "kosong", // seeder BE memakai "Kosong"
-    penghuni: k.penghuni, jatuh_tempo: k.jatuh_tempo, mendesak: !!k.mendesak, catatan: k.catatan,
+    penghuni: nama.length ? nama.join(", ") : k.penghuni,
+    penghuni_list: nama,
+    mulai, // tanggal mulai hunian paling awal (YYYY-MM-DD)
+    jatuh_tempo: k.jatuh_tempo, mendesak: !!k.mendesak, catatan: k.catatan,
   };
 }
+
+const BULAN = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+const fmtTanggal = (iso) => { const [y, m, d] = String(iso).slice(0, 10).split("-"); return d && BULAN[m - 1] ? `${d} ${BULAN[m - 1]} ${y}` : "-"; };
 
 // Satu-satunya tempat yang memanggil server (GET /api/kamar).
 async function loadRooms() {
@@ -97,8 +114,12 @@ async function saveRoom(payload, old) {
     throw err;
   }
   const saved = normalizeRoom({ ...body, ...json.data });
+  const busy = saved.status === "terisi"; // dikosongkan -> penghuni diarsipkan oleh BE, kartu tidak lagi menampilkannya
   return { ...saved, lantai: payload.lantai, fasilitas: payload.fasilitas, // ditampilkan sesuai isian form
-    penghuni: old?.penghuni, jatuh_tempo: old?.jatuh_tempo, mendesak: !!old?.mendesak, catatan: old?.catatan };
+    penghuni: busy ? (saved.penghuni || old?.penghuni) : undefined,
+    penghuni_list: busy ? (saved.penghuni_list.length ? saved.penghuni_list : old?.penghuni_list || []) : [],
+    mulai: busy ? (saved.mulai || old?.mulai) : undefined,
+    jatuh_tempo: busy ? old?.jatuh_tempo : undefined, mendesak: busy && !!old?.mendesak, catatan: busy ? old?.catatan : undefined };
 }
 
 // ---------- Helper ----------
