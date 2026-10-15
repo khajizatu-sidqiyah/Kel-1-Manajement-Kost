@@ -3,24 +3,121 @@
 namespace App\Http\Controllers;
 
 use App\Models\Penghuni;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class PenghuniController extends Controller
 {
     /**
-     * Penghuni hanya boleh melihat data miliknya sendiri.
+     * Menampilkan semua data penghuni.
+     */
+    public function index()
+    {
+        return response()->json([
+            'success' => true,
+            'message' => 'Data penghuni berhasil diambil.',
+            'data' => Penghuni::all(),
+        ], 200);
+    }
+
+    /**
+     * Menambahkan penghuni baru.
+     */
+    public function store(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+    'nama_penghuni' => 'required|string|max:100',
+    'no_telepon' => 'nullable|string|max:20',
+    'email' => 'nullable|email|max:100',
+    'alamat' => 'nullable|string',
+]);
+
+if ($validator->fails()) {
+    return response()->json([
+        'message' => 'The given data was invalid.',
+        'errors' => $validator->errors(),
+    ], 422);
+}
+
+$penghuni = Penghuni::create($validator->validated());
+
+return response()->json([
+    'success' => true,
+    'message' => 'Penghuni berhasil ditambahkan',
+    'data' => $penghuni,
+], 201);
+    }
+
+    /**
+     * Menampilkan detail satu penghuni.
      */
     public function show($id)
     {
-        $penghuni = Penghuni::findOrFail($id);
+        $penghuni = Penghuni::find($id);
 
-        if ((int) $penghuni->user_id !== (int) Auth::id()) {
-            abort(403, 'Anda tidak memiliki akses ke data penghuni ini.');
+        if (!$penghuni) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data penghuni tidak ditemukan.',
+            ], 404);
         }
 
         return response()->json([
+            'success' => true,
             'message' => 'Data penghuni berhasil diakses.',
             'data' => $penghuni,
+        ], 200);
+    }
+
+    /**
+     * Memperbarui data penghuni.
+     */
+    public function update(Request $request, $id)
+    {
+        $penghuni = Penghuni::find($id);
+
+        if (!$penghuni) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data penghuni tidak ditemukan.',
+            ], 404);
+        }
+
+        $validated = $request->validate([
+            'nama_penghuni' => 'sometimes|required|string|max:100',
+            'no_telepon' => 'sometimes|nullable|string|max:20',
+            'email' => 'sometimes|nullable|email|max:100',
+            'alamat' => 'sometimes|nullable|string',
         ]);
+
+        $penghuni->update($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data penghuni berhasil diperbarui.',
+            'data' => $penghuni->fresh(),
+        ], 200);
+    }
+
+    /**
+     * Menghapus data penghuni.
+     */
+    public function destroy($id)
+    {
+        $penghuni = Penghuni::find($id);
+
+        if (!$penghuni) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data penghuni tidak ditemukan.',
+            ], 404);
+        }
+
+        $penghuni->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data penghuni berhasil dihapus.',
+        ], 200);
     }
 }
