@@ -54,9 +54,10 @@ Route::middleware(['auth', 'pemilik'])->group(function () {
 
     // DIPERBAIKI: Mengubah nama route dari 'penyewa' menjadi 'penghuni'
     Route::get('/penghuni', function () {
-        return view('penyewa'); // Sesuaikan ke view('penghuni') jika nama file blade Anda adalah penghuni.blade.php
+        return view('penghuni'); // Sesuaikan ke view('penghuni') jika nama file blade Anda adalah penghuni.blade.php
     })->name('penghuni');
 });
+
 
 
 /*
