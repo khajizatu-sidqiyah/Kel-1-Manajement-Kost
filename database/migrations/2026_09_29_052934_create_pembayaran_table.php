@@ -22,7 +22,7 @@ return new class extends Migration
             $table->decimal('jumlah', 12, 2);
             $table->string('metode_pembayaran', 30);
             $table->string('bukti_pembayaran')->nullable();
-            $table->string('status', 20)->default('pending');
+            $table->string('status', 20)->default('DP');
             
             $table->timestamps();
         });
