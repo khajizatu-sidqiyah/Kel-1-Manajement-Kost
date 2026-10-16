@@ -23,7 +23,7 @@ class PenghunianSeeder extends Seeder
 
             // Kamar 4 - Teh Azizah
             [
-                'id_kamar' => 2,
+                'id_kamar' => 4,
                 'id_penghuni' => 3,
                 'tanggal_mulai' => '2024-08-25',
                 'tanggal_selesai' => null,
