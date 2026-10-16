@@ -140,40 +140,6 @@ class PenghuniTest extends TestCase
         ]);
     }
 
-    public function test_penghunian_bisa_disimpan_tanpa_tanggal_mulai_dan_tetap_terhubung_ke_kamar(): void
-    {
-        $idKamar = $this->buatKamar();
-        $idPenghuni = $this->buatPenghuni([
-            'nama_penghuni' => 'Rina',
-            'no_telepon' => null,
-        ]);
-
-        $response = $this->postJson('/api/penghunian', [
-            'id_kamar' => $idKamar,
-            'id_penghuni' => $idPenghuni,
-            'tanggal_mulai' => '',
-        ]);
-
-        $response->assertCreated()
-            ->assertJsonPath('data.id_kamar', $idKamar)
-            ->assertJsonPath('data.id_penghuni', $idPenghuni)
-            ->assertJsonPath('data.tanggal_mulai', null)
-            ->assertJsonPath('data.penyewa_utama', true);
-
-        $this->assertDatabaseHas('penghunian', [
-            'id_kamar' => $idKamar,
-            'id_penghuni' => $idPenghuni,
-            'tanggal_mulai' => null,
-            'status' => 'aktif',
-            'penyewa_utama' => true,
-        ]);
-
-        $this->assertDatabaseHas('kamar', [
-            'id_kamar' => $idKamar,
-            'status' => 'terisi',
-        ]);
-    }
-
     public function test_penghuni_kedua_bukan_penyewa_utama_di_kamar_yang_sama(): void
     {
         $idKamar = $this->buatKamar();

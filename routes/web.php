@@ -23,19 +23,19 @@ Route::get('/', function () {
 |--------------------------------------------------------------------------
 */
 
-    // Login Pemilik
-    Route::get('/login', [AuthController::class, 'showLogin'])
-        ->name('login');
+// Login Pemilik
+Route::get('/login', [AuthController::class, 'showLogin'])
+    ->name('login');
 
-    Route::post('/login', [AuthController::class, 'login'])
-        ->name('login.process');
+Route::post('/login', [AuthController::class, 'login'])
+    ->name('login.process');
 
-    // Login Penghuni
-    Route::get('/login/penghuni', [AuthController::class, 'showLoginPenghuni'])
-        ->name('login.penghuni');
+// Login Penghuni
+Route::get('/login/penghuni', [AuthController::class, 'showLoginPenghuni'])
+    ->name('login.penghuni');
 
-    Route::post('/login/penghuni', [AuthController::class, 'loginPenghuni'])
-        ->name('login.penghuni.process');
+Route::post('/login/penghuni', [AuthController::class, 'loginPenghuni'])
+    ->name('login.penghuni.process');
 
 
 /*
@@ -59,29 +59,31 @@ Route::middleware(['auth', 'pemilik'])->group(function () {
     })->name('penyewa');
 
     Route::get('/pengaturan-sewa', [PengaturanSewaController::class, 'index'])
-    ->name('pengaturan-sewa.index');
+        ->name('pengaturan-sewa.index');
 
     Route::put('/pengaturan-sewa', [PengaturanSewaController::class, 'update'])
-    ->name('pengaturan-sewa.update');
+        ->name('pengaturan-sewa.update');
 
-        // Perhitungan DP dan tenggat pelunasan.
+    // Perhitungan DP dan tenggat pelunasan.
     Route::post('/penghunian/{id}/hitung', [
         PenghunianController::class,
         'hitung',
     ])->name('penghunian.hitung');
 
-    // Mengubah tenggat pelunasan sewa tahunan.
     Route::put('/penghunian/{id}/tenggat', [
         PenghunianController::class,
         'ubahTenggat',
     ])->name('penghunian.ubah-tenggat');
 
-    // Menghitung tenggat bulan berikutnya.
     Route::put('/penghunian/{id}/tenggat-berikutnya', [
         PenghunianController::class,
         'tenggatBerikutnya',
     ])->name('penghunian.tenggat-berikutnya');
-});
+
+    Route::get('/penghuni', function () {
+        return view('penghuni');
+    })->name('penghuni');});
+
 
 
 /*

@@ -20,7 +20,7 @@ $("toggle-pw").addEventListener("click", () => {
 function showLoginError({ email = true, password = true, message = "Kata sandi tidak cocok" } = {}) {
   $("field-email").classList.toggle("has-error", email);
   $("field-password").classList.toggle("has-error", password);
-  $("login-error").textContent = "! " + message;
+  $("login-error").querySelector("span").textContent = "! " + message;
   $("login-error").hidden = false;
   login.classList.add("is-error");
 }
@@ -43,5 +43,6 @@ if (login.dataset.error) {
 if (new URLSearchParams(location.search).get("state") === "error") {
   $("email").value = "adminkos@gmail.com";
   $("password").value = "Kos126";
+  $("toggle-pw").click();          // kata sandi tampak, seperti di mockup
   showLoginError();
 }
