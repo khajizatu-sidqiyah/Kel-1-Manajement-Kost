@@ -51,11 +51,6 @@ Route::middleware(['auth', 'pemilik'])->group(function () {
     Route::get('/denah', function () {
         return view('denah');
     })->name('denah');
-
-    // Halaman Data Penyewa & Arsip (resources/views/penghuni.blade.php)
-    Route::get('/data-penyewa', function () {
-        return view('penghuni');
-    })->name('penghuni');
 });
 
 

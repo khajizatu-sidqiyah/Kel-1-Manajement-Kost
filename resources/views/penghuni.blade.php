@@ -198,3 +198,4 @@
     <script src="{{ asset('js/rooms-api.js') }}"></script>
     <script src="{{ asset('js/penghuni.js') }}"></script>
 @endpush
+
