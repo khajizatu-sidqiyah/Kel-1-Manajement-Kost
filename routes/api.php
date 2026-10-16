@@ -21,3 +21,6 @@ Route::delete('/penghuni/{id}', [PenghuniController::class, 'destroy']);
 Route::get('/penghunian', [PenghunianController::class, 'index']);
 Route::post('/penghunian', [PenghunianController::class, 'store']);
 Route::get('/penghunian/{id}', [PenghunianController::class, 'show']);
+Route::put('/penghunian/{id}', [PenghunianController::class, 'update']);
+Route::put('/penghunian/{id}/penyewa-utama', [PenghunianController::class, 'setPenyewaUtama']);
+Route::post('/penghunian/{id}/dp', [PenghunianController::class, 'catatDp']);

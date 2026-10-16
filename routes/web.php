@@ -51,6 +51,10 @@ Route::middleware(['auth', 'pemilik'])->group(function () {
     Route::get('/denah', function () {
         return view('denah');
     })->name('denah');
+
+    Route::get('/penyewa', function () {
+        return view('penyewa');
+    })->name('penyewa');
 });
 
 

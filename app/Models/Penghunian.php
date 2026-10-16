@@ -37,6 +37,11 @@ class Penghunian extends Model
         );
     }
 
+    public function pembayaran()
+    {
+        return $this->hasMany(\App\Models\Pembayaran::class, 'id_penghunian', 'id_penghunian');
+    }
+
     public function penghuni()
     {
         return $this->belongsTo(
