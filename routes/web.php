@@ -21,19 +21,19 @@ Route::get('/', function () {
 |--------------------------------------------------------------------------
 */
 
-    // Login Pemilik
-    Route::get('/login', [AuthController::class, 'showLogin'])
-        ->name('login');
+// Login Pemilik
+Route::get('/login', [AuthController::class, 'showLogin'])
+    ->name('login');
 
-    Route::post('/login', [AuthController::class, 'login'])
-        ->name('login.process');
+Route::post('/login', [AuthController::class, 'login'])
+    ->name('login.process');
 
-    // Login Penghuni
-    Route::get('/login/penghuni', [AuthController::class, 'showLoginPenghuni'])
-        ->name('login.penghuni');
+// Login Penghuni
+Route::get('/login/penghuni', [AuthController::class, 'showLoginPenghuni'])
+    ->name('login.penghuni');
 
-    Route::post('/login/penghuni', [AuthController::class, 'loginPenghuni'])
-        ->name('login.penghuni.process');
+Route::post('/login/penghuni', [AuthController::class, 'loginPenghuni'])
+    ->name('login.penghuni.process');
 
 
 /*
@@ -51,6 +51,11 @@ Route::middleware(['auth', 'pemilik'])->group(function () {
     Route::get('/denah', function () {
         return view('denah');
     })->name('denah');
+
+    // DIPERBAIKI: Mengubah nama route dari 'penyewa' menjadi 'penghuni'
+    Route::get('/penghuni', function () {
+        return view('penyewa'); // Sesuaikan ke view('penghuni') jika nama file blade Anda adalah penghuni.blade.php
+    })->name('penghuni');
 });
 
 
