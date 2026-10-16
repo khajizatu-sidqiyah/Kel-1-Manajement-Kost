@@ -80,13 +80,7 @@
                     <span></span>
                 </div>
 
-                <!-- Ingat sesi (desktop) + Lupa kata sandi -->
-                <div class="row-options" id="row-options">
-                    <label class="check">
-                        <input type="checkbox" name="remember"> <span>Ingat sesi saya</span>
-                    </label>
-                    <a href="#" class="link">Lupa kata sandi ?</a>
-                </div>
+                
 
                 <button type="submit" class="btn btn-primary" id="btn-submit">
                     <span class="txt-short">Login</span>
@@ -95,22 +89,7 @@
                 </button>
             </form>
 
-            <!-- SSO (disembunyikan saat state error) -->
-            <section class="sso-block" id="sso-block">
-                <div class="divider"><span>Atau masuk dengan SSO</span></div>
-
-                <div class="sso">
-                    <button type="button" class="btn btn-sso">
-                        <span class="sso-ic"><svg viewBox="0 0 48 48"><use href="#i-google"/></svg></span>
-                        <span class="txt-long">Masuk dengan Google</span><span class="txt-short">Google</span>
-                    </button>
-                    <button type="button" class="btn btn-sso">
-                        <span class="sso-ic"><svg viewBox="0 0 24 24"><use href="#i-apple"/></svg></span>
-                        <span class="txt-long">Masuk dengan Apple ID</span><span class="txt-short">Apple ID</span>
-                    </button>
-                </div>
-            </section>
-
+            
             
           </div>
         </div>
