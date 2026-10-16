@@ -11,22 +11,29 @@ class Penghunian extends Model
     protected $primaryKey = 'id_penghunian';
 
     protected $fillable = [
-        'id_kamar',
-        'id_penghuni',
-        'tanggal_mulai',
-        'tanggal_selesai',
-        'status',
-        'penyewa_utama',
-    ];
+    'id_kamar',
+    'id_penghuni',
+    'tanggal_mulai',
+    'tanggal_selesai',
+    'status',
+    'penyewa_utama',
+    'skema_sewa',
+    'total_sewa',
+    'dp_minimum',
+    'tenggat_pelunasan',
+];
 
     protected function casts(): array
-    {
-        return [
-            'tanggal_mulai' => 'date',
-            'tanggal_selesai' => 'date',
-            'penyewa_utama' => 'boolean',
-        ];
-    }
+{
+    return [
+        'tanggal_mulai' => 'date',
+        'tanggal_selesai' => 'date',
+        'penyewa_utama' => 'boolean',
+        'tenggat_pelunasan' => 'date',
+        'total_sewa' => 'decimal:2',
+        'dp_minimum' => 'decimal:2',
+    ];
+}
 
     public function kamar()
     {

@@ -3,6 +3,8 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PenghuniController;
+use App\Http\Controllers\PenghunianController;
+use App\Http\Controllers\PengaturanSewaController;
 
 /*
 |--------------------------------------------------------------------------
@@ -55,6 +57,30 @@ Route::middleware(['auth', 'pemilik'])->group(function () {
     Route::get('/penyewa', function () {
         return view('penyewa');
     })->name('penyewa');
+
+    Route::get('/pengaturan-sewa', [PengaturanSewaController::class, 'index'])
+    ->name('pengaturan-sewa.index');
+
+    Route::put('/pengaturan-sewa', [PengaturanSewaController::class, 'update'])
+    ->name('pengaturan-sewa.update');
+
+        // Perhitungan DP dan tenggat pelunasan.
+    Route::post('/penghunian/{id}/hitung', [
+        PenghunianController::class,
+        'hitung',
+    ])->name('penghunian.hitung');
+
+    // Mengubah tenggat pelunasan sewa tahunan.
+    Route::put('/penghunian/{id}/tenggat', [
+        PenghunianController::class,
+        'ubahTenggat',
+    ])->name('penghunian.ubah-tenggat');
+
+    // Menghitung tenggat bulan berikutnya.
+    Route::put('/penghunian/{id}/tenggat-berikutnya', [
+        PenghunianController::class,
+        'tenggatBerikutnya',
+    ])->name('penghunian.tenggat-berikutnya');
 });
 
 
