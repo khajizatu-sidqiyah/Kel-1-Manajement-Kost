@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
+    @stack('styles')
 </head>
 <body class="app">
 
@@ -59,7 +60,7 @@
                 <a href="{{ route('denah') }}" class="nav-item {{ request()->routeIs('denah') ? 'is-active' : '' }}"><svg class="i"><use href="#i-grid"/></svg>Denah &amp; Status Kamar</a>
                 <a href="#" class="nav-item"><svg class="i"><use href="#i-receipt"/></svg>Pembayaran &amp; Tagihan</a>
                 <a href="#" class="nav-item"><svg class="i"><use href="#i-tools"/></svg>Komplain &amp; Kerusakan</a>
-                <a href="#" class="nav-item"><svg class="i"><use href="#i-idcard"/></svg>Data Penyewa &amp; Arsip</a>
+                <a href="{{ route('penghuni') }}" class="nav-item {{ request()->routeIs('penghuni') ? 'is-active' : '' }}"><svg class="i"><use href="#i-idcard"/></svg>Data Penyewa &amp; Arsip</a>
                 <a href="#" class="nav-item"><svg class="i"><use href="#i-gear"/></svg>Pengaturan Kos</a>
             </nav>
 
@@ -83,14 +84,14 @@
                     <svg class="i"><use href="#i-menu"/></svg>
                 </button>
 
-                <button type="button" class="chip chip-kost"><svg class="i i-sm"><use href="#i-pin"/></svg>Kost Griya Harmoni (23 Kamar)<svg class="i i-sm"><use href="#i-chev"/></svg></button>
-                <span class="topbar-info"><svg class="i i-sm"><use href="#i-check"/></svg>Otomatisasi Tagihan WhatsApp Aktif</span>
+                <button type="button" class="chip chip-kost"><svg class="i i-sm"><use href="#i-pin"/></svg>Kost Griya Harmoni ( Kamar 04 / L 1 )<svg class="i i-sm"><use href="#i-chev"/></svg></button>
+                <span class="topbar-info"><svg class="i i-sm"><use href="#i-check"/></svg>Notifikasi WhatsApp Tagihan Aktif</span>
 
                 <div class="topbar-right">
                     <button type="button" class="icon-btn bell" aria-label="Notifikasi"><svg class="i"><use href="#i-bell"/></svg><span class="bell-dot"></span></button>
                     <div class="user">
-                        <span class="user-text"><b>{{ auth()->user()->name ?? 'Pemilik' }}</b><small>Pengelola Kos</small></span>
-                        <span class="avatar">{{ strtoupper(mb_substr(auth()->user()->name ?? 'P', 0, 1)) }}</span>
+                        <span class="user-text"><b>Pemilik Kost</b></span>
+                        <span class="avatar">P</span>
                     </div>
                 </div>
             </header>

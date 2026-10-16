@@ -1,26 +1,29 @@
 /* =========================================================
    HALAMAN LOGIN  (Pemilik & Penghuni)
-   Mengikuti mockup high-fidelity:
-     - Mobile  : frame iPhone Pro Max (dirancang untuk >= 360px)
-     - Desktop : frame 1440 x 1024 (kolom putih di tengah)
+   Mengikuti mockup Figma "Dekstop_1/2/3" (frame 1440 x 1024):
+     - Desktop : kartu putih 722px di tengah, latar hijau muda,
+                 kolom form 524px, tinggi field & tombol 66px, radius 20px
+     - Mobile  : satu kolom putih penuh (>= 360px)
 
-   Pendekatan mobile-first dengan 2 breakpoint:
-     @media (min-width: 360px)   -> ukuran mobile
-     @media (min-width: 1024px)  -> layout desktop
+   Font   : Inter (judul 24px bold, label 12px bold, tombol 16px regular)
+   Warna  : DCFCE7 latar | FFFFFF kartu | 000000 teks | 2563EB biru utama
+            434655 ikon | 131B2E logo Apple | BA1A1A error | FFDAD6 latar field error
+            F2F2F2 latar field (hitam 5%) | EA4335 / 4285F4 / FBBC05 / 34A853 logo Google
+   Pendekatan mobile-first, 2 breakpoint: 360px (mobile) dan 1024px (desktop).
    File ini berdiri sendiri (tidak memakai style.css).
 ========================================================= */
 
 :root {
-    --primary: #2563eb;
-    --primary-hover: #1d4ed8;
-    --ink: #0b0b0f;
-    --muted: #4b5563;
-    --field-bg: #f2f2f2;
-    --icon: #4b5563;
-    --error: #c81e1e;
-    --error-bg: #ffe9e6;
-    --desktop-bg: #dcfce7;
+    --page-bg: #dcfce7;                 /* DCFCE7 */
     --surface: #ffffff;
+    --ink: #000000;
+    --primary: #2563eb;                 /* 2563EB */
+    --primary-hover: #1d4ed8;
+    --icon: #434655;                    /* 434655 */
+    --navy: #131b2e;                    /* 131B2E */
+    --field-bg: rgba(0, 0, 0, .05);     /* hitam 5% di atas putih = F2F2F2 */
+    --error: #ba1a1a;                   /* BA1A1A */
+    --error-bg: #ffdad6;                /* FFDAD6 */
 
     --field-h: 56px;
     --radius: 999px;
@@ -79,9 +82,16 @@ body.page-login {
 }
 
 .login-panel {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    padding: 48px 16px 40px;
+    background: var(--surface);
+}
+
+.login-box {
     width: 100%;
     max-width: 440px;
-    padding: 48px 16px 40px;
 }
 
 .login-title {
@@ -106,6 +116,7 @@ body.page-login {
     padding: 0 6px;
     margin-bottom: 8px;
     font-size: 12px;
+    line-height: 16px;
     font-weight: 700;
 }
 
@@ -136,7 +147,8 @@ body.page-login {
 
 .input-wrap input::placeholder {
     font-weight: 400;
-    color: #8a8f98;
+    color: var(--icon);
+    opacity: .7;
 }
 
 .input-wrap input:focus {
@@ -196,12 +208,25 @@ body.page-login {
     color: var(--error);
 }
 
+/* Pesan galat: di antara dua garis hitam (sesuai mockup Dekstop_3) */
 .login-error {
-    margin: 22px 0 4px;
-    text-align: center;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin: 26px 0 26px;
     font-size: 12px;
+    line-height: 16px;
     font-weight: 700;
     color: var(--error);
+    white-space: nowrap;
+}
+
+.login-error::before,
+.login-error::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--ink);
 }
 
 /* ---------- Baris opsi: Lupa kata sandi / Ingat sesi ---------- */
@@ -221,15 +246,25 @@ body.page-login {
 .check {
     display: inline-flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     font-weight: 700;
     cursor: pointer;
 }
 
 .check input {
+    appearance: none;
+    -webkit-appearance: none;
     width: 14px;
     height: 14px;
-    accent-color: var(--primary);
+    border: 0;
+    border-radius: 2px;
+    background: var(--primary);
+    cursor: pointer;
+}
+
+.check input:checked {
+    background: var(--primary);
+    box-shadow: inset 0 0 0 2px var(--surface);
 }
 
 .link {
@@ -249,7 +284,7 @@ body.page-login {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 14px;
+    gap: 28px;
     border: 0;
     border-radius: var(--radius);
     font-size: 14px;
@@ -263,7 +298,7 @@ body.page-login {
 
 .btn-primary {
     background: var(--primary);
-    color: #fff;
+    color: var(--surface);
     font-weight: 700;
 }
 
@@ -275,7 +310,7 @@ body.page-login {
     display: none;          /* panah hanya tampil di desktop */
 }
 
-/* Teks ganda: versi panjang (mobile) & pendek/berbeda (desktop) */
+/* Teks ganda: versi panjang & pendek */
 .txt-long { display: inline; }
 .txt-short { display: none; }
 
@@ -291,11 +326,11 @@ body.page-login {
 .divider {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     margin-bottom: 26px;
     font-size: 11px;
+    line-height: 15px;
     font-weight: 400;
-    letter-spacing: .02em;
     text-transform: uppercase;
     white-space: nowrap;
 }
@@ -324,15 +359,15 @@ body.page-login {
 }
 
 .btn-sso:hover {
-    background: #e7e7e7;
+    background: rgba(0, 0, 0, .09);
 }
 
 .sso-ic {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 22px;
-    height: 22px;
+    width: 20px;
+    height: 20px;
 }
 
 .sso-ic svg {
@@ -346,23 +381,18 @@ body.page-login {
     margin-top: 28px;
     text-align: center;
     font-size: 12px;
-    color: var(--muted);
+    color: var(--ink);
 }
 
-/* Saat state error: sembunyikan Lupa sandi & SSO seperti mockup */
+/* Saat state error: tanpa Lupa kata sandi & SSO (sesuai mockup) */
 .login.is-error .row-options,
 .login.is-error .sso-block {
     display: none;
 }
 
-.login.is-error .btn-primary {
-    margin-top: 14px;
-}
-
 
 /* =========================================================
    BREAKPOINT 360px  ->  tampilan MOBILE
-   (frame iPhone Pro Max; ukuran diskalakan untuk >= 360px)
 ========================================================= */
 
 @media (min-width: 360px) {
@@ -378,14 +408,6 @@ body.page-login {
     .login-title {
         font-size: 24px;
         margin-bottom: 88px;
-    }
-
-    .field label {
-        font-size: 12px;
-    }
-
-    .input-wrap input {
-        font-size: 13px;
     }
 
     .btn {
@@ -412,41 +434,44 @@ body.page-login {
 
 /* =========================================================
    BREAKPOINT 1024px  ->  tampilan DESKTOP
-   (frame 1440 x 1024: latar hijau muda + kolom putih di tengah)
+   Frame 1440 x 1024: kartu putih x=359..1081 (722px), form x=458..982 (524px)
 ========================================================= */
 
 @media (min-width: 1024px) {
 
     :root {
         --field-h: 66px;
-        --radius: 24px;
+        --radius: 20px;
     }
 
     body.page-login {
-        background: var(--desktop-bg);
+        background: var(--page-bg);
     }
 
     .login-panel {
+        flex: 0 0 722px;
         max-width: 722px;
-        min-height: 100vh;
-        min-height: 100dvh;
-        padding: 56px 99px 56px;
-        background: var(--surface);
+        padding: 60px 99px 56px;
+    }
+
+    .login-box {
+        max-width: 524px;
     }
 
     .login-title {
         font-size: 24px;
-        margin-bottom: 150px;
+        margin-bottom: 214px;
     }
 
     /* Label: "Email / Username" kiri, "Format Terdaftar" kanan */
     .field {
-        margin-bottom: 40px;
+        margin-bottom: 58px;
     }
 
     .field label {
-        padding: 0 12px;
-        margin-bottom: 20px;
+        padding: 0 3px 0 12px;
+        margin-bottom: 26px;
+        font-size: 12px;
     }
 
     .field label em {
@@ -455,38 +480,55 @@ body.page-login {
     }
 
     .input-wrap input {
-        font-size: 13px;
+        font-size: 12px;
+        padding-left: 82px;
+        padding-right: 72px;
     }
 
     .ic-left {
-        left: 34px;
+        left: 33px;
+        width: 17px;
+        height: 17px;
     }
 
-    .input-wrap input {
-        padding-left: 80px;
+    .ic-right {
+        right: 40px;
+        width: 16px;
+        height: 16px;
     }
 
-    .ic-right,
     .toggle-pw {
-        right: 34px;
+        right: 46px;
+    }
+
+    .toggle-pw .ic {
+        width: 19px;
+        height: 19px;
     }
 
     /* Baris: Ingat sesi saya (kiri)  |  Lupa kata sandi ? (kanan) */
     .row-options {
         justify-content: space-between;
-        padding: 0 14px;
-        margin: 4px 0 42px;
+        padding: 0 17px 0 14px;
+        margin: -30px 0 58px;
     }
 
     .row-options .check {
         display: inline-flex;
+        gap: 13px;
     }
 
-    /* Tombol utama: teks panjang + panah */
+    .check input {
+        width: 13px;
+        height: 13px;
+        border-radius: 1px;
+    }
+
+    /* Tombol utama: teks panjang + panah hitam */
     .btn-primary {
         font-size: 16px;
         font-weight: 400;
-        gap: 22px;
+        gap: 28px;
     }
 
     .btn-primary .txt-short { display: none; }
@@ -494,32 +536,32 @@ body.page-login {
 
     .btn-arrow {
         display: block;
-        width: 26px;
-        height: 26px;
-        color: #000;
+        width: 25px;
+        height: 12px;
+        stroke-width: 2;
+        color: var(--ink);
     }
 
-    /* SSO: dua tombol biru berdampingan */
+    /* SSO: dua tombol biru 230 x 66, Google di kiri & Apple ID di kanan */
     .sso-block {
         margin-top: 44px;
     }
 
     .divider {
-        margin-bottom: 46px;
-        gap: 10px;
+        margin-bottom: 39px;
+        font-size: 12px;
     }
 
     .sso {
-        grid-template-columns: 1fr 1fr;
-        gap: 64px;
+        grid-template-columns: repeat(2, 230px);
+        justify-content: space-between;
+        gap: 16px;
     }
 
     .btn-sso {
-        gap: 20px;
-        padding-left: 34px;
         background: var(--primary);
-        color: #fff;
-        font-size: 13px;
+        padding-left: 38px;
+        gap: 36px;
     }
 
     .btn-sso:hover {
@@ -529,23 +571,37 @@ body.page-login {
     .btn-sso .txt-long { display: none; }
     .btn-sso .txt-short { display: inline; }
 
-    /* Chip putih agar logo Google/Apple tetap terbaca di atas biru */
-    .sso-ic {
-        width: 30px;
-        height: 30px;
-        border-radius: 50%;
-        background: #fff;
+    .sso-ic,
+    .sso-ic svg {
+        width: 16px;
+        height: 16px;
     }
 
     .switch-role {
-        margin-top: 40px;
+        margin-top: 36px;
+    }
+
+    /* State error desktop (Dekstop_3): pesan di antara dua garis, tombol "Login" tebal */
+    .login.is-error .login-title {
+        margin-top: -12px;
+        margin-bottom: 243px;
     }
 
     .login-error {
-        margin: 0 0 20px;
+        margin: -19px 0 39px;
     }
 
+    .login.is-error .btn-primary .txt-short { display: inline; }
+    .login.is-error .btn-primary .txt-long,
+    .login.is-error .btn-arrow { display: none; }
+
     .login.is-error .btn-primary {
-        margin-top: 0;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--ink);
+    }
+
+    .login.is-error .field label em {
+        display: none;
     }
 }

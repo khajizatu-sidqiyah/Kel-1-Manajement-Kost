@@ -24,14 +24,28 @@
     <!-- Pembayaran & komplain -->
     <section class="mini" id="fin" aria-label="Pembayaran dan komplain"></section>
 
+    <!-- Panel / Kotak Utama Sesuai UI/UX (Dua Kolom) -->
     <section class="panels" id="panels">
+        <!-- Card 1: Jatuh Tempo Terdekat -->
         <div class="card panel">
-            <div class="panel-head"><h2>Jatuh Tempo Terdekat</h2><a href="{{ route('denah') }}">Lihat denah</a></div>
-            <ul class="list" id="list-tempo"></ul>
+            <div class="panel-head">
+                <h2>Jatuh Tempo Terdekat</h2>
+                <a href="{{ route('denah') }}" class="panel-action">Lihat Semua</a>
+            </div>
+            <ul class="list" id="list-tempo">
+                <!-- Data akan diisi dinamis oleh JavaScript -->
+            </ul>
         </div>
+
+        <!-- Card 2: Kamar Kosong Siap Disewa -->
         <div class="card panel">
-            <div class="panel-head"><h2>Kamar Kosong Siap Disewa</h2><a href="{{ route('denah') }}">Lihat semua</a></div>
-            <ul class="list" id="list-kosong"></ul>
+            <div class="panel-head">
+                <h2>Kamar Kosong Siap Disewa</h2>
+                <a href="{{ route('denah') }}" class="panel-action">Lihat Semua</a>
+            </div>
+            <ul class="list" id="list-kosong">
+                <!-- Data akan diisi dinamis oleh JavaScript -->
+            </ul>
         </div>
     </section>
 
