@@ -52,7 +52,7 @@
                 <div class="field" id="field-email">
                     <label for="email">
                         <span>Email / Username {{ $roleName }} <b class="req" aria-hidden="true">*</b></span>
-                        <em>Format Terdaftar</em>
+                        
                     </label>
                     <div class="input-wrap">
                         <svg class="ic ic-left"><use href="#i-mail"/></svg>

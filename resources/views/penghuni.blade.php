@@ -4,7 +4,7 @@
 
 {{-- CSS khusus halaman (layout memuat @stack('styles') setelah dashboard.css) --}}
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/penghuni.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/penghuni.css') }}?v={{ filemtime(public_path('css/penghuni.css')) }}">
 @endpush
 
 @section('content')
@@ -223,8 +223,8 @@
             <div class="pm-head">
                 <span class="pm-ico"><svg class="i"><use href="#i-user-plus2"/></svg></span>
                 <div>
-                    <h2 id="e-title">Tambah Penyewa</h2>
-                    <p>Masukkan data penyewa baru. Data dapat dilengkapi kemudian.</p>
+                    <h2 id="e-title">Ubah Data Penyewa</h2>
+                    <p>Perbarui data penyewa. Nomor HP dan tanggal masuk dapat dilengkapi kemudian.</p>
                 </div>
                 <button type="button" class="pm-x" id="e-x" aria-label="Tutup"><svg class="i"><use href="#i-x"/></svg></button>
             </div>
@@ -290,10 +290,27 @@
         </div>
     </div>
 
+    {{-- ===== Popup pintasan setelah penghuni tersimpan (di tengah layar) ===== --}}
+    <div class="shortcut-wrap" id="pk" data-url="{{ url('/pembayaran') }}" hidden>
+        <div class="shortcut" role="dialog" aria-modal="true" aria-labelledby="k-judul">
+            <button type="button" class="shortcut-x" id="k-x" aria-label="Tutup"><svg class="i"><use href="#i-x"/></svg></button>
+            <span class="shortcut-ico"><svg class="i"><use href="#i-tick"/></svg></span>
+            <div class="shortcut-body">
+                <b id="k-judul">Data penghuni tersimpan</b>
+                <p id="k-pesan"></p>
+                <p class="shortcut-note" id="k-info" hidden></p>
+                <div class="shortcut-act">
+                    <button type="button" class="shortcut-btn shortcut-btn--ghost" id="k-selesai">Tutup</button>
+                    <a class="shortcut-btn shortcut-btn--main" id="k-dp" href="{{ url('/pembayaran') }}" hidden>Catat DP sekarang</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
 @endsection
 
 @push('scripts')
     {{-- Urutan penting: rooms-api.js (loadRooms, fmtNo, lantaiDariNomor) -> penghuni.js --}}
-    <script src="{{ asset('js/rooms-api.js') }}"></script>
-    <script src="{{ asset('js/penghuni.js') }}"></script>
+    <script src="{{ asset('js/rooms-api.js') }}?v={{ filemtime(public_path('js/rooms-api.js')) }}"></script>
+    <script src="{{ asset('js/penghuni.js') }}?v={{ filemtime(public_path('js/penghuni.js')) }}"></script>
 @endpush

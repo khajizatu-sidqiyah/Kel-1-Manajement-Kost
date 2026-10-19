@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Kamar;
 use App\Models\PengaturanSewa;
+use App\Models\Penghuni;
 use App\Models\Penghunian;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -25,6 +26,81 @@ class PenghunianController extends Controller
             ])->get(),
         ], 200);
     }
+    // Menambahkan penghuni baru sekaligus membuat penghunian.
+public function storeDenganPenghuni(Request $request)
+{
+    $validator = Validator::make($request->all(), [
+        'id_kamar' => 'required|integer|exists:kamar,id_kamar',
+
+        'nama_penghuni' => 'required|string|max:255',
+        'no_telepon' => 'required|string|max:20',
+        'alamat' => 'required|string',
+
+        'tanggal_mulai' => 'nullable|date',
+        'tanggal_selesai' => [
+            'nullable',
+            'date',
+            'after_or_equal:tanggal_mulai',
+        ],
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json([
+            'message' => 'The given data was invalid.',
+            'errors' => $validator->errors(),
+        ], 422);
+    }
+
+    $data = $validator->validated();
+
+    $hasil = DB::transaction(function () use ($data) {
+        $kamar = Kamar::where(
+            'id_kamar',
+            $data['id_kamar']
+        )->lockForUpdate()->firstOrFail();
+
+        $adaPenghuniAktif = Penghunian::where(
+            'id_kamar',
+            $kamar->id_kamar
+        )
+            ->where('status', 'aktif')
+            ->exists();
+
+        // 1. Simpan penghuni baru.
+        $penghuni = Penghuni::create([
+            'nama_penghuni' => $data['nama_penghuni'],
+            'no_telepon' => $data['no_telepon'],
+            'alamat' => $data['alamat'],
+        ]);
+
+        // 2. Simpan penghunian dengan ID penghuni yang baru dibuat.
+        $penghunian = Penghunian::create([
+            'id_kamar' => $kamar->id_kamar,
+            'id_penghuni' => $penghuni->id_penghuni,
+            'tanggal_mulai' => $data['tanggal_mulai'] ?? null,
+            'tanggal_selesai' => $data['tanggal_selesai'] ?? null,
+            'status' => 'aktif',
+            'penyewa_utama' => !$adaPenghuniAktif,
+        ]);
+
+        // 3. Ubah status kamar.
+        $kamar->status = 'terisi';
+        $kamar->save();
+
+        return [
+            'penghuni' => $penghuni,
+            'penghunian' => $penghunian->load([
+                'kamar',
+                'penghuni',
+            ]),
+        ];
+    });
+
+    return response()->json([
+        'message' => 'Penghuni dan penghunian berhasil ditambahkan.',
+        'data' => $hasil,
+    ], 201);
+}
 
     // Menambahkan data penghunian.
     public function store(Request $request)

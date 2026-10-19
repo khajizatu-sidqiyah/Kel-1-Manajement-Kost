@@ -22,7 +22,7 @@ return new class extends Migration
                 ->constrained('penghuni', 'id_penghuni')
                 ->cascadeOnDelete();
 
-            $table->date('tanggal_mulai');
+            $table->date('tanggal_mulai')->nullable();
             $table->date('tanggal_selesai')->nullable();
             $table->string('status', 20)->default('aktif');
             
