@@ -25,3 +25,22 @@ Route::get('/penghunian/{id}', [PenghunianController::class, 'show']);
 Route::put('/penghunian/{id}', [PenghunianController::class, 'update']);
 Route::put('/penghunian/{id}/penyewa-utama', [PenghunianController::class, 'setPenyewaUtama']);
 Route::post('/penghunian/{id}/dp', [PenghunianController::class, 'catatDp']);
+Route::post('/penghunian/dengan-penghuni',[PenghunianController::class, 'storeDenganPenghuni']);
+
+// API Perhitungan DP dan Tenggat Pelunasan
+Route::middleware(['auth:sanctum', 'pemilik'])->group(function () {
+    Route::post('/penghunian/{id}/hitung', [
+        PenghunianController::class,
+        'hitung',
+    ]);
+
+    Route::put('/penghunian/{id}/tenggat', [
+        PenghunianController::class,
+        'ubahTenggat',
+    ]);
+
+    Route::put('/penghunian/{id}/tenggat-berikutnya', [
+        PenghunianController::class,
+        'tenggatBerikutnya',
+    ]);
+});

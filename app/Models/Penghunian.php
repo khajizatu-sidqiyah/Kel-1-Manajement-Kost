@@ -3,6 +3,9 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Kamar;
+use App\Models\Penghuni;
+use App\Models\Pembayaran;
 
 class Penghunian extends Model
 {
@@ -52,4 +55,13 @@ class Penghunian extends Model
             'id_penghuni'
         );
     }
+
+    public function pembayaran()
+{
+    return $this->hasMany(
+        Pembayaran::class,
+        'id_penghunian',
+        'id_penghunian'
+    );
+}
 }
