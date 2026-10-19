@@ -134,6 +134,10 @@
     } else if (state.error) {
       $("pg-rows").innerHTML = ""; box.hidden = false;
       box.innerHTML = '<b>Data penyewa gagal dimuat</b>Periksa koneksi atau coba lagi.<br><button type="button" id="btn-retry">Coba lagi</button>';
+    } else if (!state.rows.length) {
+      // belum ada penghuni sama sekali (bukan sekadar filter tidak cocok)
+      $("pg-rows").innerHTML = ""; box.hidden = false;
+      box.innerHTML = '<b>Belum ada data penghuni</b><br><button type="button" id="btn-kosong-tambah">Tambah penghuni</button>';
     } else if (!slice.length) {
       $("pg-rows").innerHTML = ""; box.hidden = false;
       box.innerHTML = state.tab === "aktif" ? "<b>Belum ada penyewa</b>Tidak ada data yang cocok." : "<b>Arsip kosong</b>Belum ada penyewa yang keluar dari kos.";
@@ -302,26 +306,57 @@
     const m = modals.edit, k = selKamar(m), row = m.row;
     const c = k ? kamarCtx(k.id, row.id) : { count: 0, list: [], utama: null };
     const sama = k && k.id === row.id_kamar;                 // kamar tidak diganti -> peran tetap
-    const utama = sama ? row.utama : c.count === 0;
+    // Satu-satunya penghuni aktif di kamar ini -> otomatis penyewa utama (walau flag di data masih 0)
+    const sendiri = !!(sama && c.count === 0);
+    // Boleh dipilih jadi penyewa utama: penghuni tambahan aktif, kamar tidak diganti, dan ada penyewa utama lain
+    const bisaPilih = !!(sama && row.status === "aktif" && !row.utama && !sendiri);
+    if (!bisaPilih) m.jadikanUtama = false;
+    const utama = sama ? !!(row.utama || sendiri || m.jadikanUtama) : c.count === 0;
+    // Perlu memanggil endpoint penyewa-utama saat simpan?
+    m.kirimUtama = !!(sama && row.status === "aktif" && !row.utama && (sendiri || m.jadikanUtama));
     const rekan = c.utama;                                   // penyewa utama kamar (selain yang diedit)
     const noK = k ? fmtNo(k.no_kamar) : "";
+    const namaRekan = rekan ? esc(rekan.nama) : "-";
 
     $("e-hkamar").innerHTML = c.count
       ? `Kamar ini sudah terisi ${c.count} penghuni aktif (${esc(c.list.map((r) => r.nama).join(", "))}). Penambahan penghuni berikutnya akan terdaftar sebagai <b>Penyewa Tambahan</b>.`
       : "Pilih kamar yang akan ditempati oleh penyewa.";
 
-    if (utama) {
-      $("e-info").innerHTML = `<div class="pm-info">${ic("info")}<span>Kamar ${esc(noK)} belum memiliki penyewa utama lain. Penghuni ini ditetapkan sebagai <b>Penyewa Utama</b> dan menjadi pemegang kontrak tagihan.</span></div>`;
+    // Kotak info: gaya & warna yang sama (kuning) untuk kedua peran
+    let pesan;
+    if (utama && m.jadikanUtama && rekan) {
+      pesan = `Setelah disimpan, <b>${esc(row.nama)}</b> menjadi <b>Penyewa Utama</b> kamar ${esc(noK)} dan <b>${namaRekan}</b> menjadi <em>Penghuni Tambahan</em>.`;
+    } else if (utama) {
+      pesan = `Penghuni ini adalah <b>Penyewa Utama</b> kamar ${esc(noK)} dan menjadi pemegang kontrak tagihan.`;
     } else {
-      $("e-info").innerHTML = `<div class="pm-info pm-info--warn">${ic("clock")}<span>Kamar ${esc(noK)} telah memiliki Penyewa Utama (${esc(rekan ? rekan.nama : "-")}). Penghuni ini otomatis ditetapkan sebagai <em>Penyewa Tambahan (Teman Sekamar)</em>. Tagihan utama tetap dibebankan kepada Penyewa Utama.</span></div>`;
+      pesan = `Kamar ${esc(noK)} telah memiliki Penyewa Utama (${namaRekan}). Penghuni ini ditetapkan sebagai <em>Penyewa Tambahan (Teman Sekamar)</em>.${bisaPilih ? " Klik kartu <b>Penyewa Utama</b> di bawah bila ingin menjadikannya penyewa utama." : ""} Tagihan utama tetap dibebankan kepada Penyewa Utama.`;
     }
-    $("e-roles").innerHTML = utama
-      ? `<div class="pm-rc is-on green"><span class="ic">${ic("tick")}</span><span><span class="tt">Penyewa Utama</span><span class="ss">Pemegang kontrak tagihan</span></span></div>
-         <div class="pm-rc"><span class="ic">${ic("link2")}</span><span><span class="tt">Penyewa Tambahan</span><span class="ss">Tersedia bila kamar sudah punya penyewa utama</span></span></div>`
-      : `<div class="pm-rc is-on"><span class="ic">${ic("tick")}</span><span><span class="tt">Penyewa Tambahan</span><span class="ss">Non-pemegang kontrak tagihan</span></span><span class="tag">Teman<br>Sekamar</span></div>
-         <div class="pm-rc"><span class="ic">${ic("link2")}</span><span><span class="tt">Penyewa Utama</span><span class="ss">Sudah terisi oleh ${esc(rekan ? rekan.nama : "-")}</span></span></div>`;
-    $("e-link").hidden = utama;
-    if (!utama) $("e-link").innerHTML = `Tertaut ke: <b>${ic("user")}${esc(rekan ? rekan.nama : "-")} (Penyewa Utama / Kamar ${esc(noK)})</b>`;
+    $("e-info").innerHTML = `<div class="pm-info pm-info--warn">${ic("clock")}<span>${pesan}</span></div>`;
+
+    // Kartu peran: posisi TETAP (Tambahan di kiri, Utama di kanan); yang terpilih selalu bergaya sama (oranye)
+    const kartu = (role, judul, subOn, tag, subKlik, subKunci) => {
+      const on = role === "utama" ? utama : !utama;
+      if (on) return `<div class="pm-rc is-on"><span class="ic">${ic("tick")}</span><span><span class="tt">${judul}</span><span class="ss">${subOn}</span></span><span class="tag">${tag}</span></div>`;
+      if (bisaPilih) return `<button type="button" class="pm-rc" data-role="${role}"><span class="ic">${ic("link2")}</span><span><span class="tt">${judul}</span><span class="ss">${subKlik}</span></span></button>`;
+      return `<div class="pm-rc"><span class="ic">${ic("link2")}</span><span><span class="tt">${judul}</span><span class="ss">${subKunci}</span></span></div>`;
+    };
+    $("e-roles").innerHTML =
+      kartu("tambahan", "Penyewa Tambahan", "Non-pemegang kontrak tagihan", "Teman<br>Sekamar",
+            "Klik untuk memilih peran ini", "Kamar harus memiliki satu penyewa utama") +
+      kartu("utama", "Penyewa Utama", "Pemegang kontrak tagihan", "Pemegang<br>Kontrak",
+            `Klik untuk menggantikan ${namaRekan}`, `Sudah terisi oleh ${namaRekan}`);
+
+    // Baris "Tertaut ke" / keterangan pergantian
+    const link = $("e-link");
+    if (!utama) {
+      link.hidden = false;
+      link.innerHTML = `Tertaut ke: <b>${ic("user")}${namaRekan} (Penyewa Utama / Kamar ${esc(noK)})</b>`;
+    } else if (m.jadikanUtama && rekan) {
+      link.hidden = false;
+      link.innerHTML = `Menjadi penghuni tambahan: <b>${ic("user")}${namaRekan} (Kamar ${esc(noK)})</b>`;
+    } else {
+      link.hidden = true;
+    }
   }
 
   const renderModal = (m) => { renderPick(m); (m === modals.add ? renderAdd : renderEdit)(); };
@@ -336,7 +371,7 @@
   async function openAdd() {
     const m = modals.add; m.saving = false; m.row = null;
     ["a-nama", "a-hp"].forEach((id) => ($(id).value = "")); $("a-hub").selectedIndex = 0; $("a-setuju").checked = true;
-    setDate("a", new Date().toISOString().slice(0, 10));
+    setDate("a", ""); m.idPenghuni = null;
     nameError("a", false); formError("a"); toggleList(m, false); show(m);
     await ensureRooms();
     // Pilihan awal: kamar yang sudah berpenghuni tapi masih muat (skenario 3); bila tidak ada, kamar kosong pertama.
@@ -348,7 +383,7 @@
   async function openEdit(id) {
     const row = state.rows.find((r) => r.id === id); if (!row) return;
     const m = modals.edit; m.saving = false; m.row = row; m.kamarId = row.id_kamar;
-    $("e-nama").value = row.nama; $("e-hp").value = row.hp; setDate("e", row.mulai);
+    $("e-nama").value = row.nama; $("e-hp").value = row.hp; setDate("e", row.mulai); m.jadikanUtama = false;
     nameError("e", false); formError("e"); toggleList(m, false); show(m);
     await ensureRooms();
     // kamar milik penghunian ini harus tetap ada di daftar
@@ -363,7 +398,15 @@
     return err;
   }
   async function kirim(url, method, body) {
-    const res = await fetch(url, { method, headers: JSON_HEADERS, body: JSON.stringify(body) });
+    let res;
+    try {
+      res = await fetch(url, { method, headers: JSON_HEADERS, body: JSON.stringify(body) });
+    } catch (_) {
+      // fetch gagal total = tidak ada koneksi / server tidak terjangkau
+      const err = new Error("offline");
+      err.userMessage = "Koneksi terputus. Periksa jaringan Anda, lalu tekan Simpan lagi. Isian Anda tidak hilang.";
+      throw err;
+    }
     const json = await res.json().catch(() => ({}));
     if (!res.ok) throw apiError(json, res.status);
     return json;
@@ -382,11 +425,20 @@
     nameError("a", false); setSaving(m, true);
     try {
       // "Hubungan dengan penghuni utama" & konfirmasi hanya UI untuk saat ini (belum ada field di API).
-      const j1 = await kirim("/api/penghuni", "POST", { nama_penghuni: nama, no_telepon: $("a-hp").value.trim() || null });
-      const body = { id_kamar: m.kamarId, id_penghuni: j1.data.id_penghuni };
+      const dataOrang = { nama_penghuni: nama, no_telepon: $("a-hp").value.trim() || null };
+      if (m.idPenghuni) {
+        // langkah 2 gagal sebelumnya: pakai penghuni yang sama, jangan buat entri baru
+        await kirim(`/api/penghuni/${m.idPenghuni}`, "PUT", dataOrang);
+      } else {
+        const j1 = await kirim("/api/penghuni", "POST", dataOrang);
+        m.idPenghuni = j1.data.id_penghuni;
+      }
+      const body = { id_kamar: m.kamarId, id_penghuni: m.idPenghuni };
       if ($("a-tgl").value) body.tanggal_mulai = $("a-tgl").value;
-      await kirim("/api/penghunian", "POST", body);
-      close(m); toast("Penyewa berhasil ditambahkan."); state.tab = "aktif"; syncTabs(); refresh();
+      const j2 = await kirim("/api/penghunian", "POST", body);
+      m.idPenghuni = null;
+      close(m); state.tab = "aktif"; syncTabs(); refresh();
+      tampilKonfirmasi(j2.data);
     } catch (e) { formError("a", e.userMessage || "Gagal menyimpan data. Coba lagi."); }
     finally { setSaving(m, false, "Konfirmasi & Tambah Penghuni"); }
   }
@@ -404,10 +456,39 @@
         if (tglBaru) body.tanggal_mulai = tglBaru;
         await kirim(`/api/penghunian/${row.id}`, "PUT", body);
       }
+      if (m.kirimUtama) {
+        await kirim(`/api/penghunian/${row.id}/penyewa-utama`, "PUT", { id_kamar: row.id_kamar });
+      }
       close(m); toast("Data penyewa berhasil diperbarui."); refresh();
     } catch (e) { formError("e", e.userMessage || "Gagal menyimpan data. Coba lagi."); }
     finally { setSaving(m, false, "Simpan Penghuni"); }
   }
+
+  /* ---------------------------------------------------------
+     Popup pintasan setelah simpan: "Catat DP sekarang" -> menu Pembayaran & Tagihan
+  --------------------------------------------------------- */
+  function tampilKonfirmasi(p) {
+    const nama = p.penghuni?.nama_penghuni ?? "Penghuni";
+    const noK = fmtNo(p.kamar?.no_kamar ?? "");
+    const utama = !!p.penyewa_utama;
+    // Tombol tampil hanya bila: penyewa utama DAN kamar belum punya pembayaran DP.
+    // `kamar_sudah_ada_dp` dikirim backend di response POST /api/penghunian.
+    const sudahDp = p.kamar_sudah_ada_dp === true;
+    $("k-pesan").textContent = `${nama} tersimpan di Kamar ${noK}${utama ? " sebagai penyewa utama." : " sebagai penghuni tambahan."}`;
+
+    const kurang = [];
+    if (!p.penghuni?.no_telepon) kurang.push("nomor HP");
+    if (!p.tanggal_mulai) kurang.push("tanggal masuk");
+    $("k-info").hidden = !kurang.length;
+    $("k-info").textContent = kurang.length ? `Belum diisi: ${kurang.join(" dan ")}. Bisa dilengkapi nanti lewat tombol ubah.` : "";
+
+    // Tautan ke menu Pembayaran & Tagihan; kamar & jenis DP dibawa lewat parameter agar form terisi otomatis
+    const a = $("k-dp");
+    a.hidden = !(utama && !sudahDp);
+    a.href = `${$("pk").dataset.url}?${new URLSearchParams({ kamar: p.id_kamar, penghunian: p.id_penghunian, jenis: "DP" })}`;
+    $("pk").hidden = false;
+  }
+  const tutupKonfirmasi = () => { $("pk").hidden = true; };
 
   // Kirim template persetujuan lewat WhatsApp (wa.me) ke penyewa utama kamar terpilih
   function kirimWA() {
@@ -433,7 +514,10 @@
     const b = e.target.closest("button[data-p]");
     if (b && !b.disabled) { state.page = Number(b.dataset.p); renderTable(); }
   });
-  $("pg-state").addEventListener("click", (e) => e.target.id === "btn-retry" && refresh());
+  $("pg-state").addEventListener("click", (e) => {
+    if (e.target.id === "btn-retry") refresh();
+    if (e.target.id === "btn-kosong-tambah") openAdd();
+  });
 
   $("pg-rows").addEventListener("click", (e) => {
     const b = e.target.closest("button[data-act]");
@@ -469,11 +553,21 @@
     });
     document.addEventListener("click", (e) => { if (!e.target.closest("#" + p + "-sel")) toggleList(m, false); });
   });
+  $("e-roles").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-role]");
+    if (!b) return;
+    modals.edit.jadikanUtama = b.dataset.role === "utama";
+    renderEdit();
+  });
   $("a-simpan").addEventListener("click", simpanAdd);
   $("e-simpan").addEventListener("click", simpanEdit);
   $("a-wa").addEventListener("click", kirimWA);
+  $("k-x").addEventListener("click", tutupKonfirmasi);
+  $("k-selesai").addEventListener("click", tutupKonfirmasi);
+  $("pk").addEventListener("mousedown", (e) => { if (e.target === $("pk")) tutupKonfirmasi(); });
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
+    if (!$("pk").hidden) tutupKonfirmasi();
     Object.values(modals).forEach((m) => {
       if (m.root().hidden) return;
       if (!$(m.p + "-list").hidden) toggleList(m, false); else close(m);

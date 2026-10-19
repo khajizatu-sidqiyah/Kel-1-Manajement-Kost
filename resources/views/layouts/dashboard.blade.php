@@ -61,7 +61,7 @@
                 <a href="#" class="nav-item"><svg class="i"><use href="#i-receipt"/></svg>Pembayaran &amp; Tagihan</a>
                 <a href="#" class="nav-item"><svg class="i"><use href="#i-tools"/></svg>Komplain &amp; Kerusakan</a>
                 <a href="{{ route('penghuni') }}" class="nav-item {{ request()->routeIs('penghuni') ? 'is-active' : '' }}"><svg class="i"><use href="#i-idcard"/></svg>Data Penyewa &amp; Arsip</a>
-                <a href="#" class="nav-item"><svg class="i"><use href="#i-gear"/></svg>Pengaturan Kos</a>
+
             </nav>
 
             <div class="sidebar-foot">

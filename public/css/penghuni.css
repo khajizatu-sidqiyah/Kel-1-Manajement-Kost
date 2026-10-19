@@ -323,3 +323,42 @@ body.app { background: var(--pg-bg); }
     .topbar { padding: 0 16px; gap: 10px; }
     .pm { padding-top: 24px; }
 }
+
+
+/* ---------- 5. Tambahan: layar konfirmasi, form DP, "Jadikan penyewa utama" ---------- */
+/* Atribut [hidden] kalah oleh display:flex / inline-flex di atas -> paksa sembunyi */
+.pm-btn[hidden], .pm-agree[hidden] { display: none; }
+
+/* Input tanpa ikon di kiri (mis. Jumlah DP) */
+.pm-in input[type="number"] { padding-left: 14px; }
+
+/* Popup pintasan "Catat DP sekarang" (di tengah layar, teks gelap supaya jelas terbaca) */
+.shortcut-wrap { position: fixed; z-index: 70; inset: 0; display: grid; place-items: center; padding: 16px; background: rgba(15, 23, 42, .35); }
+.shortcut-wrap[hidden] { display: none; }
+.shortcut { position: relative; display: flex; gap: 14px; width: min(420px, 100%); padding: 22px 22px 20px 20px; border: 1px solid #A7F3D0; border-radius: 16px; background: #FFFFFF; color: #0F172A; box-shadow: 0 25px 50px -12px rgba(15, 23, 42, .35); }
+.shortcut-ico { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: #059669; color: #FFFFFF; flex-shrink: 0; }
+.shortcut-ico .i { width: 17px; height: 17px; stroke-width: 3; }
+.shortcut-body { flex: 1; min-width: 0; padding-right: 20px; }
+.shortcut-body b { display: block; font-size: 15px; font-weight: 700; color: #0F172A; }
+.shortcut-body p { margin-top: 6px; font-size: 13px; line-height: 1.5; color: #0F172A; }
+.shortcut-body p.shortcut-note { color: #B45309; }
+.shortcut-act { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+.shortcut-btn { display: inline-flex; align-items: center; justify-content: center; height: 34px; padding: 0 18px; border-radius: 10px; font-size: 12px; font-weight: 600; text-decoration: none; cursor: pointer; }
+.shortcut-btn[hidden] { display: none; }
+.shortcut-btn--ghost { border: 1px solid #CBD5E1; background: #FFFFFF; color: #0F172A; }
+.shortcut-btn--ghost:hover { background: #F1F5F9; }
+.shortcut-btn--main { border: 1px solid #065F46; background: #065F46; color: #FFFFFF; }
+.shortcut-btn--main:hover { background: #0E533C; }
+.shortcut-x { position: absolute; top: 10px; right: 10px; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; color: #475569; }
+.shortcut-x:hover { background: #F1F5F9; }
+.shortcut-x .i { width: 16px; height: 16px; }
+.btn-pg[hidden] { display: none; }
+
+/* Kartu peran yang bisa diklik (Jadikan penyewa utama) */
+button.pm-rc { width: 100%; text-align: left; font: inherit; color: inherit; cursor: pointer; opacity: 1; border-style: dashed; }
+button.pm-rc:hover { border-color: var(--pg-green-600); background: var(--pg-green-50); }
+button.pm-rc:focus-visible { outline: 2px solid rgba(5, 150, 105, .4); outline-offset: 1px; }
+
+/* Tombol "Tambah penghuni" pada daftar kosong */
+.pg-state #btn-kosong-tambah { border-color: var(--pg-green-900); background: var(--pg-green-900); color: #fff; }
+.pg-state #btn-kosong-tambah:hover { background: var(--pg-green-btn); }
