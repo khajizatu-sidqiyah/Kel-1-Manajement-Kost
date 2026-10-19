@@ -1,7 +1,9 @@
 <?php
 
 namespace App\Models;
+use App\Models\Pembayaran;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Penghunian extends Model
@@ -52,4 +54,13 @@ class Penghunian extends Model
             'id_penghuni'
         );
     }
+
+    public function pembayaran()
+{
+    return $this->hasMany(
+        Pembayaran::class,
+        'id_penghunian',
+        'id_penghunian'
+    );
+}
 }

@@ -25,3 +25,4 @@ Route::get('/penghunian/{id}', [PenghunianController::class, 'show']);
 Route::put('/penghunian/{id}', [PenghunianController::class, 'update']);
 Route::put('/penghunian/{id}/penyewa-utama', [PenghunianController::class, 'setPenyewaUtama']);
 Route::post('/penghunian/{id}/dp', [PenghunianController::class, 'catatDp']);
+Route::post('/penghunian/dengan-penghuni',[PenghunianController::class, 'storeDenganPenghuni']);
