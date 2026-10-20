@@ -1,9 +1,9 @@
 // Halaman Data Penyewa & Arsip  (resources/views/penghuni.blade.php)
-// Bergantung pada rooms-api.js (dimuat lebih dulu): loadRooms(), fmtNo(), fmtTanggal(), lantaiDariNomor().
+// Bergantung pada rooms-api.js skrng menjadi kamar-api(dimuat lebih dulu): loadRooms(), fmtNo(), fmtTanggal(), lantaiDariNomor().
 //
 // Endpoint (kontrak API Kelompok 1):
 //   GET   /api/penghunian               -> daftar penghunian (+ relasi kamar & penghuni)
-//   GET   /api/kamar                    -> lewat loadRooms() di rooms-api.js
+//   GET   /api/kamar                    -> lewat loadRooms() di rooms-api.js skrng menjadi kamar-api
 //   POST  /api/penghuni                 -> buat penghuni baru
 //   POST  /api/penghunian               -> catat penghuni menempati kamar
 //   PATCH /api/penghunian/{id}/selesai  -> akhiri penghunian (RANCANGAN: belum ada di routes/api.php)

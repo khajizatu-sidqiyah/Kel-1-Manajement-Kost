@@ -1,4 +1,4 @@
-// Halaman Denah & Status Kamar. Membutuhkan rooms-api.js (dimuat lebih dulu).
+// Halaman Denah & Status Kamar. Membutuhkan rooms-api.js skrng menjadi kamar-api (dimuat lebih dulu).
 let rooms = [];
 let filter = "all";
 

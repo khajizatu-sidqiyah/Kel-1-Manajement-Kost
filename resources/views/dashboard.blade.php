@@ -54,6 +54,6 @@
 @endsection
 
 @push('scripts')
-    <script src="{{ asset('js/rooms-api.js') }}"></script>
+    <script src="{{ asset('js/kamar-api.js') }}"></script>
     <script src="{{ asset('js/ringkasan.js') }}"></script>
 @endpush

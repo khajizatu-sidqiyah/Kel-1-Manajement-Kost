@@ -310,7 +310,7 @@
 @endsection
 
 @push('scripts')
-    {{-- Urutan penting: rooms-api.js (loadRooms, fmtNo, lantaiDariNomor) -> penghuni.js --}}
-    <script src="{{ asset('js/rooms-api.js') }}?v={{ filemtime(public_path('js/rooms-api.js')) }}"></script>
+    {{-- Urutan penting: rooms-api.js skrng menjadi kamar-api (loadRooms, fmtNo, lantaiDariNomor) -> penghuni.js --}}
+    <script src="{{ asset('js/kamar-api.js') }}?v={{ filemtime(public_path('js/kamar-api.js')) }}"></script>
     <script src="{{ asset('js/penghuni.js') }}?v={{ filemtime(public_path('js/penghuni.js')) }}"></script>
 @endpush

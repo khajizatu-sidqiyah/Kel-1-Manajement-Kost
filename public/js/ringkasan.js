@@ -1,4 +1,4 @@
-// Halaman Dashboard (ringkasan). Membutuhkan rooms-api.js (dimuat lebih dulu).
+// Halaman Dashboard (ringkasan). Membutuhkan rooms-api.js skrng menjadi kamar-api (dimuat lebih dulu).
 let rooms = [];
 const byNo = (a, b) => Number(a.no_kamar) - Number(b.no_kamar);
 
