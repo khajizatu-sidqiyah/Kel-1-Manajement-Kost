@@ -58,7 +58,7 @@
             <nav class="nav">
                 <a href="{{ route('dashboard') }}" class="nav-item {{ request()->routeIs('dashboard') ? 'is-active' : '' }}"><svg class="i"><use href="#i-chart"/></svg>Dashboard</a>
                 <a href="{{ route('denah') }}" class="nav-item {{ request()->routeIs('denah') ? 'is-active' : '' }}"><svg class="i"><use href="#i-grid"/></svg>Denah &amp; Status Kamar</a>
-                <a href="#" class="nav-item"><svg class="i"><use href="#i-receipt"/></svg>Pembayaran &amp; Tagihan</a>
+                <a href="{{ route('pembayaran') }}" class="nav-item {{ request()->routeIs('pembayaran') ? 'is-active' : '' }}"><svg class="i"><use href="#i-receipt"/></svg>Pembayaran &amp; Tagihan</a>
                 <a href="#" class="nav-item"><svg class="i"><use href="#i-tools"/></svg>Komplain &amp; Kerusakan</a>
                 <a href="{{ route('penghuni') }}" class="nav-item {{ request()->routeIs('penghuni') ? 'is-active' : '' }}"><svg class="i"><use href="#i-idcard"/></svg>Data Penyewa &amp; Arsip</a>
 

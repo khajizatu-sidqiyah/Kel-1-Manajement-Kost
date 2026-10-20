@@ -54,6 +54,12 @@ Route::middleware(['auth', 'pemilik'])->group(function () {
         return view('denah');
     })->name('denah');
 
+    // Halaman Pembayaran & Tagihan (resources/views/pembayaran.blade.php)
+    // Dibuka juga dari popup "Catat DP sekarang" di halaman penghuni: /pembayaran?kamar=..&penghunian=..&jenis=DP
+    Route::get('/pembayaran', function () {
+        return view('pembayaran');
+    })->name('pembayaran');
+
     Route::get('/penyewa', function () {
         return view('penyewa');
     })->name('penyewa');
