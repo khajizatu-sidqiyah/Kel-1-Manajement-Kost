@@ -26,26 +26,27 @@ class PenghuniController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-    'nama_penghuni' => 'required|string|max:100',
-    'no_telepon' => 'nullable|string|max:20',
-    'email' => 'nullable|email|max:100',
-    'alamat' => 'nullable|string',
-]);
+            'nama_penghuni' => 'required|string|max:100',
+            // Ubah 'string' menjadi 'numeric' (atau gunakan regex jika ingin aman dari simbol minus/plus)
+            'no_telepon' => 'nullable|numeric|digits_between:10,20',
+            'email' => 'nullable|email|max:100',
+            'alamat' => 'nullable|string',
+        ]);
 
-if ($validator->fails()) {
-    return response()->json([
-        'message' => 'The given data was invalid.',
-        'errors' => $validator->errors(),
-    ], 422);
-}
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'The given data was invalid.',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
 
-$penghuni = Penghuni::create($validator->validated());
+        $penghuni = Penghuni::create($validator->validated());
 
-return response()->json([
-    'success' => true,
-    'message' => 'Penghuni berhasil ditambahkan',
-    'data' => $penghuni,
-], 201);
+        return response()->json([
+            'success' => true,
+            'message' => 'Penghuni berhasil ditambahkan',
+            'data' => $penghuni,
+        ], 201);
     }
 
     /**
@@ -85,7 +86,8 @@ return response()->json([
 
         $validated = $request->validate([
             'nama_penghuni' => 'sometimes|required|string|max:100',
-            'no_telepon' => 'sometimes|nullable|string|max:20',
+            // Ubah 'string' menjadi 'numeric' di sini juga
+            'no_telepon' => 'sometimes|nullable|numeric|digits_between:10,20',
             'email' => 'sometimes|nullable|email|max:100',
             'alamat' => 'sometimes|nullable|string',
         ]);
