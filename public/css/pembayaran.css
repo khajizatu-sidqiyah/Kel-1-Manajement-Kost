@@ -201,3 +201,49 @@
 @media (min-width: 600px) { .pb-stats { grid-template-columns: 1fr 1fr; } }
 @media (min-width: 1100px) { .pb-stats { grid-template-columns: repeat(4, 1fr); } }
 @media (max-width: 599px) { .pb-sel { flex: 1 1 100%; width: auto; } .pb-search { flex-basis: 100%; max-width: none; } }
+
+/* ---------- Form Catat Pembayaran: DP / Bulanan / Tahunan (desain Dekstop_19 revisi) ---------- */
+.pb-g .req { color: var(--pb-red); }
+.pb-roomcard { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; padding: 14px 16px; border: 1px solid var(--pb-line); border-radius: 12px; background: #fff; }
+.pb-roomcard[hidden] { display: none; }
+.pb-roomcard .av { display: grid; place-items: center; width: 32px; height: 32px; border: 1px solid var(--pb-line); border-radius: 50%; background: var(--pb-soft); color: var(--pb-s500); flex-shrink: 0; }
+.pb-roomcard .av .i { width: 16px; height: 16px; }
+.pb-roomcard b { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 600; color: var(--pb-ink); }
+.pb-badge { padding: 4px 11px; border: 1px solid #A7F3D0; border-radius: 999px; background: var(--pb-green-50); font-size: 11.5px; font-weight: 600; white-space: nowrap; color: var(--pb-green-700); }
+
+.pb-note { display: flex; gap: 10px; margin-bottom: 15px; padding: 14px 16px; border: 1px solid #A7F3D0; border-radius: 12px; background: var(--pb-green-50); color: var(--pb-green-900); }
+.pb-note[hidden] { display: none; }
+.pb-note > .i { width: 17px; height: 17px; margin-top: 1px; flex-shrink: 0; color: var(--pb-green-700); }
+.pb-note b { display: block; font-size: 13px; font-weight: 700; }
+.pb-note p { margin-top: 2px; font-size: 12px; line-height: 1.5; }
+
+.pb-in--ro input, .pb-in input[readonly] { border-color: #E4EAF1; background: #F4F7F6; color: #64707C; }
+.pb-in--ok input[readonly] { border-color: #A7F3D0; background: var(--pb-green-50); font-weight: 600; color: var(--pb-green-700); }
+.pb-in--ro input:not([readonly]) { border-color: var(--pb-line); background: #fff; color: var(--pb-ink-2); }
+.pb-in--fixed { display: flex; align-items: center; justify-content: space-between; height: 38px; padding: 0 13px; border: 1px solid #A7F3D0; border-radius: 10px; background: var(--pb-green-50); font-size: 13px; font-weight: 600; color: var(--pb-green-900); }
+.pb-in--fixed[hidden] { display: none; }
+.pb-in--fixed .i { position: static; width: 15px; height: 15px; color: var(--pb-green-700); }
+.pb-in.err input { border-color: var(--pb-red); }
+.pb-help--note { font-style: italic; }
+
+.pb-seg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.pb-seg button { display: flex; align-items: center; justify-content: center; gap: 7px; height: 38px; border: 1px solid var(--pb-line); border-radius: 10px; background: #fff; font-size: 12.5px; font-weight: 600; color: var(--pb-s400); }
+.pb-seg button .i { width: 15px; height: 15px; }
+.pb-seg button:hover { background: #f8fafc; }
+.pb-seg button[aria-checked="true"] { border: 1.5px solid var(--pb-green-900); background: var(--pb-green-50); color: var(--pb-green-900); }
+.pb-seg.err button { border-color: var(--pb-red); }
+
+.pb-sum { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 2px 0 15px; padding: 14px 16px; border: 1px solid #A7F3D0; border-radius: 12px; background: var(--pb-green-50); }
+.pb-sum[hidden] { display: none; }
+.pb-sum span:first-child, .pb-sum div span { display: block; font-size: 12px; color: var(--pb-green-900); }
+.pb-sum b { display: block; margin-top: 3px; font-size: 20px; font-weight: 700; color: var(--pb-ink); }
+.pb-tag { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; background: var(--pb-green-900); font-size: 11.5px; font-weight: 600; white-space: nowrap; color: #fff; }
+.pb-tag .i { width: 13px; height: 13px; }
+.pb-tag--soft { background: #A7F3D0; color: var(--pb-green-900); }
+
+/* Kartu kamar: dropdown kamar di dalam kartu (form dibuka dari tombol header) */
+.pb-roomcard .pb-roomsel { flex: 1; min-width: 0; }
+.pb-roomcard .pb-roomsel select { height: 34px; border-color: transparent; background: transparent; font-size: 13.5px; font-weight: 600; color: var(--pb-ink); padding-left: 0; }
+.pb-roomcard .pb-roomsel select:hover { background: var(--pb-soft); padding-left: 8px; }
+.pb-roomcard .pb-roomsel select:focus { padding-left: 8px; }
+.pb-roomcard .pb-roomsel .i { top: 10px; }

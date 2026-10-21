@@ -28,6 +28,10 @@
         <symbol id="pb-tick" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7"/></symbol>
         <symbol id="pb-upload" viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M4 16v4h16v-4"/></symbol>
         <symbol id="pb-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+        <symbol id="pb-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></symbol>
+        <symbol id="pb-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></symbol>
+        <symbol id="pb-card" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h3"/></symbol>
+        <symbol id="pb-cash" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="11" rx="2"/><circle cx="12" cy="12.5" r="2.5"/><path d="M6.5 12.5h.01M17.5 12.5h.01"/></symbol>
         <symbol id="pb-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></symbol>
     </svg>
 
@@ -98,7 +102,11 @@
         </footer>
     </div>
 
-    {{-- ===== Modal: Form Catat Pembayaran Baru (desain: Dekstop_19) ===== --}}
+    {{-- ===== Modal: Form Catat Pembayaran Baru =====
+         Satu form, tiga tampilan (diatur pembayaran.js):
+           dp      -> kamar belum punya DP: pilih skema (bulanan/tahunan), catat DP, atur tenggat pelunasan
+           bulanan -> setelah DP: Pelunasan bulan pertama / Tagihan bulanan
+           tahunan -> setelah DP: Cicilan (periode dikunci: 1 dari 3, 2 dari 3) / Pelunasan (3 dari 3) --}}
     <div class="pb-ov" id="pb-form" hidden>
         <div class="pb-m" role="dialog" aria-modal="true" aria-labelledby="pb-form-title">
             <div class="pb-m-head">
@@ -107,71 +115,85 @@
             </div>
 
             <div class="pb-m-body">
-                <div class="pb-g">
-                    <label for="f-kamar">Pilih Kamar / Penghuni</label>
-                    <div class="pb-in pb-in--sel"><select id="f-kamar"></select><svg class="i"><use href="#pb-chev"/></svg></div>
-                    <p class="pb-help" id="f-kamar-help" hidden></p>
+                {{-- Kartu kamar. Dari tombol header: nama kamar berupa dropdown (kamar pertama terpilih otomatis).
+                     Dari tombol "Bayar": nama kamar berupa teks. --}}
+                <div class="pb-roomcard" id="f-card">
+                    <span class="av"><svg class="i"><use href="#pb-user"/></svg></span>
+                    <b id="f-card-t" hidden></b>
+                    <div class="pb-in pb-in--sel pb-roomsel" id="f-kamar-w"><select id="f-kamar" aria-label="Pilih kamar / penghuni"></select><svg class="i"><use href="#pb-chev"/></svg></div>
+                    <span class="pb-badge" id="f-card-b"></span>
                 </div>
 
-                <div class="pb-g">
-                    <label for="f-nama">Nama Penghuni</label>
-                    <div class="pb-in"><input type="text" id="f-nama" readonly tabindex="-1"></div>
+                <div class="pb-note" id="f-info-dp" hidden>
+                    <svg class="i"><use href="#pb-info"/></svg>
+                    <div><b>Informasi Down Payment</b><p>DP dicatat di awal untuk mengamankan kamar. Setelah DP tersimpan, sistem akan otomatis membuka opsi Pelunasan atau Cicilan.</p></div>
+                </div>
+                <div class="pb-note" id="f-info-ok" hidden>
+                    <svg class="i"><use href="#pb-check"/></svg>
+                    <div><b>DP sudah tercatat</b><p id="f-info-ok-t"></p></div>
                 </div>
 
-                <div class="pb-row">
+                <div class="pb-g" id="f-skema-g" hidden>
+                    <label for="f-skema">Skema Sewa</label>
+                    <div class="pb-in pb-in--sel"><select id="f-skema"><option value="bulanan">Bulanan</option><option value="tahunan">Tahunan</option></select><svg class="i"><use href="#pb-chev"/></svg></div>
+                </div>
+
+                <div class="pb-row" id="f-tarif-row" hidden>
                     <div class="pb-g">
-                        <label for="f-jenis">Jenis Tagihan</label>
-                        <div class="pb-in pb-in--sel"><select id="f-jenis"></select><svg class="i"><use href="#pb-chev"/></svg></div>
-                        <p class="pb-help pb-help--err" id="f-jenis-err" hidden></p>
+                        <label for="f-tarif" id="f-tarif-l">Tarif Kamar</label>
+                        <div class="pb-in pb-in--ro" id="f-tarif-w"><input type="text" id="f-tarif" inputmode="numeric" autocomplete="off" placeholder="Rp0" readonly></div>
+                        <p class="pb-help pb-help--err" id="f-tarif-err" hidden></p>
+                        <p class="pb-help" id="f-tarif-help"></p>
                     </div>
                     <div class="pb-g">
-                        <label for="f-periode">Periode Tagihan</label>
-                        <div class="pb-in pb-in--sel"><select id="f-periode"></select><svg class="i"><use href="#pb-chev"/></svg></div>
-                        <p class="pb-help pb-help--err" id="f-periode-err" hidden></p>
+                        <label for="f-min" id="f-min-l">Min. Rekomendasi DP (50%)</label>
+                        <div class="pb-in pb-in--ok"><input type="text" id="f-min" readonly tabindex="-1"></div>
                     </div>
                 </div>
 
-                <div class="pb-row">
-                    <div class="pb-g">
-                        <label for="f-jumlah">Jumlah Pembayaran (Rp)</label>
-                        <div class="pb-in"><input type="text" id="f-jumlah" inputmode="numeric" placeholder="Masukkan Jumlah" autocomplete="off"></div>
-                        <p class="pb-help" id="f-jumlah-help"></p>
+                <div class="pb-g" id="f-jenis-g" hidden>
+                    <label for="f-jenis">Jenis Tagihan <span class="req">*</span></label>
+                    <div class="pb-in pb-in--sel" id="f-jenis-sel"><select id="f-jenis"></select><svg class="i"><use href="#pb-chev"/></svg></div>
+                    <div class="pb-in pb-in--fixed" id="f-jenis-fix" hidden><span>Down Payment (DP)</span><svg class="i"><use href="#pb-tick"/></svg></div>
+                    <p class="pb-help pb-help--err" id="f-jenis-err" hidden></p>
+                    <p class="pb-help pb-help--note" id="f-jenis-help"></p>
+                </div>
+
+                <div class="pb-row" id="f-fields" hidden>
+                    {{-- Periode cicilan: teks saja (tahunan), dihitung dari jumlah cicilan yang sudah tercatat --}}
+                    <div class="pb-g" id="f-periode-g" hidden>
+                        <label for="f-periode">Periode Cicilan <span class="req">*</span></label>
+                        <div class="pb-in pb-in--ro"><input type="text" id="f-periode" readonly tabindex="-1"></div>
                     </div>
                     <div class="pb-g">
-                        <label for="f-metode">Metode Pembayaran</label>
-                        <div class="pb-in pb-in--sel">
-                            <select id="f-metode"><option value="">Pilih Metode</option><option value="tunai">Tunai</option><option value="transfer">Transfer</option></select>
-                            <svg class="i"><use href="#pb-chev"/></svg>
+                        <label for="f-jumlah" id="f-jumlah-l">Jumlah Pembayaran <span class="req">*</span></label>
+                        <div class="pb-in" id="f-jumlah-w"><input type="text" id="f-jumlah" inputmode="numeric" placeholder="Rp0" autocomplete="off"></div>
+                        <p class="pb-help pb-help--err" id="f-jumlah-help" hidden></p>
+                    </div>
+                    <div class="pb-g">
+                        <label for="f-tgl">Tanggal Bayar <span class="req">*</span></label>
+                        <div class="pb-in pb-date"><span class="dv ph" id="f-tgl-v">Pilih Tanggal</span><svg class="i r"><use href="#pb-calendar"/></svg><input type="date" id="f-tgl"></div>
+                        <p class="pb-help pb-help--err" id="f-tgl-err" hidden></p>
+                    </div>
+                    <div class="pb-g" id="f-tenggat-wrap" hidden>
+                        <label for="f-tenggat">Tenggat Pelunasan <span class="req">*</span></label>
+                        <div class="pb-in pb-date"><span class="dv ph" id="f-tenggat-v">Pilih Tanggal</span><svg class="i r"><use href="#pb-calendar"/></svg><input type="date" id="f-tenggat"></div>
+                        <p class="pb-help pb-help--err" id="f-tenggat-err" hidden></p>
+                    </div>
+                    <div class="pb-g">
+                        <span class="lb">Metode Pembayaran <span class="req">*</span></span>
+                        <div class="pb-seg" id="f-metode-seg" role="radiogroup" aria-label="Metode pembayaran">
+                            <button type="button" role="radio" aria-checked="false" data-metode="Transfer"><svg class="i"><use href="#pb-card"/></svg>Transfer</button>
+                            <button type="button" role="radio" aria-checked="false" data-metode="Tunai"><svg class="i"><use href="#pb-cash"/></svg>Tunai</button>
                         </div>
+                        <input type="hidden" id="f-metode" value="">
                         <p class="pb-help pb-help--err" id="f-metode-err" hidden></p>
                     </div>
                 </div>
 
-                <div class="pb-g">
-                    <label for="f-tgl">Tanggal Bayar</label>
-                    <div class="pb-in pb-date"><span class="dv ph" id="f-tgl-v">Pilih Tanggal</span><svg class="i r"><use href="#pb-calendar"/></svg><input type="date" id="f-tgl"></div>
-                    <p class="pb-help pb-help--err" id="f-tgl-err" hidden></p>
-                </div>
-
-                {{-- Hanya muncul untuk DP skema tahunan (user story 5.2a): nilai awal dari perhitungan 5.1, bisa diubah --}}
-                <div class="pb-g" id="f-tenggat-wrap" hidden>
-                    <label for="f-tenggat">Tenggat Pelunasan</label>
-                    <div class="pb-in pb-date"><span class="dv ph" id="f-tenggat-v">Pilih Tanggal</span><svg class="i r"><use href="#pb-calendar"/></svg><input type="date" id="f-tenggat"></div>
-                    <p class="pb-help">Nilai awal dari perhitungan sewa. Dapat disesuaikan sebelum menyimpan; menjadi tenggat kamar ini.</p>
-                </div>
-
-                <div class="pb-g">
-                    <span class="lb">Bukti Pembayaran <i>(opsional)</i></span>
-                    <label class="pb-drop" id="f-drop" for="f-file">
-                        <input type="file" id="f-file" accept="image/*,.pdf" hidden>
-                        <span class="pb-drop-t" id="f-drop-t"><svg class="i"><use href="#pb-upload"/></svg>Klik atau Seret file</span>
-                    </label>
-                    <p class="pb-help pb-help--err" id="f-file-err" hidden></p>
-                </div>
-
-                <div class="pb-g">
-                    <label for="f-ket">Keterangan <i>(opsional)</i></label>
-                    <textarea id="f-ket" rows="2" maxlength="255" placeholder="Tambahkan catatan jika ada"></textarea>
+                <div class="pb-sum" id="f-sum" hidden>
+                    <div><span id="f-sum-l">Sisa Tagihan Setelah Pembayaran</span><b id="f-sum-v">Rp0</b></div>
+                    <span class="pb-tag" id="f-sum-p"></span>
                 </div>
 
                 <p class="pb-err" id="f-error" role="alert" hidden></p>
@@ -179,7 +201,7 @@
 
             <div class="pb-m-foot">
                 <button type="button" class="pb-btn-ghost" id="f-batal">Batal</button>
-                <button type="button" class="pb-btn-dark" id="f-simpan">Simpan Pembayaran</button>
+                <button type="button" class="pb-btn-dark" id="f-simpan">Simpan</button>
             </div>
         </div>
     </div>
