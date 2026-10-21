@@ -3,9 +3,10 @@
 //
 // Endpoint yang dipakai:
 //   GET   /api/penghunian                 -> penghunian + relasi kamar, penghuni, pembayaran     (SUDAH ADA)
-//   POST  /api/penghunian/{id}/dp         -> catat DP (hanya sekali per kamar)                   (SUDAH ADA)
+//   POST  /api/penghunian/{id}/dp         -> catat DP + simpan skema/total/tenggat (sekali per kamar)
+//   GET   /api/pengaturan-sewa            -> DP minimum tahunan
 //   PUT   /api/penghunian/{id}/tenggat    -> ubah tenggat pelunasan                              (SUDAH ADA)
-//   POST  /api/pembayaran                 -> catat cicilan / pelunasan                           (BELUM ADA - usulan kontrak)
+//   POST  /api/pembayaran                 -> pelunasan bulan pertama / tagihan bulanan / cicilan / pelunasan
 //   PATCH /api/pembayaran/{id}/status     -> konfirmasi pembayaran {status:"lunas"}              (BELUM ADA - ada di kontrak OpenAPI)
 //
 // "Tagihan" belum punya tabel/endpoint sendiri, jadi daftar tagihan DIHITUNG di sini dari data penghunian + pembayaran.
@@ -14,8 +15,9 @@
   "use strict";
 
   const PER_PAGE = 5; // desain: "Menampilkan 1–5 dari 12 tagihan"
-  const state = { rows: [], tab: "tagihan", page: 1, loading: true, error: "", view: [] };
-  const F = { saving: false, locked: false, file: null };
+  const state = { rows: [], tab: "tagihan", page: 1, loading: true, error: "", view: [], dpTahunan: 300000 };
+  const F = { saving: false, mode: "", tenggatManual: false, pickable: false };
+  const CICILAN_N = 3; // skema tahunan: cicilan 1, cicilan 2, pelunasan = 3 periode
 
   /* ---------------------------------------------------------
      Util
@@ -35,7 +37,14 @@
   const periodeLabel = (key) => { const [y, m] = key.split("-"); return BULAN[m - 1] ? `${BULAN[m - 1]} ${y}` : key; };
   const fmtNo = (no) => (/^\d+$/.test(String(no)) ? String(no).padStart(2, "0") : String(no));
   const lantaiDariNomor = (no) => { const n = Number(no); return (n >= 1 && n <= 9) || n === 21 ? 1 : 2; }; // sama dengan rooms-api.js skrng menjadi kamar-api
-  const JENIS = { dp: "DP", cicilan: "Cicilan", pelunasan: "Pelunasan" };
+  const JENIS = { dp: "DP", pelunasan_pertama: "Pelunasan Bulan Pertama", bulanan: "Tagihan Bulanan", cicilan: "Cicilan", pelunasan: "Pelunasan" };
+  const jenisLabel = (b) => (b.jenis === "cicilan" || b.jenis === "pelunasan") && b.periode ? `${JENIS[b.jenis]} ${b.periode}/${CICILAN_N}` : JENIS[b.jenis] || "-";
+  const tglPanjang = (s) => { const [y, m, d] = iso(s).split("-"); return y && BULAN[m - 1] ? `${pad(d)} ${BULAN[m - 1]} ${y}` : ""; };
+  const parseRp = (v) => Number(String(v || "").replace(/\D/g, "")) || 0;
+  function tambahBulan(s, n) { // setara addMonthsNoOverflow
+    const [y, m, d] = iso(s).split("-").map(Number), t = new Date(y, m - 1 + n, 1), last = new Date(t.getFullYear(), t.getMonth() + 1, 0).getDate();
+    return `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(Math.min(d, last))}`;
+  }
 
   let toastTimer;
   function toast(msg, err) {
@@ -98,7 +107,7 @@
       skema: String(p.skema_sewa || "").toLowerCase(), total: num(p.total_sewa), dpMin: num(p.dp_minimum), tenggat: iso(p.tenggat_pelunasan),
       bayar: (p.pembayaran || []).map((b) => ({
         id: b.id_pembayaran, tanggal: iso(b.tanggal_bayar), jumlah: num(b.jumlah),
-        metode: String(b.metode_pembayaran || "").replace(/^DP\s*-\s*/i, ""), jenis: jenisOf(b), status: statusBayarOf(b), ket: b.keterangan || "",
+        metode: String(b.metode_pembayaran || "").replace(/^DP\s*-\s*/i, ""), jenis: jenisOf(b), periode: Number(b.periode_cicilan) || 0, status: statusBayarOf(b), ket: b.keterangan || "",
       })),
     };
   }
@@ -122,7 +131,7 @@
     list.forEach((k) => {
       k.aktif = k.semua.filter((r) => r.status === "aktif").sort((a, b) => a.id - b.id);
       k.utama = k.aktif.find((r) => r.utama) || k.aktif[0] || null;
-      k.adaDp = k.semua.some((r) => r.bayar.some((b) => b.jenis === "dp" && b.status !== "ditolak")); // BE: DP hanya sekali per kamar
+      k.adaDp = k.aktif.some((r) => r.bayar.some((b) => b.jenis === "dp" && b.status !== "ditolak")); // DP sekali per kamar untuk penghuni AKTIF; DP penghuni lama (sudah keluar) tidak dihitung
       k.bayarAktif = k.aktif.flatMap((r) => r.bayar);
       const u = k.utama;
       k.skema = u?.skema || "";
@@ -132,19 +141,39 @@
     return list.sort((a, b) => String(a.no).localeCompare(String(b.no), undefined, { numeric: true }));
   }
 
-  // Satu tagihan per kamar berpenyewa utama. Bulanan: periode bulan ini. Tahunan: total sewa setahun.
+  // Posisi pembayaran satu kamar (hanya pembayaran berstatus sudah dibayar).
+  //   Tahunan : sisa = total - dibayar; cicilan = berapa kali cicilan sudah tercatat (maks 2; periode ke-3 = pelunasan).
+  //   Bulanan : dihitung berjalan (ledger). Periode ke-N lunas bila total dibayar >= N x tarif.
+  const dpRows = (k) => k.aktif.flatMap((r) => r.bayar).filter((b) => b.jenis === "dp" && b.status !== "ditolak");
+  const dpDate = (k) => dpRows(k).map((b) => b.tanggal).filter(Boolean).sort()[0] || "";
+  function ringkas(k) {
+    const sudah = k.bayarAktif.filter((b) => b.status === "sudah"), T = Math.round(sudah.reduce((s, b) => s + b.jumlah, 0));
+    if (k.skema === "tahunan") {
+      return { tahunan: true, T, total: k.total, sisa: Math.max(0, k.total - T), cicilan: sudah.filter((b) => b.jenis === "cicilan").length, lunas: k.total > 0 && T >= k.total, n: sudah.length };
+    }
+    const H = k.total || k.harga;
+    return { tahunan: false, T, H, sisa: H > 0 ? H - (T % H) : 0, paidPeriods: H > 0 ? Math.floor(T / H) : 0, pertamaLunas: H > 0 && T >= H, n: sudah.length };
+  }
+
+  // Satu tagihan per kamar berpenyewa utama. Bulanan: periode berjalan (bulan pertama = bulan DP). Tahunan: total sewa setahun.
   function hitungTagihan(k) {
     if (!k.utama || !k.total) return null;
-    const tahunan = k.skema === "tahunan", key = todayIso().slice(0, 7);
-    const pays = k.bayarAktif.filter((b) => b.status !== "ditolak" && (tahunan || b.tanggal.slice(0, 7) === key));
-    const sudah = pays.filter((b) => b.status === "sudah"), pending = pays.find((b) => b.status === "menunggu");
-    const paid = sudah.reduce((s, b) => s + b.jumlah, 0);
+    const r = ringkas(k), today = todayIso(), pending = k.bayarAktif.find((b) => b.status === "menunggu");
+    if (r.tahunan) {
+      return {
+        tipe: "tagihan", key: "t" + k.id, kamar: k, nama: k.utama.nama, jenis: "Sewa Tahunan", bulan: today.slice(0, 7),
+        periode: `Tahun ${(k.utama.mulai || dpDate(k) || today).slice(0, 4)}`,
+        jumlah: k.total, paid: r.T, nSudah: r.n, sisa: r.sisa, status: r.lunas ? "sudah" : pending ? "menunggu" : "belum", pendingId: pending?.id,
+      };
+    }
+    const first = dpDate(k) || k.utama.mulai || today, idx = (d) => Number(d.slice(0, 4)) * 12 + Number(d.slice(5, 7)) - 1;
+    const base = idx(first), dueKe = idx(today) - base + 1, openKe = r.paidPeriods + 1, sebagian = r.sisa < r.H;
+    // Periode terbuka tampil bila sudah jatuh tempo / sebagian dibayar; jika sudah terkejar, tampilkan periode terakhir yang lunas.
+    const ke = sebagian || openKe <= dueKe || !r.paidPeriods ? openKe : r.paidPeriods, paid = ke === openKe ? r.H - r.sisa : r.H, m = base + ke - 1;
+    const key = `${Math.floor(m / 12)}-${pad((m % 12) + 1)}`;
     return {
-      tipe: "tagihan", key: "t" + k.id, kamar: k, nama: k.utama.nama,
-      jenis: tahunan ? "Sewa Tahunan" : "Sewa Kamar", bulan: key,
-      periode: tahunan ? `Tahun ${(k.utama.mulai || todayIso()).slice(0, 4)}` : periodeLabel(key),
-      jumlah: k.total, paid, nSudah: sudah.length, sisa: Math.max(0, k.total - paid),
-      status: paid >= k.total ? "sudah" : pending ? "menunggu" : "belum", pendingId: pending?.id,
+      tipe: "tagihan", key: "t" + k.id, kamar: k, nama: k.utama.nama, jenis: "Sewa Kamar", bulan: key, periode: periodeLabel(key),
+      jumlah: r.H, paid, nSudah: r.n, sisa: Math.max(0, r.H - paid), status: paid >= r.H ? "sudah" : pending ? "menunggu" : "belum", pendingId: pending?.id,
     };
   }
 
@@ -152,7 +181,7 @@
     const kamar = hitungKamar(), byId = new Map(kamar.map((k) => [k.id, k]));
     const tagihan = kamar.map(hitungTagihan).filter(Boolean);
     const riwayat = state.rows.flatMap((r) => r.bayar.map((b) => ({
-      tipe: "riwayat", key: "p" + b.id, kamar: byId.get(r.id_kamar), nama: r.nama, jenis: JENIS[b.jenis], pay: b,
+      tipe: "riwayat", key: "p" + b.id, kamar: byId.get(r.id_kamar), nama: r.nama, jenis: jenisLabel(b), pay: b,
       bulan: b.tanggal.slice(0, 7), periode: b.tanggal ? periodeLabel(b.tanggal.slice(0, 7)) : "-", jumlah: b.jumlah, status: b.status,
     }))).sort((a, b) => (b.pay.tanggal || "").localeCompare(a.pay.tanggal || "") || b.pay.id - a.pay.id);
     return { kamar, tagihan, riwayat };
@@ -255,88 +284,141 @@
   }
 
   /* ---------------------------------------------------------
-     Form Catat Pembayaran (Dekstop_19)
+     Form Catat Pembayaran
+       dp      : kamar belum punya DP -> pilih skema, catat DP, atur tenggat pelunasan
+       bulanan : setelah DP -> Pelunasan bulan pertama / Tagihan bulanan
+       tahunan : setelah DP -> Cicilan (periode dikunci) / Pelunasan (3 dari 3)
   --------------------------------------------------------- */
   const kamarAktif = () => hitungKamar().filter((k) => k.utama);
   const curRoom = () => kamarAktif().find((k) => String(k.id) === $("f-kamar").value);
+  const modeOf = (k) => (!k.adaDp ? "dp" : k.skema === "tahunan" ? "tahunan" : "bulanan");
+  const show = (id, on) => { $(id).hidden = !on; };
+  const skemaDp = () => ($("f-skema").value === "tahunan" ? "tahunan" : "bulanan");
+  const totalDp = (k) => (skemaDp() === "tahunan" ? parseRp($("f-tarif").value) : k.harga);
+  const dpMin = (k) => (skemaDp() === "tahunan" ? state.dpTahunan : k.harga * 0.5);
 
   function setDate(id, val) {
     $(id).value = val || "";
     const v = $(id + "-v"); v.textContent = val ? tglPendek(val) : "Pilih Tanggal"; v.classList.toggle("ph", !val);
   }
+  function setJumlah(n, lock) { $("f-jumlah").value = n > 0 ? rpRapat(n) : ""; $("f-jumlah").readOnly = !!lock; }
+  function setMetode(v) { $("f-metode").value = v; document.querySelectorAll("#f-metode-seg button").forEach((b) => b.setAttribute("aria-checked", b.dataset.metode === v)); }
   function fieldErr(id, msg) {
     const e = $(id); if (!e) return;
     e.textContent = msg || ""; e.hidden = !msg;
     const wrap = e.previousElementSibling; if (wrap) wrap.classList.toggle("err", !!msg);
   }
   function formError(msg) { $("f-error").textContent = msg || ""; $("f-error").hidden = !msg; }
-  function clearErrors() { ["f-jenis-err", "f-periode-err", "f-metode-err", "f-tgl-err", "f-file-err"].forEach((id) => fieldErr(id, "")); formError(""); resetJumlahHelp(); }
+  function clearErrors() { ["f-jenis-err", "f-tarif-err", "f-jumlah-help", "f-tgl-err", "f-tenggat-err", "f-metode-err"].forEach((id) => fieldErr(id, "")); $("f-metode-seg").classList.remove("err"); formError(""); }
 
-  function jenisOptions(k) {
-    // Aturan jenis per skema: bulanan = DP + Pelunasan; tahunan = DP + Cicilan + Pelunasan; belum diatur = semua.
-    let o = k.skema === "bulanan" ? ["dp", "pelunasan"] : ["dp", "cicilan", "pelunasan"];
-    if (k.adaDp) o = o.filter((x) => x !== "dp"); // DP hanya sekali
-    return o;
+  // Ringkasan "Sisa Tagihan Setelah ..." di bawah form
+  function hitungRingkas() {
+    const k = curRoom(), box = $("f-sum");
+    if (!k || F.selesai) { box.hidden = true; return; }
+    const jml = parseRp($("f-jumlah").value), dp = F.mode === "dp";
+    const sisa = dp ? Math.max(0, totalDp(k) - jml) : Math.max(0, ringkas(k).sisa - jml);
+    const lunas = (dp ? totalDp(k) > 0 : true) && sisa <= 0;
+    $("f-sum-l").textContent = dp ? "Sisa Tagihan Setelah DP" : "Sisa Tagihan Setelah Pembayaran";
+    $("f-sum-v").textContent = rpRapat(sisa);
+    $("f-sum-p").className = "pb-tag" + (lunas ? " pb-tag--soft" : "");
+    $("f-sum-p").innerHTML = lunas ? ic("tick") + "Lunas" : dp ? ic("clock") + "Menunggu Pelunasan" : ic("tick") + "Belum Lunas";
+    box.hidden = false;
   }
-  function periodeOptions() {
-    const d = new Date(), out = [];
-    for (let i = -3; i <= 3; i++) { const x = new Date(d.getFullYear(), d.getMonth() + i, 1); const key = `${x.getFullYear()}-${pad(x.getMonth() + 1)}`; out.push([key, periodeLabel(key)]); }
-    return out;
+
+  // Tenggat pelunasan otomatis (bisa diubah): bulanan = tanggal DP + 1 bulan, tahunan = tanggal masuk (atau tanggal DP) + 2 bulan
+  function autoTenggat() {
+    const k = curRoom(); if (F.mode !== "dp" || F.tenggatManual || !k) return;
+    const tgl = $("f-tgl").value;
+    setDate("f-tenggat", !tgl ? "" : skemaDp() === "tahunan" ? tambahBulan(k.utama.mulai || tgl, 2) : tambahBulan(tgl, 1));
   }
-  function resetJumlahHelp() {
-    const k = curRoom(), j = $("f-jenis").value, p = [];
-    $("f-jumlah-help").classList.remove("pb-help--err");
-    if (k) {
-      if (j === "dp" && k.dpMin) p.push(`DP minimum <b>${rpRapat(k.dpMin)}</b>`);
-      const t = hitungTagihan(k); if (t) p.push(`Sisa pembayaran <b>${rp(t.sisa)}</b>`);
+
+  // Mode DP: skema berubah -> tarif, DP minimum, jumlah awal, tenggat
+  function onSkema() {
+    const k = curRoom(); if (!k || F.mode !== "dp") return;
+    const tahunan = skemaDp() === "tahunan";
+    $("f-tarif-l").textContent = tahunan ? "Total Tagihan Tahunan" : "Tarif Kamar";
+    $("f-tarif").readOnly = !tahunan; $("f-tarif").value = tahunan ? "" : `${rpRapat(k.harga)} / bulan`;
+    $("f-tarif-help").textContent = tahunan ? "Diisi oleh pemilik" : "Otomatis dari harga unit kamar";
+    $("f-min-l").textContent = tahunan ? "Min. DP Tahunan" : "Min. Rekomendasi DP (50%)";
+    $("f-min").value = rpRapat(dpMin(k));
+    setJumlah(dpMin(k), false); fieldErr("f-tarif-err", ""); fieldErr("f-jumlah-help", "");
+    autoTenggat(); hitungRingkas();
+  }
+
+  // Dipanggil saat kamar berubah / form dibuka
+  function onKamar() {
+    const k = curRoom(); clearErrors();
+    F.mode = k ? modeOf(k) : ""; F.selesai = false;
+    const dp = F.mode === "dp";
+    show("f-card-t", !F.pickable); show("f-kamar-w", F.pickable); show("f-info-dp", dp); show("f-info-ok", !!k && !dp);
+    ["f-skema-g", "f-tarif-row", "f-jenis-g", "f-fields"].forEach((id) => show(id, !!k));
+    show("f-jenis-sel", !dp); show("f-jenis-fix", dp); show("f-tenggat-wrap", dp); show("f-periode-g", F.mode === "tahunan");
+    $("f-simpan").disabled = !k;
+    if (!k) { hitungRingkas(); return; }
+    $("f-card-t").textContent = `Kamar ${fmtNo(k.no)} - ${k.utama.nama}`;
+    $("f-card-b").textContent = dp ? "Pencatatan DP" : F.mode === "tahunan" ? "Skema Tahunan" : "Skema Bulanan";
+    setDate("f-tgl", todayIso()); setMetode(""); F.tenggatManual = false; setDate("f-tenggat", "");
+
+    if (dp) {
+      $("f-skema").disabled = false; $("f-skema").value = "bulanan";
+      $("f-jumlah-l").innerHTML = 'Jumlah DP <span class="req">*</span>';
+      $("f-jenis-help").textContent = "Setelah DP tersimpan, jenis tagihan berikutnya yang terbuka adalah Pelunasan bulan pertama atau Cicilan.";
+      onSkema(); return;
     }
-    $("f-jumlah-help").innerHTML = p.join(" · ");
-  }
 
-  // Dipanggil saat kamar berubah: isi nama, jenis, tenggat
-  function onKamar(jenisAwal) {
-    const k = curRoom();
-    $("f-nama").value = k ? k.utama.nama : "";
-    const opts = k ? jenisOptions(k) : [];
-    const cur = jenisAwal ?? $("f-jenis").value;
-    $("f-jenis").innerHTML = '<option value="">Pilih Jenis</option>' + opts.map((j) => `<option value="${j}">${JENIS[j]}</option>`).join("");
-    $("f-jenis").value = opts.includes(cur) ? cur : "";
+    // Sudah ada DP
+    const r = ringkas(k), tahunan = r.tahunan, totalDpAmt = dpRows(k).reduce((s, b) => s + b.jumlah, 0);
+    $("f-skema").disabled = true; $("f-skema").value = F.mode;
+    $("f-jumlah-l").innerHTML = 'Jumlah Pembayaran <span class="req">*</span>';
+    $("f-info-ok-t").textContent = `DP ${rpRapat(totalDpAmt)} pada ${tglPanjang(dpDate(k))}`;
+    $("f-tarif").readOnly = true;
+    $("f-tarif-l").textContent = tahunan ? "Total Tagihan Tahunan" : "Jumlah Tagihan";
+    $("f-tarif").value = tahunan ? rpRapat(k.total) : `${rpRapat(r.H)} / bulan`;
+    $("f-tarif-help").textContent = tahunan ? "Diisi oleh pemilik" : "Otomatis dari harga kamar";
+    $("f-min-l").textContent = tahunan ? "Sisa Tagihan" : "Sisa Tagihan Bulan Ini";
+    $("f-min").value = rpRapat(r.sisa);
+    $("f-jenis-help").textContent = tahunan
+      ? "Setelah DP tersimpan (skema tahunan), jenis tagihan yang tersedia adalah Cicilan dan Pelunasan."
+      : "Setelah DP tersimpan (skema bulanan), jenis tagihan yang tersedia adalah Pelunasan bulan pertama dan Tagihan bulanan.";
+
+    let opts;
+    if (tahunan) opts = r.cicilan < CICILAN_N - 1 ? ["cicilan", "pelunasan"] : ["pelunasan"]; // cicilan hanya periode 1 dan 2
+    else opts = r.pertamaLunas ? ["bulanan"] : ["pelunasan_pertama", "bulanan"];
+    const nama = { cicilan: "Cicilan", pelunasan: "Pelunasan", pelunasan_pertama: "Pelunasan bulan pertama", bulanan: "Tagihan bulanan" };
+    $("f-jenis").innerHTML = opts.map((j) => `<option value="${j}">${nama[j]}</option>`).join("");
+
+    if (tahunan && r.lunas) { // tidak ada yang bisa dicatat lagi
+      F.selesai = true; show("f-jenis-g", false); show("f-fields", false); $("f-simpan").disabled = true;
+      formError("Sewa tahunan kamar ini sudah lunas. Tidak ada pembayaran yang perlu dicatat."); hitungRingkas(); return;
+    }
     onJenis();
   }
+
+  // Mode setelah DP: jenis tagihan berubah -> jumlah awal, periode cicilan (hanya teks)
   function onJenis() {
-    const k = curRoom(), j = $("f-jenis").value;
-    const tampil = !!(k && j === "dp" && k.skema === "tahunan");
-    $("f-tenggat-wrap").hidden = !tampil;
-    if (tampil) setDate("f-tenggat", k.tenggat);   // nilai awal dari perhitungan 5.1, bisa diubah
-    resetJumlahHelp();
+    const k = curRoom(); if (!k || F.mode === "dp") return;
+    const r = ringkas(k), j = $("f-jenis").value;
+    if (r.tahunan) {
+      if (j === "cicilan") {
+        const dpAmt = dpRows(k).reduce((s, b) => s + b.jumlah, 0);
+        setJumlah(Math.min(r.sisa - 1, Math.round((k.total - dpAmt) / CICILAN_N)), false); // cicilan sama rata; sisa dilunasi di periode 3
+        $("f-periode").value = `${r.cicilan + 1} dari ${CICILAN_N}`;
+      } else { setJumlah(r.sisa, true); $("f-periode").value = `${CICILAN_N} dari ${CICILAN_N}`; }
+    } else setJumlah(r.sisa, j === "pelunasan_pertama");
+    fieldErr("f-jumlah-help", ""); hitungRingkas();
   }
 
-  function setFile(file) {
-    fieldErr("f-file-err", "");
-    if (file && file.size > 5 * 1024 * 1024) { fieldErr("f-file-err", "Ukuran file maksimal 5 MB."); file = null; }
-    F.file = file || null;
-    $("f-drop-t").innerHTML = F.file
-      ? `${ic("doc")}${esc(F.file.name)}<button type="button" id="f-file-x">Hapus</button>`
-      : `${ic("upload")}Klik atau Seret file`;
-    if (!F.file) $("f-file").value = "";
-  }
-
-  // opts: { kamarId, jenis, periode, locked }
+  // opts: { kamarId }
   function bukaForm(opts = {}) {
-    const k = kamarAktif();
-    F.saving = false; F.locked = !!opts.locked;
-    $("f-simpan").disabled = false; $("f-simpan").textContent = "Simpan Pembayaran";
-    $("f-kamar").innerHTML = '<option value="">Pilih Kamar / Penghuni</option>' +
-      k.map((r) => `<option value="${r.id}">${esc(fmtNo(r.no))} Lt. ${esc(r.lantai)} - ${esc(r.utama.nama)}</option>`).join("");
-    $("f-kamar").value = opts.kamarId ? String(opts.kamarId) : "";
-    $("f-kamar").disabled = F.locked;
-    $("f-kamar-help").hidden = !F.locked; $("f-kamar-help").textContent = "Kamar tidak dapat diganti pada pencatatan ini.";
-    $("f-periode").innerHTML = '<option value="">Pilih Periode</option>' + periodeOptions().map(([v, l]) => `<option value="${v}">${l}</option>`).join("");
-    $("f-periode").value = opts.periode || ""; // kosong = "Pilih Periode" (desain); dari tombol Bayar terisi periode tagihan
-    $("f-metode").value = ""; $("f-jumlah").value = ""; $("f-ket").value = ""; setDate("f-tgl", ""); setFile(null);
-    clearErrors(); onKamar(opts.jenis || "");
+    F.saving = false;
+    $("f-simpan").disabled = false; $("f-simpan").textContent = "Simpan";
+    $("f-kamar").innerHTML = kamarAktif().map((r) => `<option value="${r.id}">Kamar ${esc(fmtNo(r.no))} - ${esc(r.utama.nama)}</option>`).join("");
+    F.pickable = !opts.kamarId; // dari tombol "Bayar" / "Catat DP sekarang" kamar sudah pasti
+    // Tombol header: langsung tampil form, kamar pertama yang belum punya DP terpilih otomatis (bisa diganti di kartu kamar)
+    const awal = opts.kamarId ? kamarAktif().find((r) => r.id === opts.kamarId) : kamarAktif().find((r) => !r.adaDp) || kamarAktif()[0];
+    $("f-kamar").value = awal ? String(awal.id) : "";
+    onKamar();
     $("pb-form").hidden = false; document.body.style.overflow = "hidden";
-    ($("f-kamar").value ? $("f-jenis") : $("f-kamar")).focus();
   }
   function tutupForm() { $("pb-form").hidden = true; $("pb-peringatan").hidden = true; document.body.style.overflow = ""; }
 
@@ -344,24 +426,31 @@
     clearErrors();
     const k = curRoom(); let ok = true;
     if (!k) { formError("Pilih kamar terlebih dahulu."); return null; }
-    const v = {
-      jenis: $("f-jenis").value, periode: $("f-periode").value, metode: $("f-metode").value, tanggal: $("f-tgl").value,
-      jumlah: Number($("f-jumlah").value.replace(/\D/g, "")), ket: $("f-ket").value.trim(), tenggat: $("f-tenggat-wrap").hidden ? "" : $("f-tenggat").value,
-    };
-    if (!v.jenis) { fieldErr("f-jenis-err", "Pilih jenis tagihan."); ok = false; }
-    if (!v.periode) { fieldErr("f-periode-err", "Pilih periode tagihan."); ok = false; }
-    if (!v.jumlah) { $("f-jumlah-help").textContent = "Jumlah pembayaran wajib diisi."; $("f-jumlah-help").classList.add("pb-help--err"); ok = false; }
-    if (!v.metode) { fieldErr("f-metode-err", "Pilih metode pembayaran."); ok = false; }
+    const dp = F.mode === "dp", skema = dp ? skemaDp() : F.mode;
+    const v = { k, dp, skema, jenis: dp ? "dp" : $("f-jenis").value, metode: $("f-metode").value, tanggal: $("f-tgl").value, jumlah: parseRp($("f-jumlah").value), tenggat: dp ? $("f-tenggat").value : "", total: 0, dpMin: 0 };
+    if (dp) {
+      v.total = totalDp(k); v.dpMin = dpMin(k);
+      if (!v.total) { fieldErr("f-tarif-err", skema === "tahunan" ? "Total tagihan tahunan wajib diisi." : "Harga sewa kamar belum diisi."); ok = false; }
+      else if (v.jumlah > v.total) { fieldErr("f-jumlah-help", "DP tidak boleh melebihi total tagihan."); ok = false; }
+      if (!v.tenggat) { fieldErr("f-tenggat-err", "Tenggat pelunasan wajib diisi."); ok = false; }
+      else if (v.tanggal && v.tenggat < v.tanggal) { fieldErr("f-tenggat-err", "Tenggat tidak boleh sebelum tanggal bayar."); ok = false; }
+    } else {
+      if (!v.jenis) { fieldErr("f-jenis-err", "Pilih jenis tagihan."); ok = false; }
+      const sisa = ringkas(k).sisa;
+      if (v.jumlah > sisa) { fieldErr("f-jumlah-help", `Jumlah melebihi sisa tagihan (${rp(sisa)}).`); ok = false; }
+    }
+    if (!v.jumlah && $("f-jumlah-help").hidden) { fieldErr("f-jumlah-help", "Jumlah pembayaran wajib diisi."); ok = false; }
+    if (!v.metode) { fieldErr("f-metode-err", "Pilih metode pembayaran."); $("f-metode-seg").classList.add("err"); ok = false; }
     if (!v.tanggal) { fieldErr("f-tgl-err", "Tanggal bayar wajib diisi."); ok = false; }
-    return ok ? { k, ...v } : null;
+    return ok ? v : null;
   }
 
   function simpan(lewatiPeringatan) {
     if (F.saving) return;
     const v = validasi(); if (!v) return;
     // Skenario: DP di bawah minimum = peringatan, bukan penolakan
-    if (v.jenis === "dp" && v.k.dpMin && v.jumlah < v.k.dpMin && !lewatiPeringatan) {
-      $("w-judul").textContent = `DP di bawah minimum ${rpRapat(v.k.dpMin)}`;
+    if (v.dp && v.dpMin && v.jumlah < v.dpMin && !lewatiPeringatan) {
+      $("w-judul").textContent = `DP di bawah minimum ${rpRapat(v.dpMin)}`;
       $("w-isi").textContent = `Nominal DP ${rp(v.jumlah)} lebih kecil dari DP minimum kamar ${fmtNo(v.k.no)}. Anda dapat melanjutkan atau mengubah nominal.`;
       $("pb-peringatan").hidden = false; $("w-ubah").focus(); return;
     }
@@ -369,31 +458,27 @@
   }
 
   async function kirimPembayaran(v) {
-    const u = v.k.utama, tagihan = hitungTagihan(v.k), sisaSebelum = tagihan ? tagihan.sisa : null;
+    const u = v.k.utama, sisaSebelum = v.dp ? v.total : ringkas(v.k).sisa;
     F.saving = true; $("f-simpan").disabled = true; $("f-simpan").textContent = "Menyimpan…";
     try {
-      const data = { tanggal_bayar: v.tanggal, jumlah: v.jumlah, metode_pembayaran: v.metode };
-      let url = `/api/penghunian/${u.id}/dp`;
-      if (v.jenis !== "dp") { url = "/api/pembayaran"; Object.assign(data, { id_penghunian: u.id, jenis_pembayaran: v.jenis, periode: v.periode }); }
-      if (v.ket) data.keterangan = v.ket;
-      let body = data;
-      if (F.file) { body = new FormData(); Object.entries(data).forEach(([a, b]) => body.append(a, b)); body.append("bukti_pembayaran", F.file); }
-      await kirim(url, "POST", body);
-
-      let tenggatGagal = false;
-      if (v.jenis === "dp" && v.tenggat && v.tenggat !== v.k.tenggat) {
-        try { await kirim(`/api/penghunian/${u.id}/tenggat`, "PUT", { tenggat_pelunasan: v.tenggat }); } catch (_) { tenggatGagal = true; }
+      if (v.dp) {
+        const data = { tanggal_bayar: v.tanggal, jumlah: v.jumlah, metode_pembayaran: v.metode, skema_sewa: v.skema, tenggat_pelunasan: v.tenggat };
+        if (v.skema === "tahunan") data.total_sewa = v.total;
+        await kirim(`/api/penghunian/${u.id}/dp`, "POST", data);
+      } else {
+        // periode cicilan sengaja tidak dikirim: dihitung server dari jumlah cicilan yang sudah tercatat
+        await kirim("/api/pembayaran", "POST", { id_penghunian: u.id, jenis_pembayaran: v.jenis, tanggal_bayar: v.tanggal, jumlah: v.jumlah, metode_pembayaran: v.metode });
       }
       tutupForm(); state.tab = "tagihan"; syncTabs();
-      const lunas = sisaSebelum !== null && sisaSebelum - v.jumlah <= 0;
-      if (tenggatGagal) toast("Pembayaran tersimpan, tetapi tenggat pelunasan gagal diubah. Ubah lagi lewat pengaturan sewa.", true);
-      else toast(lunas ? `Pembayaran tersimpan. Kamar ${fmtNo(v.k.no)} sudah lunas.` : `Pembayaran ${JENIS[v.jenis]} kamar ${fmtNo(v.k.no)} berhasil dicatat atas nama ${u.nama}.`);
+      const lunas = sisaSebelum - v.jumlah <= 0;
+      toast(v.dp ? `DP kamar ${fmtNo(v.k.no)} berhasil dicatat atas nama ${u.nama}.` + (lunas ? "" : " Menunggu pelunasan.")
+        : lunas ? `Pembayaran tersimpan. Kamar ${fmtNo(v.k.no)} sudah lunas.` : `Pembayaran kamar ${fmtNo(v.k.no)} berhasil dicatat atas nama ${u.nama}.`);
       refresh();
     } catch (e) {
       formError(e.userMessage || "Gagal menyimpan pembayaran. Coba lagi.");
-      if (e.status === 422 && /sudah tercatat/i.test(e.userMessage || "")) refresh(); // DP ganda: muat ulang agar opsi DP hilang
+      if (e.status === 422 && /sudah tercatat/i.test(e.userMessage || "")) refresh(); // DP ganda: muat ulang
     } finally {
-      F.saving = false; $("f-simpan").disabled = false; $("f-simpan").textContent = "Simpan Pembayaran";
+      F.saving = false; $("f-simpan").disabled = false; $("f-simpan").textContent = "Simpan";
     }
   }
 
@@ -407,10 +492,11 @@
     $("d-body").innerHTML = `<div class="pb-d-meta">
         <div>Penyewa utama<b>${esc(k.utama?.nama || "-")}</b></div><div>Skema sewa<b>${esc(k.skema ? k.skema[0].toUpperCase() + k.skema.slice(1) : "Belum diatur")}</b></div>
         <div>Total sewa<b>${k.total ? rp(k.total) : "-"}</b></div><div>Sisa pembayaran<b>${t ? rp(t.sisa) : "-"}</b></div>
+        ${t && k.skema === "tahunan" ? `<div>Periode cicilan<b>${Math.min(CICILAN_N, ringkas(k).lunas ? CICILAN_N : ringkas(k).cicilan)} dari ${CICILAN_N}</b></div>` : ""}
         ${k.tenggat ? `<div>Tenggat pelunasan<b>${esc(tglPendek(k.tenggat))}</b></div>` : ""}</div>` +
       (baris.length
         ? `<table class="pb-d-list"><thead><tr><th>Tanggal</th><th>Jenis</th><th>Jumlah</th><th>Metode</th><th>Status</th></tr></thead><tbody>${baris.map((b) =>
-            `<tr><td>${esc(tglPendek(b.tanggal) || "-")}</td><td>${JENIS[b.jenis]}</td><td>${rp(b.jumlah)}</td><td>${esc(b.metode || "-")}</td><td>${{ sudah: "Sudah Dibayar", menunggu: "Menunggu Konfirmasi", ditolak: "Ditolak" }[b.status]}</td></tr>`).join("")}</tbody></table>`
+            `<tr><td>${esc(tglPendek(b.tanggal) || "-")}</td><td>${esc(jenisLabel(b))}</td><td>${rp(b.jumlah)}</td><td>${esc(b.metode || "-")}</td><td>${{ sudah: "Sudah Dibayar", menunggu: "Menunggu Konfirmasi", ditolak: "Ditolak" }[b.status]}</td></tr>`).join("")}</tbody></table>`
         : '<p class="pb-d-kosong">Belum ada pembayaran untuk kamar ini.</p>');
     $("pb-det").hidden = false; document.body.style.overflow = "hidden";
   }
@@ -459,22 +545,26 @@
   });
   document.addEventListener("click", tutupMenu);
 
-  function bayar(it) { bukaForm({ kamarId: it.kamar.id, periode: it.bulan }); }
+  function bayar(it) { bukaForm({ kamarId: it.kamar.id }); } // belum ada DP -> form DP; sudah ada -> form pelunasan/cicilan/bulanan
 
   // Form
-  $("f-kamar").addEventListener("change", () => { clearErrors(); onKamar(); });
+  $("f-kamar").addEventListener("change", onKamar);
+  $("f-skema").addEventListener("change", onSkema);
   $("f-jenis").addEventListener("change", () => { fieldErr("f-jenis-err", ""); onJenis(); });
-  $("f-periode").addEventListener("change", () => fieldErr("f-periode-err", ""));
-  $("f-metode").addEventListener("change", () => fieldErr("f-metode-err", ""));
-  $("f-jumlah").addEventListener("input", (e) => { const d = e.target.value.replace(/\D/g, ""); e.target.value = d ? Number(d).toLocaleString("id-ID") : ""; resetJumlahHelp(); });
+  [["f-jumlah", () => fieldErr("f-jumlah-help", "")], ["f-tarif", () => { fieldErr("f-tarif-err", ""); }]].forEach(([id, extra]) => {
+    $(id).addEventListener("input", (e) => {
+      if (e.target.readOnly) return;
+      const d = e.target.value.replace(/\D/g, ""); e.target.value = d ? rpRapat(Number(d)) : ""; extra(); hitungRingkas();
+    });
+  });
+  document.querySelectorAll("#f-metode-seg button").forEach((b) => b.addEventListener("click", () => { setMetode(b.dataset.metode); fieldErr("f-metode-err", ""); $("f-metode-seg").classList.remove("err"); }));
   ["f-tgl", "f-tenggat"].forEach((id) => {
-    $(id).addEventListener("change", (e) => { setDate(id, e.target.value); if (id === "f-tgl") fieldErr("f-tgl-err", ""); });
+    $(id).addEventListener("change", (e) => {
+      setDate(id, e.target.value);
+      if (id === "f-tgl") { fieldErr("f-tgl-err", ""); autoTenggat(); } else { F.tenggatManual = true; fieldErr("f-tenggat-err", ""); }
+    });
     $(id).addEventListener("click", (e) => { try { e.target.showPicker(); } catch (_) {} });
   });
-  $("f-file").addEventListener("change", (e) => setFile(e.target.files[0]));
-  $("f-drop").addEventListener("click", (e) => { if (e.target.id === "f-file-x") { e.preventDefault(); setFile(null); } });
-  ["dragover", "dragenter"].forEach((ev) => $("f-drop").addEventListener(ev, (e) => { e.preventDefault(); $("f-drop").classList.add("over"); }));
-  ["dragleave", "drop"].forEach((ev) => $("f-drop").addEventListener(ev, (e) => { e.preventDefault(); $("f-drop").classList.remove("over"); if (ev === "drop") setFile(e.dataTransfer.files[0]); }));
   $("f-simpan").addEventListener("click", () => simpan(false));
   $("f-x").addEventListener("click", tutupForm);
   $("f-batal").addEventListener("click", tutupForm);
@@ -508,8 +598,9 @@
     history.replaceState(null, "", location.pathname); // supaya muat ulang halaman tidak membuka form lagi
     const k = kamarAktif().find((x) => x.id === idKamar);
     if (!k) return toast("Tambahkan penghuni terlebih dahulu.", true); // kamar tanpa penghuni aktif: form tidak dibuka
-    bukaForm({ kamarId: k.id, jenis: String(q.get("jenis") || "").toLowerCase(), locked: true });
+    bukaForm({ kamarId: k.id });
   }
 
+  fetch("/api/pengaturan-sewa", { headers: { Accept: "application/json" } }).then((r) => r.json()).then((j) => { const n = num(j.data?.dp_minimum_tahunan); if (n) state.dpTahunan = n; }).catch(() => {});
   refresh().then(dariParameter);
 })();
