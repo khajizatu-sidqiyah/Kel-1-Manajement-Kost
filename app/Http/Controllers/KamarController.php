@@ -49,26 +49,36 @@ class KamarController extends Controller
      * PUT /api/kamar/{id}
      * Mengubah data kamar.
      */
-    public function update(Request $request, $id)
-    {
-        $kamar = Kamar::find($id);
+    
+public function update(Request $request, $id)
+{
+    $kamar = Kamar::find($id);
 
-        if (!$kamar) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Data kamar tidak ditemukan'
-            ], 404);
-        }
+    if (!$kamar) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Data kamar tidak ditemukan'
+        ], 404);
+    }
 
-        $validated = $request->validate([
-            'id_kost' => ['required', 'exists:kos,id_kost'],
-            'no_kamar' => ['required', 'string', 'max:20'],
-            'tipe_kamar' => ['nullable', 'string', 'max:50'],
-            'harga' => ['required', 'numeric'],
-            'status' => ['required', 'in:kosong,terisi'],
-        ]);
+    $validated = $request->validate([
+        'id_kost' => ['required', 'exists:kos,id_kost'],
+        'no_kamar' => ['required', 'string', 'max:20'],
+        'tipe_kamar' => ['nullable', 'string', 'max:50'],
+        'harga' => ['required', 'numeric'],
+        'harga_tahunan' => ['nullable', 'numeric', 'min:0'],
+        'harga_tahunan' => ['nullable', 'numeric', 'min:0'],
+        'status' => ['required', 'in:kosong,terisi'],
+    ]);
 
-        $kamar->update($validated);
+    $kamar->update($validated);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Data kamar berhasil diperbarui',
+        'data' => $kamar
+    ], 200);
+
 
         return response()->json([
             'success' => true,

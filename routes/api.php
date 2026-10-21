@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\KamarController;
 use App\Http\Controllers\PenghuniController;
 use App\Http\Controllers\PenghunianController;
+use App\Http\Controllers\PembayaranController;
 
 // API Kamar
 Route::get('/kamar', [KamarController::class, 'index']);
@@ -38,4 +39,16 @@ Route::post('/penghunian/dengan-penghuni',[PenghunianController::class, 'storeDe
     Route::post('/penghunian/tenggat-berikutnya', [PenghunianController::class, 'tenggatBerikutnya']);
 // API Utama Pengujian (Dilindungi Middleware Pemilik & Sanctum)
 Route::middleware(['auth:sanctum', 'pemilik'])->group(function () {
+});
+
+// API Pembayaran
+Route::middleware(['auth:sanctum', 'pemilik'])->group(function () {
+    Route::get('/pembayaran', [PembayaranController::class, 'index']);
+    Route::get('/pembayaran/{id}', [PembayaranController::class, 'show']);
+    Route::post('/pembayaran', [PembayaranController::class, 'store']);
+    Route::put('/pembayaran/{id}', [PembayaranController::class, 'update']);
+    Route::patch('/pembayaran/{id}/status', [
+        PembayaranController::class,
+        'updateStatus',
+    ]);
 });
