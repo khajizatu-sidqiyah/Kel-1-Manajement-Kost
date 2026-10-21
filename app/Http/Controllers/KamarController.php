@@ -76,4 +76,55 @@ class KamarController extends Controller
             'data' => $kamar
         ], 200);
     }
+
+    public function show($id)
+    {
+        // Mencari kamar berdasarkan ID
+        $kamar = Kamar::find($id);
+
+        // Jika kamar dengan ID 26 tidak ditemukan di database
+        if (!$kamar) {
+            return response()->json([
+                'message' => 'Data kamar tidak ditemukan.',
+                'error' => [
+                    'code' => 404,
+                    'message' => "Kamar dengan ID {$id} tidak ditemukan.",
+                    'status' => 'NOT_FOUND'
+                ]
+            ], 404);
+        }
+
+        // Jika kamar ditemukan, kembalikan dengan format wrapper standar
+        return response()->json([
+            'message' => '',
+            'data' => $kamar
+        ], 200);
+    }
+
+    public function destroy($id)
+{
+    // 1. Cari data kamar berdasarkan ID
+    $kamar = Kamar::find($id);
+
+    // 2. Jika kamar tidak ditemukan, kembalikan 404
+    if (!$kamar) {
+        return response()->json([
+            'message' => 'Data kamar tidak ditemukan.',
+            'error' => [
+                'code' => 404,
+                'message' => "Kamar dengan ID {$id} tidak ditemukan.",
+                'status' => 'NOT_FOUND'
+            ]
+        ], 404);
+    }
+
+    // 3. Hapus data dari database
+    $kamar->delete();
+
+    // 4. Kembalikan response sukses
+    return response()->json([
+        'message' => 'Data kamar berhasil dihapus.',
+        'data' => null
+    ], 200);
+}
 }

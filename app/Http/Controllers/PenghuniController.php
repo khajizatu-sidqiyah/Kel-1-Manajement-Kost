@@ -14,8 +14,7 @@ class PenghuniController extends Controller
     public function index()
     {
         return response()->json([
-            'success' => true,
-            'message' => 'Data penghuni berhasil diambil.',
+            'message' => '',
             'data' => Penghuni::all(),
         ], 200);
     }
@@ -27,24 +26,28 @@ class PenghuniController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'nama_penghuni' => 'required|string|max:100',
-            // Ubah 'string' menjadi 'numeric' (atau gunakan regex jika ingin aman dari simbol minus/plus)
-            'no_telepon' => 'nullable|numeric|digits_between:10,20',
+            // Diubah menjadi maksimal 13 digit
+            'no_telepon' => 'nullable|numeric|digits_between:10,13',
             'email' => 'nullable|email|max:100',
             'alamat' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
-                'message' => 'The given data was invalid.',
-                'errors' => $validator->errors(),
+                'message' => 'Invalid request parameters.',
+                'error' => [
+                    'code' => 422,
+                    'message' => 'Validation failed',
+                    'status' => 'INVALID_ARGUMENT',
+                    'details' => $validator->errors()
+                ]
             ], 422);
         }
 
         $penghuni = Penghuni::create($validator->validated());
 
         return response()->json([
-            'success' => true,
-            'message' => 'Penghuni berhasil ditambahkan',
+            'message' => 'Penghuni berhasil ditambahkan.',
             'data' => $penghuni,
         ], 201);
     }
@@ -58,14 +61,17 @@ class PenghuniController extends Controller
 
         if (!$penghuni) {
             return response()->json([
-                'success' => false,
                 'message' => 'Data penghuni tidak ditemukan.',
+                'error' => [
+                    'code' => 404,
+                    'message' => "Penghuni dengan ID {$id} tidak ditemukan.",
+                    'status' => 'NOT_FOUND'
+                ]
             ], 404);
         }
 
         return response()->json([
-            'success' => true,
-            'message' => 'Data penghuni berhasil diakses.',
+            'message' => '',
             'data' => $penghuni,
         ], 200);
     }
@@ -79,23 +85,38 @@ class PenghuniController extends Controller
 
         if (!$penghuni) {
             return response()->json([
-                'success' => false,
                 'message' => 'Data penghuni tidak ditemukan.',
+                'error' => [
+                    'code' => 404,
+                    'message' => "Penghuni dengan ID {$id} tidak ditemukan.",
+                    'status' => 'NOT_FOUND'
+                ]
             ], 404);
         }
 
-        $validated = $request->validate([
+        $validator = Validator::make($request->all(), [
             'nama_penghuni' => 'sometimes|required|string|max:100',
-            // Ubah 'string' menjadi 'numeric' di sini juga
-            'no_telepon' => 'sometimes|nullable|numeric|digits_between:10,20',
+            // Diubah menjadi maksimal 13 digit
+            'no_telepon' => 'sometimes|nullable|numeric|digits_between:10,13',
             'email' => 'sometimes|nullable|email|max:100',
             'alamat' => 'sometimes|nullable|string',
         ]);
 
-        $penghuni->update($validated);
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Invalid request parameters.',
+                'error' => [
+                    'code' => 422,
+                    'message' => 'Validation failed',
+                    'status' => 'INVALID_ARGUMENT',
+                    'details' => $validator->errors()
+                ]
+            ], 422);
+        }
+
+        $penghuni->update($validator->validated());
 
         return response()->json([
-            'success' => true,
             'message' => 'Data penghuni berhasil diperbarui.',
             'data' => $penghuni->fresh(),
         ], 200);
@@ -110,16 +131,20 @@ class PenghuniController extends Controller
 
         if (!$penghuni) {
             return response()->json([
-                'success' => false,
                 'message' => 'Data penghuni tidak ditemukan.',
+                'error' => [
+                    'code' => 404,
+                    'message' => "Penghuni dengan ID {$id} tidak ditemukan.",
+                    'status' => 'NOT_FOUND'
+                ]
             ], 404);
         }
 
         $penghuni->delete();
 
         return response()->json([
-            'success' => true,
             'message' => 'Data penghuni berhasil dihapus.',
+            'data' => null,
         ], 200);
     }
 }

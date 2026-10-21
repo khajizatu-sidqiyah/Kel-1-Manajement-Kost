@@ -8,7 +8,9 @@ use App\Http\Controllers\PenghunianController;
 // API Kamar
 Route::get('/kamar', [KamarController::class, 'index']);
 Route::post('/kamar', [KamarController::class, 'store']);
+Route::get('/kamar/{id}', [KamarController::class, 'show']); 
 Route::put('/kamar/{id}', [KamarController::class, 'update']);
+Route::delete('/kamar/{id}', [KamarController::class, 'destroy']);
 
 // API Penghuni
 Route::get('/penghuni', [PenghuniController::class, 'index']);
@@ -21,7 +23,6 @@ Route::delete('/penghuni/{id}', [PenghuniController::class, 'destroy']);
 Route::get('/penghunian', [PenghunianController::class, 'index']);
 Route::post('/penghunian', [PenghunianController::class, 'store']);
 Route::get('/penghunian/{id}', [PenghunianController::class, 'show']);
-
 Route::put('/penghunian/{id}', [PenghunianController::class, 'update']);
 Route::put('/penghunian/{id}/penyewa-utama', [PenghunianController::class, 'setPenyewaUtama']);
 Route::post('/penghunian/{id}/dp', [PenghunianController::class, 'catatDp']);
