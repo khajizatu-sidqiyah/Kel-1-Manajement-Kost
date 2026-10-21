@@ -329,12 +329,26 @@ public function storeDenganPenghuni(Request $request)
 
         $hargaBulanan = (float) $penghunian->kamar->harga;
 
+        
         if ($data['skema_sewa'] === 'bulanan') {
             // DP bulanan minimal 50% dari harga sewa.
             $totalSewa = $hargaBulanan;
             $dpMinimum = $hargaBulanan * 0.5;
         } else {
-            // Nilai DP tahunan dibaca dari pengaturan database.
+            // Harga tahunan diambil dari data kamar.
+            $hargaTahunan = $penghunian->kamar->harga_tahunan;
+
+            if (
+                $hargaTahunan === null ||
+                !is_numeric($hargaTahunan) ||
+                (float) $hargaTahunan <= 0
+            ) {
+                return response()->json([
+                    'message' => 'Harga sewa tahunan kamar belum diisi.',
+                ], 422);
+            }
+
+            // DP minimum tahunan tetap mengikuti pengaturan.
             $pengaturan = PengaturanSewa::first();
 
             if (
@@ -349,9 +363,10 @@ public function storeDenganPenghuni(Request $request)
                 ], 422);
             }
 
-            $totalSewa = $hargaBulanan * 12;
+            $totalSewa = (float) $hargaTahunan;
             $dpMinimum = (float) $pengaturan->dp_minimum_tahunan;
         }
+
 
         // DP tetap dihitung meskipun tanggal masuk belum diisi.
         $tanggalMulai = $penghunian->tanggal_mulai;
@@ -364,10 +379,10 @@ public function storeDenganPenghuni(Request $request)
                 // Tenggat awal bulanan mengikuti tanggal masuk.
                 $tenggat = $tanggalMulai->toDateString();
             } else {
-                // Tenggat tahunan adalah tiga bulan setelah tanggal masuk.
+                // Tenggat tahunan adalah dua bulan setelah tanggal masuk.
                 $tenggat = $tanggalMulai
                     ->copy()
-                    ->addMonthsNoOverflow(3)
+                    ->addMonthsNoOverflow(2)
                     ->toDateString();
             }
         }
@@ -379,15 +394,22 @@ public function storeDenganPenghuni(Request $request)
             'tenggat_pelunasan' => $tenggat,
         ]);
 
+        
+        $penghunian->refresh();
+        $penghunian->load([
+            'kamar',
+            'penghuni',
+            'pembayaran',
+        ]);
+
         return response()->json([
+            'success' => true,
             'message' => $tanggalMulai
                 ? 'Perhitungan DP dan tenggat berhasil disimpan.'
                 : 'DP berhasil dihitung. Isi tanggal masuk untuk menghitung tenggat.',
-            'skema_sewa' => $data['skema_sewa'],
-            'total_sewa' => $totalSewa,
-            'dp_minimum' => $dpMinimum,
-            'tenggat_pelunasan' => $tenggat,
+            'data' => $penghunian,
         ], 200);
+
     }
 
     // Mengubah tenggat pelunasan sewa tahunan.
@@ -421,8 +443,13 @@ public function storeDenganPenghuni(Request $request)
             ], 422);
         }
 
-        $tanggalMulai = Carbon::parse($penghunian->tanggal_mulai);
-        $tanggalTenggat = Carbon::parse($data['tenggat_pelunasan']);
+        $tanggalMulai = Carbon::parse(
+            $penghunian->tanggal_mulai)
+            ->startOfDay();
+
+        $tanggalTenggat = Carbon::parse(
+            $data['tenggat_pelunasan'])
+            ->startOfDay();
 
         if ($tanggalTenggat->lt($tanggalMulai)) {
             return response()->json([
@@ -435,10 +462,20 @@ public function storeDenganPenghuni(Request $request)
             'tenggat_pelunasan' => $tanggalTenggat->toDateString(),
         ]);
 
+        
+        $penghunian->refresh();
+        $penghunian->load([
+            'kamar',
+            'penghuni',
+            'pembayaran',
+        ]);
+
         return response()->json([
+            'success' => true,
             'message' => 'Tenggat pelunasan berhasil diubah.',
-            'tenggat_pelunasan' => $tanggalTenggat->toDateString(),
+            'data' => $penghunian,
         ], 200);
+
     }
 
     // Menghitung tenggat bulanan berikutnya.
