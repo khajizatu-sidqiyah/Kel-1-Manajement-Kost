@@ -12,9 +12,11 @@ class Pembayaran extends Model
 
     protected $fillable = [
         'id_penghunian',
+        'jenis_pembayaran',
         'tanggal_bayar',
         'jumlah',
         'metode_pembayaran',
+        'bukti_pembayaran',
         'status',
     ];
 

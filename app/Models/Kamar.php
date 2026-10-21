@@ -14,6 +14,7 @@ class Kamar extends Model
         'no_kamar',
         'tipe_kamar',
         'harga',
+        'harga_tahunan',
         'status',
         'id_kost',
     ];
