@@ -4,10 +4,13 @@
 
 @section('content')
 
-    <!-- Judul halaman -->
+        <!-- Judul halaman -->
     <section class="card page-head">
         <span class="tile"><svg class="i"><use href="#i-grid"/></svg></span>
-       
+        <div class="page-head-text">
+            <h1>Denah &amp; Status Kamar</h1>
+            <p>Kost Griya Harmoni</p>
+        </div>
         <div class="page-head-actions">
             <button type="button" class="btn-main" id="btn-add-room"><svg class="i i-sm"><use href="#i-plus"/></svg>Tambah Kamar</button>
         </div>
