@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\KamarController;
 use App\Http\Controllers\PenghuniController;
 use App\Http\Controllers\PenghunianController;
+use App\Http\Controllers\PembayaranController;
 
 //API Login
 Route::post('/login', [AuthController::class, 'login']);
@@ -45,5 +46,21 @@ Route::get('/penghunian/{id}/ringkasan-pembayaran', [PenghunianController::class
     Route::put('/penghunian/{id}/selesai', [PenghunianController::class, 'selesai']); 
 // API Utama Pengujian (Dilindungi Middleware Pemilik & Sanctum)
 Route::middleware(['auth:sanctum', 'pemilik'])->group(function () {
+<<<<<<< HEAD
     Route::post('/logout', [AuthController::class, 'logout']);
 });
+=======
+});
+
+// API Pembayaran
+Route::middleware(['auth:sanctum', 'pemilik'])->group(function () {
+    Route::get('/pembayaran', [PembayaranController::class, 'index']);
+    Route::get('/pembayaran/{id}', [PembayaranController::class, 'show']);
+    Route::post('/pembayaran', [PembayaranController::class, 'store']);
+    Route::put('/pembayaran/{id}', [PembayaranController::class, 'update']);
+    Route::patch('/pembayaran/{id}/status', [
+        PembayaranController::class,
+        'updateStatus',
+    ]);
+});
+>>>>>>> 4e4cd9b5b1f582e8975c0c32e08386fb49a762ed
