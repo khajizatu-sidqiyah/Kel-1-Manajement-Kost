@@ -84,9 +84,6 @@
                     <svg class="i"><use href="#i-menu"/></svg>
                 </button>
 
-                <button type="button" class="chip chip-kost"><svg class="i i-sm"><use href="#i-pin"/></svg>Kost Griya Harmoni ( Kamar 04 / L 1 )<svg class="i i-sm"><use href="#i-chev"/></svg></button>
-                <span class="topbar-info"><svg class="i i-sm"><use href="#i-check"/></svg>Notifikasi WhatsApp Tagihan Aktif</span>
-
                 <div class="topbar-right">
                     <button type="button" class="icon-btn bell" aria-label="Notifikasi"><svg class="i"><use href="#i-bell"/></svg><span class="bell-dot"></span></button>
                     <div class="user">
