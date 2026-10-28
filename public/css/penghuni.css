@@ -26,40 +26,39 @@
     --top-h: 96px;             /* topbar desain = 96px  (dashboard.css = 64px)  */
 }
 
-/* ---------- 1. Penyesuaian kerangka (sidebar & topbar) agar sama dengan desain ---------- */
+/* ---------- 1. Penyesuaian kerangka (sidebar & topbar) ----------
+   Ukuran/jarak mengikuti desain Data Penyewa & Pembayaran.
+   WARNA disamakan dengan halaman Denah (Figma) supaya sidebar & topbar seragam. */
 body.app { background: var(--pg-bg); }
 .sidebar { padding: 25px 21px 20px; gap: 0; border-right-color: var(--pg-line-soft); }
 .brand { gap: 12px; padding: 0 6px 20px; }
 .brand-logo { width: 40px; height: 40px; border-radius: 12px; background: #007042; }
-.brand-text b { display: block; font-size: 17px; line-height: 1.2; font-weight: 700; color: var(--pg-ink); }
-.brand-text small { font-size: 10px; font-weight: 700; letter-spacing: .08em; color: var(--pg-green-700); }
-.kost-switch { gap: 12px; padding: 0 15px; height: 55px; border-radius: 12px; background: #F8FAFC; border: 1px solid var(--pg-line-soft); color: var(--pg-ink-2); }
-.kost-switch b { font-size: 13px; font-weight: 700; color: var(--pg-ink-2); }
-.kost-switch small { font-size: 11px; color: var(--pg-slate-500); }
-.kost-switch > .i { color: var(--pg-slate-500); } .kost-switch > .i-sm { color: var(--pg-slate-400); }
-.nav-label { margin: 22px 7px 10px; font-size: 10px; font-weight: 600; letter-spacing: .08em; color: var(--pg-slate-400); }
+.brand-text b { display: block; font-size: 17px; line-height: 1.2; font-weight: 700; color: #1E293B; }
+.brand-text small { font-size: 10px; font-weight: 700; letter-spacing: .08em; color: #008952; }
+.kost-switch { gap: 12px; padding: 0 15px; height: 55px; border-radius: 12px; background: #D6E6F6; border: 0; color: #1E293B; }
+.kost-switch b { font-size: 13px; font-weight: 700; color: #1E293B; }
+.kost-switch small { font-size: 11px; color: #94A3B8; }
+.kost-switch > .i { color: #1E293B; }
+.nav-label { margin: 22px 7px 10px; font-size: 10px; font-weight: 600; letter-spacing: .08em; color: #94A3B8; }
 .nav { gap: 1px; }
-.nav-item { height: 39.5px; padding: 0 14px; border-radius: 12px; font-size: 13.5px; font-weight: 500; color: var(--pg-slate-600); }
-.nav-item .i { width: 18px; height: 18px; color: var(--pg-slate-500); stroke-width: 1.5; }
+.nav-item { height: 39.5px; padding: 0 14px; border-radius: 12px; font-size: 13.5px; font-weight: 500; color: #475569; }
+.nav-item .i { width: 18px; height: 18px; stroke-width: 1.5; }
 .nav-item:hover { background: var(--pg-line-soft); }
-.nav-item.is-active { background: #EAF7EE; color: var(--pg-green-700); font-weight: 600; }
-.nav-item.is-active .i { color: var(--pg-green-700); }
+.nav-item.is-active { background: #E4F8ED; color: #007042; font-weight: 600; }
 .nav-logout:hover { background: #fff1f2; }
 .sidebar-foot { padding-top: 16px; gap: 14px; }
-.license { gap: 12px; padding: 0 15px; height: 57.7px; border-radius: 12px; background: #EEF5FF; border: 1px solid rgba(219, 234, 254, .6); color: var(--pg-ink-2); }
-.license b { font-size: 12px; font-weight: 700; } .license small { font-size: 11px; color: var(--pg-slate-500); }
-.license > .i { width: 22px; height: 22px; color: #2563EB; }
-
+.license { gap: 12px; padding: 0 15px; height: 57.7px; border-radius: 12px; background: #EFF4FF; border: 0; color: #1E3A8A; }
+.license b { font-size: 12px; font-weight: 700; } .license small { font-size: 11px; color: #475569; }
+.license > .i { width: 22px; height: 22px; }
+ 
 .topbar { padding: 0 34px 0 83px; border-bottom: 0; }
 .chip-kost { height: 53px; min-width: 285px; justify-content: center; padding: 0 22px; gap: 8px; border-radius: 20px; background: rgba(143, 181, 244, .18); color: var(--pg-ink-2); font-size: 12px; font-weight: 700; }
 .topbar-info { justify-self: center; margin: 0 auto; font-size: 12px; color: var(--pg-ink); }
 .topbar-info .i { display: none; }
 .topbar-right { gap: 22px; }
-.bell .i { width: 20px; height: 20px; color: var(--pg-ink); }
-.bell-dot { display: none; }
 .user { gap: 12px; padding-left: 0; border-left: 0; }
-.user-text b { font-size: 15px; font-weight: 700; color: var(--pg-ink); }
-.avatar { width: 50px; height: 50px; font-size: 24px; font-weight: 500; background: var(--pg-green-900); }
+.user-text b { font-size: 14px; font-weight: 700; color: #000; }
+.avatar { width: 50px; height: 50px; font-size: 32px; font-weight: 700; background: #006948; }
 
 /* ---------- 2. Isi halaman ---------- */
 .content { display: block; padding: 0; }   /* padding diatur oleh .pg di bawah (desain: kiri 70px, kanan 34px) */
