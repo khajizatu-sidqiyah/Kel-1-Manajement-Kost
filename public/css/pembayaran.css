@@ -10,14 +10,14 @@
     --pb-ink: #0F172A; --pb-ink-2: #1E293B; --pb-s700: #334155; --pb-s600: #475569; --pb-s500: #64748B; --pb-s400: #94A3B8; --pb-s300: #A1AEC1;
     --pb-line: #E2E8F0; --pb-line-2: #E5EBF2; --pb-soft: #F1F5F9; --pb-bg: #F7F8FC;
     --pb-red: #E11D48; --pb-amber: #B45309;
-    --side-w: 287px;               /* desain pembayaran: sidebar 287px */
+    --side-w: 323px;               /* desain Figma: sidebar 323px */
 }
 
 /* ---------- Kerangka halaman ---------- */
 .content { display: block; padding: 0; }
 .pb { padding: 12px 16px 40px; }
 @media (min-width: 1024px) { .pb { padding: 12px 24px 40px; } }
-@media (min-width: 1280px) { .pb { padding: 12px 44px 40px 79px; } }   /* desain: kiri 79px, kanan 44px */
+@media (min-width: 1280px) { .pb { padding: 12px 43px 40px 43px; } }   /* desain Figma: jarak dari sidebar 43px, kanan 43px */
 .pb .i { stroke-width: 1.6; }
 
 .pb-crumb { display: flex; flex-wrap: wrap; gap: 8px; font-size: 12.5px; color: var(--pb-s400); }
