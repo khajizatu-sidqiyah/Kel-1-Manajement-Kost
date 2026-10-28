@@ -22,7 +22,7 @@
     --pg-line:      #E2E8F0;   --pg-line-soft: #F1F5F9;
     --pg-bg:        #F7F8FC;
 
-    --side-w: 293px;           /* sidebar desain = 293px (dashboard.css = 264px) */
+    --side-w: 323px;           /* sidebar desain Figma = 323px */
     --top-h: 96px;             /* topbar desain = 96px  (dashboard.css = 64px)  */
 }
 
@@ -50,7 +50,7 @@ body.app { background: var(--pg-bg); }
 .license { gap: 12px; padding: 0 15px; height: 57.7px; border-radius: 12px; background: #EFF4FF; border: 0; color: #1E3A8A; }
 .license b { font-size: 12px; font-weight: 700; } .license small { font-size: 11px; color: #475569; }
 .license > .i { width: 22px; height: 22px; }
- 
+
 .topbar { padding: 0 34px 0 83px; border-bottom: 0; }
 .chip-kost { height: 53px; min-width: 285px; justify-content: center; padding: 0 22px; gap: 8px; border-radius: 20px; background: rgba(143, 181, 244, .18); color: var(--pg-ink-2); font-size: 12px; font-weight: 700; }
 .topbar-info { justify-self: center; margin: 0 auto; font-size: 12px; color: var(--pg-ink); }
@@ -316,7 +316,7 @@ body.app { background: var(--pg-bg); }
 }
 @media (min-width: 1024px) {
     .topbar { padding: 0 34px 0 83px; }
-    .pg { padding: 15px 34px 40px 70px; }
+    .pg { padding: 15px 34px 40px 43px; }
     .pg-head { flex-wrap: nowrap; }
     .pm { left: var(--side-w); top: var(--top-h); }  /* overlay hanya menutup area utama, seperti desain */
 }
