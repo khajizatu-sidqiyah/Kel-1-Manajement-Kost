@@ -1,0 +1,14 @@
+$kind: http-request
+description: "Skenario: hitung tenggat bulan berikutnya."
+url: "{{base_url}}/penghunian/tenggat-berikutnya"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "penghunian_id": 1
+    }
+order: 10000

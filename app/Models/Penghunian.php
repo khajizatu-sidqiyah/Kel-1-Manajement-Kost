@@ -25,6 +25,7 @@ class Penghunian extends Model
     'total_sewa',
     'dp_minimum',
     'tenggat_pelunasan',
+    'status_pembayaran',
 ];
 
     protected function casts(): array

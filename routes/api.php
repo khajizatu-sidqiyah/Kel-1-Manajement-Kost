@@ -5,6 +5,8 @@ use App\Http\Controllers\KamarController;
 use App\Http\Controllers\PenghuniController;
 use App\Http\Controllers\PenghunianController;
 
+//API Login
+Route::post('/login', [AuthController::class, 'login']);
 // API Kamar
 Route::get('/kamar', [KamarController::class, 'index']);
 Route::post('/kamar', [KamarController::class, 'store']);
@@ -27,6 +29,9 @@ Route::put('/penghunian/{id}', [PenghunianController::class, 'update']);
 Route::put('/penghunian/{id}/penyewa-utama', [PenghunianController::class, 'setPenyewaUtama']);
 Route::post('/penghunian/{id}/dp', [PenghunianController::class, 'catatDp']);
 Route::post('/penghunian/dengan-penghuni',[PenghunianController::class, 'storeDenganPenghuni']);
+Route::post('/penghunian/{id}/pembayaran', [PenghunianController::class, 'catatPembayaran']);
+Route::get('/penghunian/{id}/pembayaran', [PenghunianController::class, 'riwayatPembayaran']);
+Route::get('/penghunian/{id}/ringkasan-pembayaran', [PenghunianController::class, 'ringkasanPembayaran']);
     
     // 1. Skenario: Menghitung DP Minimum & Tenggat (Bulanan & Tahunan)
     // Serta menangani validasi (Tanggal masuk kosong, Harga kosong, Skema belum dipilih)
@@ -37,6 +42,8 @@ Route::post('/penghunian/dengan-penghuni',[PenghunianController::class, 'storeDe
 
     // 3. Skenario: Menghitung tenggat bulan berikutnya
     Route::post('/penghunian/tenggat-berikutnya', [PenghunianController::class, 'tenggatBerikutnya']);
+    Route::put('/penghunian/{id}/selesai', [PenghunianController::class, 'selesai']); 
 // API Utama Pengujian (Dilindungi Middleware Pemilik & Sanctum)
 Route::middleware(['auth:sanctum', 'pemilik'])->group(function () {
+    Route::post('/logout', [AuthController::class, 'logout']);
 });

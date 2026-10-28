@@ -1,0 +1,16 @@
+$kind: http-request
+url: "{{base_url}}/penghuni"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "nama_penghuni": "Rina",
+      "no_hp": "089684457261",
+      "email": "Rina@gmail.com",
+      "alamat": "Kuningan"
+    }
+order: 2000

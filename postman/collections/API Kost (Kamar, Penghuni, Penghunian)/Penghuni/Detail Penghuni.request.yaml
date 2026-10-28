@@ -1,0 +1,9 @@
+$kind: http-request
+url: "{{base_url}}/penghuni/15"
+method: GET
+headers:
+  Accept: application/json
+body:
+  type: json
+  content: ""
+order: 3000

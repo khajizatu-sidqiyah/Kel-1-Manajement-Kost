@@ -1,0 +1,15 @@
+$kind: http-request
+url: "{{base_url}}/penghunian/14"
+method: PUT
+headers:
+  Accept: application/json
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "id_kamar": 1,
+      "id_penghuni": "15",
+      "tanggal_mulai": "2026-11-05"
+    }
+order: 4000

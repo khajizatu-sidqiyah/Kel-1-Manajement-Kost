@@ -2,6 +2,10 @@
 workspace:
   id: 544e0582-b295-4080-8e0e-0f6c26aa8f4b
 
+cloudResources:
+  collections:
+    ../postman/collections/API Kost (Kamar, Penghuni, Penghunian): b63b049c-3061-474f-9b42-bca920840886
+
 # All resources in the `postman/` folder are automatically registered in Local View.
 # Point to additional files outside the `postman/` folder to register them individually. Example:
 #localResources:

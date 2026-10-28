@@ -1,0 +1,14 @@
+$kind: http-request
+url: "{{base_url}}/penghunian/{{id}}/dp"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "jumlah": 500000,
+      "tanggal_bayar": "2026-10-21"
+    }
+order: 6000
