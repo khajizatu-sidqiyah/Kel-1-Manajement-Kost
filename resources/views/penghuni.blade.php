@@ -37,10 +37,7 @@
 
     <div class="pg">
 
-        {{-- Breadcrumb --}}
-        <nav class="crumb" aria-label="Breadcrumb">
-            <a href="{{ route('dashboard') }}">Dashboard</a><span>/</span><b>Data Penyewa &amp; Arsip</b>
-        </nav>
+       
 
         {{-- Judul halaman + tombol tambah --}}
         <header class="pg-head">
