@@ -51,7 +51,6 @@
             <button type="button" class="kost-switch">
                 <svg class="i"><use href="#i-building"/></svg>
                 <span><b>Kost Griya Harmoni</b><small>23 Kamar Aktif</small></span>
-                <svg class="i i-sm"><use href="#i-chev"/></svg>
             </button>
 
             <p class="nav-label">OPERASIONAL KOS</p>
