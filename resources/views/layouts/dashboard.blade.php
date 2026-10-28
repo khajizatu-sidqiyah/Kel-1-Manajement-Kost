@@ -85,7 +85,7 @@
                 </button>
 
                 <div class="topbar-right">
-                    <button type="button" class="icon-btn bell" aria-label="Notifikasi"><svg class="i"><use href="#i-bell"/></svg><span class="bell-dot"></span></button>
+                    
                     <div class="user">
                         <span class="user-text"><b>Pemilik Kost</b></span>
                         <span class="avatar">P</span>
