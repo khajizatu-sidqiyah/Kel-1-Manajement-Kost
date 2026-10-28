@@ -61,7 +61,7 @@ small { display: block; }
 .bell { position: relative; } .bell-dot { position: absolute; top: 9px; right: 10px; width: 8px; height: 8px; border-radius: 50%; background: var(--red); border: 2px solid #fff; }
 .user { display: flex; align-items: center; gap: 10px; }
 .user-text { display: none; text-align: right; font-size: 12px; } .user-text b { font-size: 12px; } .user-text small { color: var(--muted); }
-.avatar { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--green); color: #fff; font-weight: 700; }
+.avatar { display: grid; place-items: center; width: 50px; height: 50px; border-radius: 50%; background: var(--green); color: #fff; font-weight: 700; }
 
 /* ---------- Konten ---------- */
 .content { padding: 16px 12px 32px; display: grid; gap: 16px; }
