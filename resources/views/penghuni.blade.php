@@ -37,7 +37,10 @@
 
     <div class="pg">
 
-       
+        {{-- Breadcrumb --}}
+        <nav class="crumb" aria-label="Breadcrumb">
+            <a href="{{ route('dashboard') }}">Dashboard</a><span>/</span><b>Data Penyewa &amp; Arsip</b>
+        </nav>
 
         {{-- Judul halaman + tombol tambah --}}
         <header class="pg-head">
@@ -51,12 +54,6 @@
 
         {{-- 4 kartu ringkasan (diisi penghuni.js) --}}
         <section class="pg-stats" id="pg-stats" aria-label="Ringkasan penyewa"></section>
-
-        {{-- Tab Penyewa Aktif / Arsip --}}
-        <div class="pg-tabs" role="tablist">
-            <button type="button" class="pg-tab" role="tab" data-tab="aktif" aria-selected="true">Penyewa Aktif</button>
-            <button type="button" class="pg-tab" role="tab" data-tab="arsip" aria-selected="false">Arsip Penyewa</button>
-        </div>
 
         {{-- Pencarian & filter --}}
         <div class="pg-filters">
@@ -82,6 +79,12 @@
                 </select>
                 <svg class="i"><use href="#i-chev"/></svg>
             </div>
+        </div>
+
+        {{-- Tab Penyewa Aktif / Arsip --}}
+        <div class="pg-tabs" role="tablist">
+            <button type="button" class="pg-tab" role="tab" data-tab="aktif" aria-selected="true">Penyewa Aktif</button>
+            <button type="button" class="pg-tab" role="tab" data-tab="arsip" aria-selected="false">Arsip Penyewa</button>
         </div>
 
         {{-- Tabel penyewa --}}
