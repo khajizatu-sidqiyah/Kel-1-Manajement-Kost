@@ -51,7 +51,7 @@ small { display: block; }
 
 /* ---------- Topbar ---------- */
 .main { min-width: 0; min-height: 100vh; }
-.topbar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 10px; height: var(--top-h); padding: 0 12px; background: var(--white); border-bottom: 1px solid var(--line); }
+.topbar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 10px; height: var(--top-h); padding: 0 12px; background: var(--white); border-bottom: 0; }
 .icon-btn { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 10px; }
 .icon-btn:hover { background: #f1f5f9; }
 .chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
@@ -222,3 +222,10 @@ body.modal-open { overflow: hidden; }
 /* Peringatan kosongkan kamar */
 .form-warn { margin-bottom: 12px; padding: 10px 12px; border-radius: 8px; background: #fff7ed; color: #9a3412; font-size: 12px; line-height: 1.5; }
 .form-warn b { font-weight: 600; }
+
+/* Judul halaman tanpa kartu putih (Denah, sesuai Figma) */
+.page-head.page-head--plain { padding: 32px 0 0 10px; margin-bottom: 36px; gap: 14px; background: transparent; border: 0; border-radius: 0; }
+.page-head--plain .tile { width: 40px; height: 40px; border-radius: 12px; background: #DFEAEA; color: #6D7A72; }
+.page-head.page-head--plain h1 { font-size: 24px; line-height: 1.2; }
+.page-head.page-head--plain p { margin-top: 2px; font-size: 12px; }
+.page-head--plain .btn-main { height: 35px; padding: 0 16px; border-radius: 8px; font-size: 12px; }
