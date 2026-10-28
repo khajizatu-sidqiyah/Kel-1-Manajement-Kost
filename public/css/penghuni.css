@@ -59,7 +59,7 @@ body.app { background: var(--pg-bg); }
 .bell-dot { display: none; }
 .user { gap: 12px; padding-left: 0; border-left: 0; }
 .user-text b { font-size: 15px; font-weight: 700; color: var(--pg-ink); }
-.avatar { width: 48px; height: 48px; font-size: 28px; font-weight: 500; background: var(--pg-green-900); }
+.avatar { width: 50px; height: 50px; font-size: 24px; font-weight: 500; background: var(--pg-green-900); }
 
 /* ---------- 2. Isi halaman ---------- */
 .content { display: block; padding: 0; }   /* padding diatur oleh .pg di bawah (desain: kiri 70px, kanan 34px) */
