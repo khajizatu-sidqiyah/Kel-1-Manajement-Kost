@@ -37,11 +37,7 @@
 
     <div class="pb">
 
-        {{-- Breadcrumb --}}
-        <nav class="pb-crumb" aria-label="Breadcrumb">
-            <a href="{{ route('dashboard') }}">Dashboard</a><span>/</span><b>Pembayaran &amp; Tagihan</b>
-        </nav>
-
+       
         {{-- Judul + tombol --}}
         <header class="pb-head">
             <span class="pb-tile"><svg class="i"><use href="#pb-cal"/></svg></span>
