@@ -8,7 +8,7 @@
     --red: #E21E49; --red-soft: #fff1f2; --red-dark: #BA0035;
     --blue: #2563eb; --blue-soft: #EFF4FF;
     --ink: #0B1C30; --muted: #565E74; --line: #e2e8f0; --bg: #F7F8FC; --white: #fff;
-    --side-w: 293px; --top-h: 96px;
+    --side-w: 323px; --top-h: 96px;
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 body.app { font-family: "Inter", system-ui, -apple-system, "Segoe UI", Arial, sans-serif; background: var(--bg); color: var(--ink); -webkit-font-smoothing: antialiased; }
