@@ -80,7 +80,17 @@ async function loadRooms() {
     return MOCK.map(([no, lantai, tipe, fas, harga, status, penghuni, tempo, urgent, note]) =>
       ({ no_kamar: no, lantai, tipe_kamar: tipe, fasilitas: fas, harga, status, penghuni, jatuh_tempo: tempo, mendesak: !!urgent, catatan: note }));
   }
-  const res = await fetch(API_URL, { headers: { Accept: "application/json" } });
+
+  // Ambil token yang tersimpan saat login (sesuaikan key-nya dengan kode login Anda, misal 'token' atau 'auth_token')
+  const token = localStorage.getItem('token') || '';
+
+  const res = await fetch(API_URL, { 
+    headers: { 
+      Accept: "application/json",
+      "Authorization": `Bearer ${token}` // Menyertakan token agar tidak 401 Unauthorized
+    } 
+  });
+  
   if (!res.ok) throw new Error("HTTP " + res.status);
   const rows = (await res.json()).data;
   if (!Array.isArray(rows)) throw new Error("Format data tidak dikenali");
