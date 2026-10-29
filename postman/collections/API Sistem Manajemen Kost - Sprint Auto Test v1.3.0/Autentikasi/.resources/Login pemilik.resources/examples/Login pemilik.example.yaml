@@ -1,0 +1,42 @@
+$kind: http-example
+request:
+  url: "{{base_url}}/login"
+  method: POST
+  headers:
+    Accept: application/json
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "email": "pemilik@gmail.com",
+        "password": "password123"
+      }
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Host: 127.0.0.1:8000
+    Connection: close
+    X-Powered-By: PHP/8.2.12
+    Cache-Control: no-cache, private
+    Date: Thu, 29 Oct 2026 02:10:38 GMT
+    Content-Type: application/json; charset=utf-8
+    Access-Control-Allow-Origin: "*"
+  body:
+    type: json
+    content: |-
+      {
+        "message": "Login berhasil.",
+        "data": {
+          "token": "3|vIhf2yeYMJg3OtSeOWf6mUfBt1b1W92f9yCvMRAA096eedeb",
+          "token_type": "Bearer",
+          "user": {
+            "id": 1,
+            "name": "Pemilik Kost",
+            "email": "pemilik@gmail.com",
+            "role": "pemilik"
+          }
+        }
+      }
+order: 1000

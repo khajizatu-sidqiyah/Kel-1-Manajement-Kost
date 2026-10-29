@@ -1,9 +1,0 @@
-$kind: http-request
-url: "{{base_url}}/kamar"
-method: GET
-headers:
-  Accept: application/json
-body:
-  type: json
-  content: ""
-order: 1000

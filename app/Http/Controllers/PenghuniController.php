@@ -65,7 +65,8 @@ class PenghuniController extends Controller
                 'error' => [
                     'code' => 404,
                     'message' => "Penghuni dengan ID {$id} tidak ditemukan.",
-                    'status' => 'NOT_FOUND'
+                    'status' => 'NOT_FOUND',
+                    'details' => (object) []
                 ]
             ], 404);
         }
@@ -89,7 +90,8 @@ class PenghuniController extends Controller
                 'error' => [
                     'code' => 404,
                     'message' => "Penghuni dengan ID {$id} tidak ditemukan.",
-                    'status' => 'NOT_FOUND'
+                    'status' => 'NOT_FOUND',
+                    'details' => (object) []
                 ]
             ], 404);
         }
@@ -135,7 +137,8 @@ class PenghuniController extends Controller
                 'error' => [
                     'code' => 404,
                     'message' => "Penghuni dengan ID {$id} tidak ditemukan.",
-                    'status' => 'NOT_FOUND'
+                    'status' => 'NOT_FOUND',
+                    'details' => (object) []
                 ]
             ], 404);
         }

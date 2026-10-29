@@ -2,9 +2,11 @@
 workspace:
   id: 544e0582-b295-4080-8e0e-0f6c26aa8f4b
 
+# Each entry here maps a local resource to one or more corresponding objects in Postman Cloud
+
 cloudResources:
   collections:
-    ../postman/collections/API Kost (Kamar, Penghuni, Penghunian): b63b049c-3061-474f-9b42-bca920840886
+    ../postman/collections/API Sistem Manajemen Kost - Sprint Auto Test v1.3.0: 6a56309b-08f3-4ced-a23e-9b5cc81111a7
 
 # All resources in the `postman/` folder are automatically registered in Local View.
 # Point to additional files outside the `postman/` folder to register them individually. Example:

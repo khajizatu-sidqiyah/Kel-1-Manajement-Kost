@@ -33,7 +33,7 @@ public function storeDenganPenghuni(Request $request)
         'id_kamar' => 'required|integer|exists:kamar,id_kamar',
 
         'nama_penghuni' => 'required|string|max:255',
-        'no_telepon' => 'required|string|max:20',
+        'no_telepon' => 'nullable|string|max:20',
         'alamat' => 'required|string',
 
         'tanggal_mulai' => 'nullable|date',
@@ -297,152 +297,6 @@ public function storeDenganPenghuni(Request $request)
         ], 201);
     }
 
-    /**
-     * Mencatat DP, cicilan, atau pelunasan untuk penghunian penyewa utama.
-     * POST /api/penghunian/{id}/pembayaran
-     */
-    public function catatPembayaran(Request $request, $id)
-    {
-        $data = $request->validate([
-            'jenis_pembayaran' => ['required', Rule::in(['dp', 'cicilan', 'pelunasan'])],
-            'jumlah' => ['required', 'numeric', 'gt:0', 'max:9999999999'],
-            'tanggal_bayar' => ['required', 'date'],
-            'metode_pembayaran' => ['required', Rule::in(['tunai', 'transfer'])],
-        ]);
-
-        $hasil = DB::transaction(function () use ($data, $id) {
-            $penghunian = Penghunian::where('id_penghunian', $id)
-                ->lockForUpdate()
-                ->first();
-
-            if (!$penghunian || $penghunian->status !== 'aktif') {
-                return ['http' => 404, 'message' => 'Penghunian aktif tidak ditemukan.'];
-            }
-
-            if (!$penghunian->penyewa_utama) {
-                return ['http' => 422, 'message' => 'Pembayaran harus dicatat pada penghunian penyewa utama.'];
-            }
-
-            if (!$penghunian->skema_sewa || !$penghunian->total_sewa || !$penghunian->dp_minimum) {
-                return ['http' => 422, 'message' => 'Pilih skema sewa dan hitung DP minimum terlebih dahulu.'];
-            }
-
-            $pembayaranQuery = DB::table('pembayaran')
-                ->where('id_penghunian', $penghunian->id_penghunian);
-
-            if ($data['jenis_pembayaran'] === 'dp' && (clone $pembayaranQuery)
-                ->where('status', 'dp')->exists()) {
-                return ['http' => 422, 'message' => 'DP untuk penghunian ini sudah tercatat.'];
-            }
-
-            $totalTerbayar = (float) (clone $pembayaranQuery)->sum('jumlah');
-            $sisa = max(0, (float) $penghunian->total_sewa - $totalTerbayar);
-            $jumlah = (float) $data['jumlah'];
-
-            if ($sisa <= 0) {
-                return ['http' => 422, 'message' => 'Sewa sudah lunas. Pembayaran baru tidak dapat dicatat.'];
-            }
-
-            if ($jumlah > $sisa) {
-                return ['http' => 422, 'message' => 'Nominal pembayaran melebihi sisa sewa Rp' . number_format($sisa, 0, ',', '.') . '.'];
-            }
-
-            if ($data['jenis_pembayaran'] === 'pelunasan' && $jumlah != $sisa) {
-                return ['http' => 422, 'message' => 'Nominal pelunasan harus sama dengan sisa pembayaran Rp' . number_format($sisa, 0, ',', '.') . '.'];
-            }
-
-            // DP di bawah minimum diperbolehkan; frontend dapat menampilkan peringatan/konfirmasi.
-            $isDpDiBawahMinimum = $data['jenis_pembayaran'] === 'dp'
-                && $jumlah < (float) $penghunian->dp_minimum;
-
-            $paymentId = DB::table('pembayaran')->insertGetId([
-                'id_penghunian' => $penghunian->id_penghunian,
-                'tanggal_bayar' => $data['tanggal_bayar'],
-                'jumlah' => $jumlah,
-                'metode_pembayaran' => $data['metode_pembayaran'],
-                'status' => $data['jenis_pembayaran'],
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            $totalBaru = $totalTerbayar + $jumlah;
-            $sisaBaru = max(0, (float) $penghunian->total_sewa - $totalBaru);
-            $lunas = $sisaBaru <= 0;
-
-            // Status pembayaran disimpan terpisah dari status penghunian (aktif/selesai).
-            if (\Illuminate\Support\Facades\Schema::hasColumn('penghunian', 'status_pembayaran')) {
-                $penghunian->status_pembayaran = $lunas ? 'lunas' : 'belum_lunas';
-                $penghunian->save();
-            }
-
-            return [
-                'http' => 201,
-                'message' => $isDpDiBawahMinimum
-                    ? 'DP di bawah minimum Rp' . number_format((float) $penghunian->dp_minimum, 0, ',', '.') . '. Pembayaran berhasil dicatat.'
-                    : 'Pembayaran berhasil dicatat.',
-                'warning' => $isDpDiBawahMinimum,
-                'data' => [
-                    'id_pembayaran' => $paymentId,
-                    'id_penghunian' => $penghunian->id_penghunian,
-                    'nama_penyewa_utama' => optional($penghunian->penghuni)->nama_penghuni,
-                    'jenis_pembayaran' => $data['jenis_pembayaran'],
-                    'jumlah' => $jumlah,
-                    'tanggal_bayar' => $data['tanggal_bayar'],
-                    'metode_pembayaran' => $data['metode_pembayaran'],
-                    'total_sewa' => (float) $penghunian->total_sewa,
-                    'total_terbayar' => $totalBaru,
-                    'sisa_pembayaran' => $sisaBaru,
-                    'status_pembayaran' => $lunas ? 'lunas' : 'belum_lunas',
-                ],
-            ];
-        });
-
-        $http = $hasil['http'];
-        unset($hasil['http']);
-        return response()->json($hasil, $http);
-    }
-
-    /** Riwayat pembayaran untuk satu penghunian. */
-    public function riwayatPembayaran($id)
-    {
-        $penghunian = Penghunian::with(['penghuni', 'pembayaran'])->find($id);
-        if (!$penghunian) {
-            return response()->json(['message' => 'Data penghunian tidak ditemukan.'], 404);
-        }
-
-        return response()->json([
-            'message' => 'Riwayat pembayaran berhasil diambil.',
-            'data' => $penghunian->pembayaran,
-        ], 200);
-    }
-
-    /** Ringkasan total, terbayar, sisa, dan status pembayaran. */
-    public function ringkasanPembayaran($id)
-    {
-        $penghunian = Penghunian::with('penghuni')->find($id);
-        if (!$penghunian) {
-            return response()->json(['message' => 'Data penghunian tidak ditemukan.'], 404);
-        }
-
-        $total = (float) ($penghunian->total_sewa ?? 0);
-        $terbayar = (float) $penghunian->pembayaran()->sum('jumlah');
-        $sisa = max(0, $total - $terbayar);
-
-        return response()->json([
-            'message' => 'Ringkasan pembayaran berhasil diambil.',
-            'data' => [
-                'id_penghunian' => $penghunian->id_penghunian,
-                'nama_penyewa_utama' => optional($penghunian->penghuni)->nama_penghuni,
-                'skema_sewa' => $penghunian->skema_sewa,
-                'total_sewa' => $total,
-                'total_terbayar' => $terbayar,
-                'sisa_pembayaran' => $sisa,
-                'status_pembayaran' => $sisa <= 0 && $total > 0 ? 'lunas' : 'belum_lunas',
-                'tenggat_pelunasan' => $penghunian->tenggat_pelunasan,
-            ],
-        ], 200);
-    }
-
     // Menghitung DP minimum dan tenggat pelunasan.
     public function hitung(Request $request, $id)
     {
@@ -684,4 +538,22 @@ public function storeDenganPenghuni(Request $request)
             'data' => $penghunian,
         ], 200);
     }
+
+    // Menandai penghunian selesai dan memperbarui status kamar jika tidak ada penghuni aktif lain.
+    public function selesai($id)
+    {
+        $penghunian = Penghunian::with('kamar')->find($id);
+        if (!$penghunian) return response()->json(['message' => 'Data penghunian tidak ditemukan.'], 404);
+        DB::transaction(function () use ($penghunian) {
+            $penghunian->update(['status' => 'selesai', 'penyewa_utama' => false]);
+            $masihAktif = Penghunian::where('id_kamar', $penghunian->id_kamar)->where('status', 'aktif')->exists();
+            if (!$masihAktif && $penghunian->kamar) $penghunian->kamar->update(['status' => 'kosong']);
+            elseif ($masihAktif) {
+                $adaUtama = Penghunian::where('id_kamar', $penghunian->id_kamar)->where('status', 'aktif')->where('penyewa_utama', true)->exists();
+                if (!$adaUtama) Penghunian::where('id_kamar', $penghunian->id_kamar)->where('status', 'aktif')->orderBy('id_penghunian')->first()?->update(['penyewa_utama' => true]);
+            }
+        });
+        return response()->json(['message' => 'Penghunian berhasil diselesaikan.', 'data' => $penghunian->fresh()->load(['kamar', 'penghuni', 'pembayaran'])], 200);
+    }
+
 }

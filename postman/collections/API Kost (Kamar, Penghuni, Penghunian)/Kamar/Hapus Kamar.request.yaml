@@ -1,9 +1,0 @@
-$kind: http-request
-url: "{{base_url}}/kamar/24"
-method: DELETE
-headers:
-  Accept: application/json
-body:
-  type: json
-  content: ""
-order: 5000

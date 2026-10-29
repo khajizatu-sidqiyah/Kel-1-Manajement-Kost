@@ -1,66 +1,41 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\KosController;
 use App\Http\Controllers\KamarController;
 use App\Http\Controllers\PenghuniController;
 use App\Http\Controllers\PenghunianController;
-use App\Http\Controllers\PembayaranController;
 
-//API Login
-Route::post('/login', [AuthController::class, 'login']);
-// API Kamar
-Route::get('/kamar', [KamarController::class, 'index']);
-Route::post('/kamar', [KamarController::class, 'store']);
-Route::get('/kamar/{id}', [KamarController::class, 'show']); 
-Route::put('/kamar/{id}', [KamarController::class, 'update']);
-Route::delete('/kamar/{id}', [KamarController::class, 'destroy']);
+Route::middleware('api.contract')->group(function () {
+    Route::post('/login', [AuthController::class, 'loginApi']);
 
-// API Penghuni
-Route::get('/penghuni', [PenghuniController::class, 'index']);
-Route::post('/penghuni', [PenghuniController::class, 'store']);
-Route::get('/penghuni/{id}', [PenghuniController::class, 'show']);
-Route::put('/penghuni/{id}', [PenghuniController::class, 'update']);
-Route::delete('/penghuni/{id}', [PenghuniController::class, 'destroy']);
+    Route::middleware(['auth:sanctum', 'pemilik'])->group(function () {
+        Route::post('/logout', [AuthController::class, 'logoutApi']);
+        Route::get('/me', [AuthController::class, 'me']);
 
-// API Penghunian
-Route::get('/penghunian', [PenghunianController::class, 'index']);
-Route::post('/penghunian', [PenghunianController::class, 'store']);
-Route::get('/penghunian/{id}', [PenghunianController::class, 'show']);
-Route::put('/penghunian/{id}', [PenghunianController::class, 'update']);
-Route::put('/penghunian/{id}/penyewa-utama', [PenghunianController::class, 'setPenyewaUtama']);
-Route::post('/penghunian/{id}/dp', [PenghunianController::class, 'catatDp']);
-Route::post('/penghunian/dengan-penghuni',[PenghunianController::class, 'storeDenganPenghuni']);
-Route::post('/penghunian/{id}/pembayaran', [PenghunianController::class, 'catatPembayaran']);
-Route::get('/penghunian/{id}/pembayaran', [PenghunianController::class, 'riwayatPembayaran']);
-Route::get('/penghunian/{id}/ringkasan-pembayaran', [PenghunianController::class, 'ringkasanPembayaran']);
-    
-    // 1. Skenario: Menghitung DP Minimum & Tenggat (Bulanan & Tahunan)
-    // Serta menangani validasi (Tanggal masuk kosong, Harga kosong, Skema belum dipilih)
-    Route::post('/penghunian/{id}/hitung-dp', [PenghunianController::class, 'hitung']);
+        Route::get('/kamar', [KamarController::class, 'index']);
+        Route::post('/kamar', [KamarController::class, 'store']);
+        Route::get('/kamar/{id}', [KamarController::class, 'show'])->whereNumber('id');
+        Route::put('/kamar/{id}', [KamarController::class, 'update'])->whereNumber('id');
+        Route::delete('/kamar/{id}', [KamarController::class, 'destroy'])->whereNumber('id');
 
-    // 2. Skenario: Pemilik menyesuaikan tenggat pelunasan
-    Route::put('/penghunian/{id}/tenggat', [PenghunianController::class, 'ubahTenggat']);
+        Route::get('/penghuni', [PenghuniController::class, 'index']);
+        Route::post('/penghuni', [PenghuniController::class, 'store']);
+        Route::get('/penghuni/{id}', [PenghuniController::class, 'show'])->whereNumber('id');
+        Route::put('/penghuni/{id}', [PenghuniController::class, 'update'])->whereNumber('id');
+        Route::delete('/penghuni/{id}', [PenghuniController::class, 'destroy'])->whereNumber('id');
 
-    // 3. Skenario: Menghitung tenggat bulan berikutnya
-    Route::post('/penghunian/tenggat-berikutnya', [PenghunianController::class, 'tenggatBerikutnya']);
-    Route::put('/penghunian/{id}/selesai', [PenghunianController::class, 'selesai']); 
-// API Utama Pengujian (Dilindungi Middleware Pemilik & Sanctum)
-Route::middleware(['auth:sanctum', 'pemilik'])->group(function () {
-<<<<<<< HEAD
-    Route::post('/logout', [AuthController::class, 'logout']);
+        Route::get('/penghunian', [PenghunianController::class, 'index']);
+        Route::post('/penghunian', [PenghunianController::class, 'store']);
+        Route::post('/penghunian/dengan-penghuni', [PenghunianController::class, 'storeDenganPenghuni']);
+        Route::get('/penghunian/{id}', [PenghunianController::class, 'show'])->whereNumber('id');
+        Route::put('/penghunian/{id}', [PenghunianController::class, 'update'])->whereNumber('id');
+        Route::put('/penghunian/{id}/penyewa-utama', [PenghunianController::class, 'setPenyewaUtama'])->whereNumber('id');
+        Route::post('/penghunian/{id}/dp', [PenghunianController::class, 'catatDp'])->whereNumber('id');
+        Route::post('/penghunian/{id}/hitung-dp', [PenghunianController::class, 'hitung'])->whereNumber('id');
+        Route::put('/penghunian/{id}/tenggat', [PenghunianController::class, 'ubahTenggat'])->whereNumber('id');
+        Route::post('/penghunian/{id}/tenggat-berikutnya', [PenghunianController::class, 'tenggatBerikutnya'])->whereNumber('id');
+        Route::put('/penghunian/{id}/selesai', [PenghunianController::class, 'selesai'])->whereNumber('id');
+    });
 });
-=======
-});
-
-// API Pembayaran
-Route::middleware(['auth:sanctum', 'pemilik'])->group(function () {
-    Route::get('/pembayaran', [PembayaranController::class, 'index']);
-    Route::get('/pembayaran/{id}', [PembayaranController::class, 'show']);
-    Route::post('/pembayaran', [PembayaranController::class, 'store']);
-    Route::put('/pembayaran/{id}', [PembayaranController::class, 'update']);
-    Route::patch('/pembayaran/{id}/status', [
-        PembayaranController::class,
-        'updateStatus',
-    ]);
-});
->>>>>>> 4e4cd9b5b1f582e8975c0c32e08386fb49a762ed

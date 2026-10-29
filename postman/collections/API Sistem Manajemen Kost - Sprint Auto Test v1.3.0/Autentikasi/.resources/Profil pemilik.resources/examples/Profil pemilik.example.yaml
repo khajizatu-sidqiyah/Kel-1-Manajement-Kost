@@ -1,0 +1,30 @@
+$kind: http-example
+request:
+  url: "{{base_url}}/me"
+  method: GET
+  headers:
+    Accept: application/json
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Host: 127.0.0.1:8000
+    Connection: close
+    X-Powered-By: PHP/8.2.12
+    Cache-Control: no-cache, private
+    Date: Thu, 29 Oct 2026 02:12:39 GMT
+    Content-Type: application/json; charset=utf-8
+    Access-Control-Allow-Origin: "*"
+  body:
+    type: json
+    content: |-
+      {
+        "message": "",
+        "data": {
+          "id": 1,
+          "name": "Pemilik Kost",
+          "email": "pemilik@gmail.com",
+          "role": "pemilik"
+        }
+      }
+order: 1000

@@ -1,0 +1,53 @@
+$kind: http-request
+description: Kontrak target. Route dilindungi Sanctum, tetapi respons aktual harus diuji.
+url: "{{base_url}}/logout"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+body:
+  type: json
+  content: "{}"
+auth:
+  type: bearer
+  credentials:
+    token: "{{token}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("HTTP status sesuai kontrak (200)", function () {
+          pm.expect(pm.response.code).to.eql(200);
+      });
+      pm.test("Content-Type JSON", function () {
+          pm.expect(pm.response.headers.get("Content-Type") || "").to.include("application/json");
+      });
+      let body;
+      pm.test("Response berupa JSON valid", function () {
+          body = pm.response.json();
+          pm.expect(body).to.be.an("object");
+      });
+      if (pm.response.code >= 200 && pm.response.code < 300) {
+          pm.test("Success response mengikuti kontrak: message dan data", function () {
+              body = pm.response.json();
+              pm.expect(body).to.have.property("message");
+              pm.expect(body.message).to.be.a("string");
+              pm.expect(body).to.have.property("data");
+              pm.expect(body).not.to.have.property("success");
+          });
+      } else if (pm.response.code >= 400) {
+          pm.test("Error response mengikuti kontrak: message dan error", function () {
+              body = pm.response.json();
+              pm.expect(body).to.have.property("message");
+              pm.expect(body).to.have.property("error");
+              pm.expect(body.error).to.be.an("object");
+              pm.expect(body.error).to.have.property("code");
+              pm.expect(body.error).to.have.property("message");
+              pm.expect(body.error).to.have.property("status");
+              pm.expect(body.error).to.have.property("details");
+              pm.expect(body).not.to.have.property("errors");
+              pm.expect(body).not.to.have.property("success");
+          });
+      }
+    language: text/javascript
+examples: .resources/Logout pemilik.resources/examples
+order: 3000
