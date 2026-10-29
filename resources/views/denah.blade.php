@@ -9,7 +9,7 @@
         <span class="tile"><svg class="i"><use href="#i-grid"/></svg></span>
         <div class="page-head-text">
             <h1>Denah &amp; Status Kamar</h1>
-            <p>Kost Griya Harmoni &bull;</p>
+            <p>Pantau tata letak denah dan status ketersediaan seluruh kamar kost.</p>
         </div>
         <div class="page-head-actions">
             <button type="button" class="btn-main" id="btn-add-room"><svg class="i i-sm"><use href="#i-plus"/></svg>Tambah Kamar</button>

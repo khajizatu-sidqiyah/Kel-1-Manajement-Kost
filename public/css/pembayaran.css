@@ -73,7 +73,8 @@
 @media (min-width: 1280px) { .pb-table .th-no, .pb-table td.no { padding-left: 56px; } }
 .pb-table th.th-aksi { padding-right: 20px; text-align: right; }
 @media (min-width: 1280px) { .pb-table th.th-aksi { padding-right: 56px; } }
-.pb-table td.no { color: var(--pb-s500); }
+.pb-table td.no { font-family: "Plus Jakarta Sans", "Inter", system-ui, sans-serif; font-weight: 600; color: var(--pb-ink-2); }
+.pb-table .th-no { font-family: "Plus Jakarta Sans", "Inter", system-ui, sans-serif; }
 .pb-table td.nama { font-weight: 700; }
 .pb-table td.kamar b { display: block; font-weight: 600; }
 .pb-table td.kamar small { display: block; margin-top: 2px; font-size: 11px; color: var(--pb-s300); }
