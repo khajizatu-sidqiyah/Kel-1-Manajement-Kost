@@ -1,11 +1,15 @@
 <?php
 
-namespace App\Models;
+namespace app\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Penghunian;
 
 class Pembayaran extends Model
 {
+    use HasFactory;
+
     protected $table = 'pembayaran';
 
     protected $primaryKey = 'id_pembayaran';
@@ -25,6 +29,10 @@ class Pembayaran extends Model
         'jumlah' => 'decimal:2',
     ];
 
+    /**
+     * Relasi ke data penghunian.
+     * Satu pembayaran dimiliki oleh satu data penghunian.
+     */
     public function penghunian()
     {
         return $this->belongsTo(
@@ -32,5 +40,21 @@ class Pembayaran extends Model
             'id_penghunian',
             'id_penghunian'
         );
+    }
+
+    /**
+     * Scope untuk mengambil pembayaran yang sudah terverifikasi.
+     */
+    public function scopeTerverifikasi($query)
+    {
+        return $query->where('status', 'terverifikasi');
+    }
+
+    /**
+     * Scope untuk mengambil pembayaran yang masih menunggu verifikasi.
+     */
+    public function scopeMenungguVerifikasi($query)
+    {
+        return $query->where('status', 'menunggu_verifikasi');
     }
 }

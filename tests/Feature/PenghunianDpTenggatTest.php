@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Feature;
+namespace tests\Feature;
 
 use App\Models\PengaturanSewa;
 use App\Models\Penghunian;
@@ -12,6 +12,9 @@ class PenghunianDpTenggatTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * Membuat data penghunian untuk kebutuhan pengujian.
+     */
     private function buatPenghunian(
         ?string $tanggalMulai = '2026-01-31',
         float $harga = 750000
@@ -66,6 +69,9 @@ class PenghunianDpTenggatTest extends TestCase
         ]);
     }
 
+    /**
+     * Helper untuk menjalankan perhitungan DP.
+     */
     private function hitung(int $id, string $skema)
     {
         return $this->withoutMiddleware()
@@ -129,6 +135,7 @@ class PenghunianDpTenggatTest extends TestCase
         $id = $this->buatPenghunian('2026-01-31');
 
         $penghunian = Penghunian::findOrFail($id);
+
         $penghunian->update([
             'skema_sewa' => 'bulanan',
             'tenggat_pelunasan' => '2026-01-31',
@@ -145,6 +152,7 @@ class PenghunianDpTenggatTest extends TestCase
         $id = $this->buatPenghunian('2026-01-15');
 
         $penghunian = Penghunian::findOrFail($id);
+
         $penghunian->update([
             'skema_sewa' => 'tahunan',
             'tenggat_pelunasan' => '2026-04-15',
@@ -163,6 +171,7 @@ class PenghunianDpTenggatTest extends TestCase
         $id = $this->buatPenghunian('2026-04-15');
 
         $penghunian = Penghunian::findOrFail($id);
+
         $penghunian->update([
             'skema_sewa' => 'tahunan',
         ]);
@@ -178,38 +187,37 @@ class PenghunianDpTenggatTest extends TestCase
             );
     }
 
+    public function test_harga_kamar_nol_ditolak_saat_menghitung_dp(): void
+    {
+        $id = $this->buatPenghunian('2026-01-15', 0);
 
-public function test_harga_kamar_nol_ditolak_saat_menghitung_dp(): void
-{
-    $id = $this->buatPenghunian('2026-01-15', 0);
+        $this->hitung($id, 'bulanan')
+            ->assertUnprocessable()
+            ->assertJsonPath(
+                'message',
+                'Harga sewa kamar belum diisi'
+            );
+    }
 
-    $this->hitung($id, 'bulanan')
-        ->assertUnprocessable()
-        ->assertJsonPath(
-            'message',
-            'Harga sewa kamar belum diisi'
-        );
-}
+    public function test_tenggat_bulanan_akhir_februari_tahun_kabisat(): void
+    {
+        $id = $this->buatPenghunian('2028-01-31');
 
-public function test_tenggat_bulanan_akhir_februari_tahun_kabisat(): void
-{
-    $id = $this->buatPenghunian('2028-01-31');
+        $penghunian = Penghunian::findOrFail($id);
 
-    $penghunian = Penghunian::findOrFail($id);
-    $penghunian->update([
-        'skema_sewa' => 'bulanan',
-        'tenggat_pelunasan' => '2028-01-31',
-    ]);
+        $penghunian->update([
+            'skema_sewa' => 'bulanan',
+            'tenggat_pelunasan' => '2028-01-31',
+        ]);
 
-    $this->withoutMiddleware()
-        ->putJson("/penghunian/{$id}/tenggat-berikutnya")
-        ->assertOk()
-        ->assertJsonPath(
-            'tenggat_berikutnya',
-            '2028-02-29'
-        );
-}
-
+        $this->withoutMiddleware()
+            ->putJson("/penghunian/{$id}/tenggat-berikutnya")
+            ->assertOk()
+            ->assertJsonPath(
+                'tenggat_berikutnya',
+                '2028-02-29'
+            );
+    }
 
     public function test_skema_sewa_yang_tidak_valid_ditolak(): void
     {
@@ -237,6 +245,7 @@ public function test_tenggat_bulanan_akhir_februari_tahun_kabisat(): void
         $id = $this->buatPenghunian(null);
 
         $penghunian = Penghunian::findOrFail($id);
+
         $penghunian->update([
             'skema_sewa' => 'tahunan',
         ]);
@@ -264,5 +273,4 @@ public function test_tenggat_bulanan_akhir_februari_tahun_kabisat(): void
             ->assertOk()
             ->assertJsonPath('tenggat_pelunasan', '2026-04-30');
     }
-
 }

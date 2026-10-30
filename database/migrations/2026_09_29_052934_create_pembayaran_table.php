@@ -18,11 +18,14 @@ return new class extends Migration
                 ->constrained('penghunian', 'id_penghunian')
                 ->cascadeOnDelete();
 
+            $table->string('jenis_pembayaran', 20); // dp, cicilan, pelunasan
             $table->date('tanggal_bayar');
             $table->decimal('jumlah', 12, 2);
             $table->string('metode_pembayaran', 30);
             $table->string('bukti_pembayaran')->nullable();
-            $table->string('status', 20)->default('DP');
+            
+            // Default status disesuaikan dengan logika controller
+            $table->string('status', 20)->default('menunggu_verifikasi'); 
             
             $table->timestamps();
         });

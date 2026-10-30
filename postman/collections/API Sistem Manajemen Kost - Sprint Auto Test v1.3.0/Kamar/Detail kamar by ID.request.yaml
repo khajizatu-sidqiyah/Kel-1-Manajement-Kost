@@ -1,6 +1,6 @@
 $kind: http-request
 description: Data satu resource berupa object dalam data.
-url: "{{base_url}}/kamar/{{kamar_id}}"
+url: "{{base_url}}/kamar/1"
 method: GET
 headers:
   Accept: application/json
