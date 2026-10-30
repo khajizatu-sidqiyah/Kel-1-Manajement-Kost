@@ -41,14 +41,11 @@ const mockMode = () => new URLSearchParams(location.search).get("mock");
 const fmtNo = (no) => (/^\d+$/.test(String(no)) ? String(no).padStart(2, "0") : String(no));
 
 // Pembagian lantai sesuai denah: Lantai 1 = kamar 01-09 + 21 (10 kamar), Lantai 2 = kamar 10-20 + 22, 23 (13 kamar).
-// Dipakai sementara selama BE belum menyimpan kolom `lantai`.
 const lantaiDariNomor = (no) => { const n = Number(no); return n >= 1 && n <= 9 || n === 21 ? 1 : 2; };
 
-// Ubah satu baris dari BE (id_kamar, no_kamar, tipe_kamar, harga, status, id_kost, ...) ke bentuk yang dipakai tampilan.
-// BE belum punya kolom lantai & fasilitas -> lantai diturunkan dari nomor kamar (lihat lantaiDariNomor).
+// Ubah satu baris dari BE ke bentuk yang dipakai tampilan.
 function normalizeRoom(k) {
   const no = String(k.no_kamar ?? "");
-  // Penghuni aktif dari tabel penghunian (relasi penghunian_aktif.penghuni di BE). Boleh lebih dari satu orang.
   const aktif = Array.isArray(k.penghunian_aktif) ? k.penghunian_aktif : [];
   const nama = aktif.map((p) => p.penghuni?.nama_penghuni).filter(Boolean);
   const mulai = aktif.map((p) => String(p.tanggal_mulai || "").slice(0, 10)).filter(Boolean).sort()[0];
@@ -59,11 +56,11 @@ function normalizeRoom(k) {
     lantai: Number(k.lantai) || lantaiDariNomor(no),
     tipe_kamar: k.tipe_kamar || "",
     fasilitas: k.fasilitas || "",
-    harga: Number(k.harga) || 0, // BE mengirim decimal sebagai string, mis. "750000.00"
-    status: String(k.status).toLowerCase() === "terisi" ? "terisi" : "kosong", // seeder BE memakai "Kosong"
+    harga: Number(k.harga) || 0,
+    status: String(k.status).toLowerCase() === "terisi" ? "terisi" : "kosong",
     penghuni: nama.length ? nama.join(", ") : k.penghuni,
     penghuni_list: nama,
-    mulai, // tanggal mulai hunian paling awal (YYYY-MM-DD)
+    mulai,
     jatuh_tempo: k.jatuh_tempo, mendesak: !!k.mendesak, catatan: k.catatan,
   };
 }
@@ -71,7 +68,7 @@ function normalizeRoom(k) {
 const BULAN = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
 const fmtTanggal = (iso) => { const [y, m, d] = String(iso).slice(0, 10).split("-"); return d && BULAN[m - 1] ? `${d} ${BULAN[m - 1]} ${y}` : "-"; };
 
-// Satu-satunya tempat yang memanggil server (GET /api/kamar).
+// Mengambil data kamar dari server dengan menyertakan token autentikasi.
 async function loadRooms() {
   const mode = mockMode();
   if (mode === "error") throw new Error("mock error");
@@ -81,7 +78,7 @@ async function loadRooms() {
       ({ no_kamar: no, lantai, tipe_kamar: tipe, fasilitas: fas, harga, status, penghuni, jatuh_tempo: tempo, mendesak: !!urgent, catatan: note }));
   }
 
-  // Ambil token yang tersimpan saat login (sesuaikan key-nya dengan kode login Anda, misal 'token' atau 'auth_token')
+  // Ambil token dari localStorage
   const token = localStorage.getItem('token') || '';
 
   const res = await fetch(API_URL, { 
@@ -98,8 +95,7 @@ async function loadRooms() {
   return rows.map(normalizeRoom);
 }
 
-// Simpan kamar: POST /api/kamar (tambah) atau PUT /api/kamar/{id_kamar} (ubah).
-// `old` = kamar lama saat mode ubah, `null` saat mode tambah. Mengembalikan data kamar terbaru.
+// Simpan kamar: POST /api/kamar atau PUT /api/kamar/{id_kamar} dengan menyertakan token.
 async function saveRoom(payload, old) {
   if (mockMode() === "saveerror") throw new Error("mock save error");
   if (USE_MOCK) {
@@ -109,23 +105,31 @@ async function saveRoom(payload, old) {
       jatuh_tempo: busy ? (old?.jatuh_tempo || "-") : undefined,
       mendesak: busy ? !!old?.mendesak : false, catatan: busy ? old?.catatan : undefined };
   }
-  // lantai & fasilitas ikut dikirim; BE yang sekarang mengabaikannya (belum ada kolomnya).
+
+  // Ambil token dari localStorage
+  const token = localStorage.getItem('token') || '';
+
   const body = { ...payload, id_kost: old?.id_kost ?? kostId };
   const res = await fetch(old ? `${API_URL}/${old.id}` : API_URL, {
     method: old ? "PUT" : "POST",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    headers: { 
+      "Content-Type": "application/json", 
+      Accept: "application/json",
+      "Authorization": `Bearer ${token}` // Menyertakan token agar proses simpan tidak 401 Unauthorized
+    },
     body: JSON.stringify(body),
   });
+  
   const json = await res.json().catch(() => ({}));
   if (!res.ok) {
     const err = new Error("HTTP " + res.status);
     const first = json.errors && Object.values(json.errors)[0];
-    err.userMessage = (Array.isArray(first) ? first[0] : first) || json.message; // pesan validasi dari Laravel (422)
+    err.userMessage = (Array.isArray(first) ? first[0] : first) || json.message;
     throw err;
   }
   const saved = normalizeRoom({ ...body, ...json.data });
-  const busy = saved.status === "terisi"; // dikosongkan -> penghuni diarsipkan oleh BE, kartu tidak lagi menampilkannya
-  return { ...saved, lantai: payload.lantai, fasilitas: payload.fasilitas, // ditampilkan sesuai isian form
+  const busy = saved.status === "terisi";
+  return { ...saved, lantai: payload.lantai, fasilitas: payload.fasilitas,
     penghuni: busy ? (saved.penghuni || old?.penghuni) : undefined,
     penghuni_list: busy ? (saved.penghuni_list.length ? saved.penghuni_list : old?.penghuni_list || []) : [],
     mulai: busy ? (saved.mulai || old?.mulai) : undefined,
@@ -139,7 +143,7 @@ const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 const rp = (n) => "Rp " + Number(n).toLocaleString("id-ID") + "/bln";
 const icon = (id, cls = "i i-sm") => `<svg class="${cls}"><use href="#i-${id}"/></svg>`;
 
-// Empat kartu ringkasan (dipakai Dashboard & Denah)
+// Empat kartu ringkasan
 function renderStats(rooms) {
   const total = rooms.length, busy = rooms.filter((r) => r.status === "terisi").length, free = total - busy;
   const pct = total ? Math.round((busy / total) * 100) : 0, floors = new Set(rooms.map((r) => r.lantai)).size;
@@ -149,9 +153,9 @@ function renderStats(rooms) {
     <div class="card stat stat--red"><div><small>Kamar Terisi</small><div class="stat-num"><b>${busy}</b><small class="tag tag--red">TERISI</small></div><p>Penghuni aktif terdaftar</p></div><span class="stat-ico">${icon("door", "i")}</span></div>
     <div class="card stat stat--green"><div><small>Kamar Kosong</small><div class="stat-num"><b>${free}</b><small class="tag tag--green">KOSONG</small></div><p>Siap huni / Disewa</p></div><span class="stat-ico">${icon("door", "i")}</span></div>
     <div class="card stat"><div style="flex:1"><small>Tingkat Okupansi</small><div class="stat-num"><b>${pct}%</b><span>${busy} / ${total} Kamar</span></div><div class="bar"><i style="width:${pct}%"></i></div></div>
-      <div class="ring"><svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="20" fill="none" stroke="#e2e8f0" stroke-width="5"/><circle cx="24" cy="24" r="20" fill="none" stroke="#047857" stroke-width="5" stroke-linecap="round" stroke-dasharray="${(C * pct) / 100} ${C}"/></svg><span>${busy}/${total}</span></div></div>`);
+    <div class="ring"><svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="20" fill="none" stroke="#e2e8f0" stroke-width="5"/><circle cx="24" cy="24" r="20" fill="none" stroke="#047857" stroke-width="5" stroke-linecap="round" stroke-dasharray="${(C * pct) / 100} ${C}"/></svg><span>${busy}/${total}</span></div></div>`);
   if ($("chip-km")) {
-    $("chip-km").hidden = !rooms.some((r) => r.fasilitas); // BE belum menyimpan fasilitas -> chip disembunyikan
+    $("chip-km").hidden = !rooms.some((r) => r.fasilitas);
     $("chip-km").lastChild.textContent = `KM Dalam (${rooms.filter((r) => !/KM Luar/i.test(r.fasilitas)).length})`;
   }
 }

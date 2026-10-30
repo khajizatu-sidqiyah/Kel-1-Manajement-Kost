@@ -127,8 +127,8 @@ body.app { background: var(--pg-bg); }
 .pg-table thead th:last-child  { border-top-right-radius: 16px; }
 .pg-table tbody td { height: 81px; padding: 0 0 0 7px; border-top: 1px solid var(--pg-line-soft); vertical-align: middle; overflow-wrap: anywhere; }
 .pg-table .ta-c { text-align: center; padding-left: 0; }
-.pg-table td.no { font-weight: 700; padding-left: 32px; padding-right: 0; text-align: center; }
-.pg-table thead th.no { padding-left: 32px; padding-right: 0; text-align: center; }
+.pg-table td.no { font-family: "Plus Jakarta Sans", "Inter", system-ui, sans-serif; font-weight: 600; color: var(--pg-ink-2); padding-left: 32px; padding-right: 0; text-align: center; }
+.pg-table thead th.no { font-family: "Plus Jakarta Sans", "Inter", system-ui, sans-serif; padding-left: 32px; padding-right: 0; text-align: center; }
 .pg-table td.aksi-td, .pg-table thead th.aksi-td { padding-right: 40px; text-align: center; }
 .pg-table td.nama { font-weight: 700; }
 .pg-table td.kamar b { display: block; width: auto; font-weight: 600; line-height: 1.25; }

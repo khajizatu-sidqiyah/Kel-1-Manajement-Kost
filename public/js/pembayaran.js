@@ -7,12 +7,15 @@
 //   GET   /api/pengaturan-sewa            -> DP minimum tahunan
 //   PUT   /api/penghunian/{id}/tenggat    -> ubah tenggat pelunasan                              (SUDAH ADA)
 //   POST  /api/pembayaran                 -> pelunasan bulan pertama / tagihan bulanan / cicilan / pelunasan
-//   PATCH /api/pembayaran/{id}/status     -> konfirmasi pembayaran {status:"lunas"}              (BELUM ADA - ada di kontrak OpenAPI)
+//   PATCH /api/pembayaran/{id}/status     -> konfirmasi pembayaran {status:"terverifikasi"}
+// Semua request API membawa token Bearer dari localStorage (disimpan login.js), karena route API memakai auth:sanctum.
 //
 // "Tagihan" belum punya tabel/endpoint sendiri, jadi daftar tagihan DIHITUNG di sini dari data penghunian + pembayaran.
 // Ganti fungsi hitungTagihan() bila backend sudah menyediakan GET /api/tagihan.
 (function () {
   "use strict";
+
+  const AUTH = { Authorization: `Bearer ${localStorage.getItem("token") || ""}` };
 
   const PER_PAGE = 5; // desain: "Menampilkan 1–5 dari 12 tagihan"
   const state = { rows: [], tab: "tagihan", page: 1, loading: true, error: "", view: [], dpTahunan: 300000 };
@@ -58,7 +61,7 @@
   // Pemanggil API: menerjemahkan galat jaringan / server menjadi pesan yang bisa dibaca pemilik kos
   async function kirim(url, method, body) {
     const isForm = body instanceof FormData;
-    const opts = { method, headers: { Accept: "application/json" } };
+    const opts = { method, headers: { Accept: "application/json", ...AUTH } };
     if (body !== undefined) { opts.body = isForm ? body : JSON.stringify(body); if (!isForm) opts.headers["Content-Type"] = "application/json"; }
     let res;
     try { res = await fetch(url, opts); }
@@ -113,7 +116,8 @@
   }
 
   async function muatData() {
-    const res = await fetch("/api/penghunian", { headers: { Accept: "application/json" } });
+    const res = await fetch("/api/penghunian", { headers: { Accept: "application/json", ...AUTH } });
+    if (res.status === 401) { localStorage.removeItem("token"); location.href = "/login"; return []; }
     if (!res.ok) throw new Error("HTTP " + res.status);
     const data = (await res.json()).data;
     if (!Array.isArray(data)) throw new Error("Format data tidak dikenali");
@@ -506,7 +510,7 @@
     const id = it.tipe === "tagihan" ? it.pendingId : it.pay?.id;
     if (!id) return toast("Data pembayaran yang menunggu konfirmasi tidak ditemukan.", true);
     if (!confirm("Konfirmasi pembayaran ini sebagai lunas?")) return;
-    try { await kirim(`/api/pembayaran/${id}/status`, "PATCH", { status: "lunas" }); toast("Pembayaran dikonfirmasi."); refresh(); }
+    try { await kirim(`/api/pembayaran/${id}/status`, "PATCH", { status: "terverifikasi" }); toast("Pembayaran dikonfirmasi."); refresh(); }
     catch (e) { toast(e.userMessage || "Gagal mengonfirmasi pembayaran.", true); }
   }
 
@@ -601,6 +605,6 @@
     bukaForm({ kamarId: k.id });
   }
 
-  fetch("/api/pengaturan-sewa", { headers: { Accept: "application/json" } }).then((r) => r.json()).then((j) => { const n = num(j.data?.dp_minimum_tahunan); if (n) state.dpTahunan = n; }).catch(() => {});
+  fetch("/api/pengaturan-sewa", { headers: { Accept: "application/json", ...AUTH } }).then((r) => r.json()).then((j) => { const n = num(j.data?.dp_minimum_tahunan); if (n) state.dpTahunan = n; }).catch(() => {});
   refresh().then(dariParameter);
 })();

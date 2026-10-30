@@ -6,7 +6,8 @@
 //   GET   /api/kamar                    -> lewat loadRooms() di rooms-api.js skrng menjadi kamar-api
 //   POST  /api/penghuni                 -> buat penghuni baru
 //   POST  /api/penghunian               -> catat penghuni menempati kamar
-//   PATCH /api/penghunian/{id}/selesai  -> akhiri penghunian (RANCANGAN: belum ada di routes/api.php)
+//   PUT   /api/penghunian/{id}/selesai  -> akhiri penghunian
+// Semua request API membawa token Bearer dari localStorage (disimpan login.js), karena route API memakai auth:sanctum.
 (function () {
   "use strict";
 
@@ -17,7 +18,8 @@
   const $ = (id) => document.getElementById(id);
   const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const ic = (name, cls = "i") => `<svg class="${cls}"><use href="#i-${name}"/></svg>`;
-  const JSON_HEADERS = { Accept: "application/json", "Content-Type": "application/json" };
+  const AUTH = { Authorization: `Bearer ${localStorage.getItem("token") || ""}` };
+  const JSON_HEADERS = { Accept: "application/json", "Content-Type": "application/json", ...AUTH };
 
   // "2026-11-05" -> "5 Nov 2026" (tanpa nol di depan, sesuai desain)
   const BLN = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
@@ -52,7 +54,8 @@
   }
 
   async function loadPenghunian() {
-    const res = await fetch("/api/penghunian", { headers: { Accept: "application/json" } });
+    const res = await fetch("/api/penghunian", { headers: { Accept: "application/json", ...AUTH } });
+    if (res.status === 401) { localStorage.removeItem("token"); location.href = "/login"; return []; }
     if (!res.ok) throw new Error("HTTP " + res.status);
     const rows = (await res.json()).data;
     if (!Array.isArray(rows)) throw new Error("Format data tidak dikenali");
@@ -183,7 +186,7 @@
   async function akhiri(id) {
     if (!confirm("Akhiri penghunian penyewa ini? Penyewa akan masuk ke Arsip.")) return;
     try {
-      const res = await fetch(`/api/penghunian/${id}/selesai`, { method: "PATCH", headers: JSON_HEADERS });
+      const res = await fetch(`/api/penghunian/${id}/selesai`, { method: "PUT", headers: JSON_HEADERS });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json.message || "HTTP " + res.status);
       toast("Penghunian berhasil diakhiri."); refresh();
