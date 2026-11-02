@@ -1,0 +1,94 @@
+$kind: http-request
+url: "{{base_url}}/penghunian/58/hitung-dp"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer 1|SGm785QgdMEnT3KPMYjM3R23IeYcfKBcRVclSGqG947e0637
+body:
+  type: json
+  content: "{\r
+
+    \    \"id_kamar\": 1,\r
+
+    \    \"id_penghuni\": 32,\r
+
+    \    \"tanggal_mulai\": null,\r
+
+    \    \"skema_sewa\": \"bulanan\",\r
+
+    \    \"harga\": 600000,\r
+
+    \    \"dp_minimum\": 300000\r
+
+    }"
+scripts:
+  - type: afterResponse
+    code: "pm.test(\"Respons menggunakan JSON\", function () {\r
+
+      \    pm.response.to.be.json;\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Status HTTP 200\", function () {\r
+
+      \    pm.response.to.have.status(200);\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Pesan tanggal masuk belum tersedia\", function () {\r
+
+      \    const body = pm.response.json();\r
+
+      \    pm.expect(body.message)\r
+
+      \        .to.eql(\"Perhitungan sewa berhasil disimpan. Isi tanggal masuk untuk menentukan tenggat.\");\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Skema sewa bulanan tersimpan\", function () {\r
+
+      \    const body = pm.response.json();\r
+
+      \    pm.expect(body.data.skema_sewa).to.eql(\"bulanan\");\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Total sewa bulanan benar\", function () {\r
+
+      \    const body = pm.response.json();\r
+
+      \    pm.expect(Number(body.data.total_sewa)).to.eql(600000);\r
+
+      });\r
+
+      \r
+
+      pm.test(\"DP minimum bulanan benar\", function () {\r
+
+      \    const body = pm.response.json();\r
+
+      \    pm.expect(Number(body.data.dp_minimum)).to.eql(300000);\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Tenggat pelunasan bernilai null\", function () {\r
+
+      \    const body = pm.response.json();\r
+
+      \    pm.expect(body.data.tenggat_pelunasan).to.eql(null);\r
+
+      });"
+    language: text/javascript
+examples: .resources/200 Tanggal masuk kosong.resources/examples
+order: 4000

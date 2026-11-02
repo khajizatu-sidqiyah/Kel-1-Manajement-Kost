@@ -1,0 +1,10 @@
+$kind: http-request
+name: 405 Hitung DP Tahunan
+url: "{{base_url}}/penghunian/59/hitung-dp"
+method: GET
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer 1|SGm785QgdMEnT3KPMYjM3R23IeYcfKBcRVclSGqG947e0637
+examples: .resources/405 Hitung DP Tahunan-1.resources/examples
+order: 3000
