@@ -1,0 +1,94 @@
+$kind: http-request
+url: "{{base_url}}/penghunian/59/hitung-dp"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer 1|SGm785QgdMEnT3KPMYjM3R23IeYcfKBcRVclSGqG947e0637
+body:
+  type: json
+  content: "{\r
+
+    \    \"id_kamar\": 3,\r
+
+    \    \"id_penghuni\": 30,\r
+
+    \    \"tanggal_mulai\": \"2026-11-01\",\r
+
+    \    \"skema_sewa\": \"tahunan\",\r
+
+    \    \"harga\": 5000000,\r
+
+    \    \"dp_minimum\": 300000\r
+
+    }"
+scripts:
+  - type: afterResponse
+    code: "pm.test(\"Respons menggunakan JSON\", function () {\r
+
+      \    pm.response.to.be.json;\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Status HTTP 200\", function () {\r
+
+      \    pm.response.to.have.status(200);\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Perhitungan sewa berhasil\", function () {\r
+
+      \    const body = pm.response.json();\r
+
+      \    pm.expect(body.data).to.exist;\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Skema sewa adalah tahunan\", function () {\r
+
+      \    const body = pm.response.json();\r
+
+      \    pm.expect(body.data.skema_sewa).to.eql(\"tahunan\");\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Total sewa tahunan sebesar Rp5.000.000\", function () {\r
+
+      \    const body = pm.response.json();\r
+
+      \    pm.expect(Number(body.data.total_sewa)).to.eql(5000000);\r
+
+      });\r
+
+      \r
+
+      pm.test(\"DP minimum sebesar Rp300.000\", function () {\r
+
+      \    const body = pm.response.json();\r
+
+      \    pm.expect(Number(body.data.dp_minimum)).to.eql(300000);\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Tenggat pelunasan dua bulan setelah tanggal masuk\", function () {\r
+
+      \    const body = pm.response.json();\r
+
+      \    pm.expect(body.data.tenggat_pelunasan.substring(0, 10))\r
+
+      \        .to.eql(\"2027-01-05\");\r
+
+      });"
+    language: text/javascript
+examples: .resources/200 Hitung DP Tahunan.resources/examples
+order: 1000

@@ -1,0 +1,53 @@
+$kind: http-request
+url: "{{base_url}}/penghunian/58/hitung-dp"
+method: GET
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer 1|SGm785QgdMEnT3KPMYjM3R23IeYcfKBcRVclSGqG947e0637
+scripts:
+  - type: afterResponse
+    code: "pm.test(\"Respons menggunakan JSON\", function () {\r
+
+      \    pm.response.to.be.json;\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Status HTTP 405\", function () {\r
+
+      \    pm.response.to.have.status(405);\r
+
+      });\r
+
+      \r
+
+      pm.test(\"GET tidak didukung\", function () {\r
+
+      \    const body = pm.response.json();\r
+
+      \    pm.expect(body.message).to.include(\r
+
+      \        \"GET method is not supported\"\r
+
+      \    );\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Endpoint hanya mendukung POST\", function () {\r
+
+      \    const body = pm.response.json();\r
+
+      \    pm.expect(body.message).to.include(\r
+
+      \        \"Supported methods: POST\"\r
+
+      \    );\r
+
+      });"
+    language: text/javascript
+examples: .resources/405 Skema sewa kosong.resources/examples
+order: 8000
