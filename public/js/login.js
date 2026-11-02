@@ -43,53 +43,51 @@ if (new URLSearchParams(location.search).get("state") === "error") {
   showLoginError();
 }
 
-// ---------- INTEGRASI LOGIN API & PENYIMPANAN TOKEN KE LOCAL STORAGE ----------
+// ---------- LOGIN: token API (localStorage) + sesi web (untuk middleware auth) ----------
 const loginForm = $("login-form");
 if (loginForm) {
   loginForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    
-    const email = $("email").value;
-    const password = $("password").value;
     const role = login.dataset.role || "pemilik";
-    
-    // Sesuaikan endpoint dengan fungsi loginApi di Controller Anda
-    const endpoint = role === "penghuni" ? "/api/login/penghuni" : "/api/login";
+
+    // Penghuni: belum ada endpoint /api/login/penghuni,
+    // jadi biarkan form submit biasa ke route web (pakai sesi).
+    if (role === "penghuni") return;
+
+    e.preventDefault();
+    const btnSubmit = $("btn-submit");
+    btnSubmit.disabled = true; // Cegah klik ganda
 
     try {
-      const btnSubmit = $("btn-submit");
-      btnSubmit.disabled = true; // Cegah klik ganda
-
-      const res = await fetch(endpoint, {
+      const res = await fetch("/api/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Accept": "application/json"
         },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email: $("email").value, password: $("password").value })
       });
 
       const data = await res.json().catch(() => ({}));
 
-      // Sesuai format JSON dari loginApi Anda: data.data.token
       if (res.ok && data.data && data.data.token) {
-        // SIMPAN TOKEN KE LOCAL STORAGE AGAR TIDAK 401 UNAUTHORIZED
+        // 1) Simpan token untuk panggilan API dari halaman (pembayaran.js, dll.)
         localStorage.setItem("token", data.data.token);
 
-        // Arahkan ke halaman dashboard setelah sukses
-        window.location.href = "/dashboard";
+        // 2) Buat sesi lewat route web POST /login. Server akan redirect ke /dashboard.
+        //    form.submit() tidak memicu event "submit" lagi, jadi tidak looping.
+        loginForm.submit();
       } else {
         btnSubmit.disabled = false;
         let errorMsg = "Email atau kata sandi tidak sesuai.";
         if (data.error && data.error.message) {
-            errorMsg = data.error.message;
+          errorMsg = data.error.message;
         } else if (data.message) {
-            errorMsg = data.message;
+          errorMsg = data.message;
         }
         showLoginError({ message: errorMsg });
       }
     } catch (err) {
-      $("btn-submit").disabled = false;
+      btnSubmit.disabled = false;
       showLoginError({ message: "Terjadi kesalahan pada koneksi server." });
     }
   });

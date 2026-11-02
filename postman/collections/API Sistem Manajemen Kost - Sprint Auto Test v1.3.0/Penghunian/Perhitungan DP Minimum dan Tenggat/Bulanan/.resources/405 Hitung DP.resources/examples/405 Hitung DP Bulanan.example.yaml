@@ -1,0 +1,49 @@
+$kind: http-example
+request:
+  url: http://127.0.0.1:8000/api/penghunian/58/hitung-dp
+  method: PUT
+  headers:
+    Accept: application/json
+    Content-Type: application/json
+    Authorization: Bearer 1|SGm785QgdMEnT3KPMYjM3R23IeYcfKBcRVclSGqG947e0637
+  body:
+    type: json
+    content: "{\r
+
+      \    \"id_kamar\": 1,\r
+
+      \    \"id_penghuni\": 32,\r
+
+      \    \"tanggal_mulai\": \"2026-11-05\",\r
+
+      \    \"skema_sewa\": \"bulanan\",\r
+
+      \    \"harga\": 600000,\r
+
+      \    \"dp_minimum\": 300000\r
+
+      }"
+response:
+  statusCode: 405
+  statusText: Method Not Allowed
+  headers:
+    Host: 127.0.0.1:8000
+    Connection: close
+    X-Powered-By: PHP/8.2.12
+    Cache-Control: no-cache, private
+    Date: Sat, 31 Oct 2026 06:34:25 GMT
+    Content-Type: application/json
+    Access-Control-Allow-Origin: "*"
+  body:
+    type: json
+    content: |-
+      {
+        "message": "The PUT method is not supported for route api/penghunian/58/hitung-dp. Supported methods: POST.",
+        "error": {
+          "code": 405,
+          "message": "The PUT method is not supported for route api/penghunian/58/hitung-dp. Supported methods: POST.",
+          "status": "ERROR",
+          "details": {}
+        }
+      }
+order: 1000

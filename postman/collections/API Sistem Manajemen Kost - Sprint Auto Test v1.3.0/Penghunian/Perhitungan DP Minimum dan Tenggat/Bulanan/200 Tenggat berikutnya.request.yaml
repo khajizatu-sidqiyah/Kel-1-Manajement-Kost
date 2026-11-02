@@ -1,0 +1,76 @@
+$kind: http-request
+url: "{{base_url}}/penghunian/58/tenggat-berikutnya"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer 1|SGm785QgdMEnT3KPMYjM3R23IeYcfKBcRVclSGqG947e0637
+body:
+  type: json
+  content: "{\r
+
+    \    \"id_penghunian\": 58,\r
+
+    \    \"id_kamar\": 1,\r
+
+    \    \"id_penghuni\": 32,\r
+
+    \    \"tanggal_mulai\": \"2026-11-05\",\r
+
+    \    \"skema_sewa\": \"bulanan\",\r
+
+    \    \"total_sewa\": 600000,\r
+
+    \    \"dp_minimum\": 300000,\r
+
+    \    \"tenggat_pelunasan\": \"2026-11-05\"\r
+
+    }"
+scripts:
+  - type: afterResponse
+    code: "pm.test(\"Respons menggunakan JSON\", function () {\r
+
+      \    pm.response.to.be.json;\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Status HTTP 200\", function () {\r
+
+      \    pm.response.to.have.status(200);\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Pesan tenggat berikutnya berhasil dihitung\", function () {\r
+
+      \    const body = pm.response.json();\r
+
+      \    pm.expect(body.message).to.eql(\"Tenggat berikutnya berhasil dihitung.\");\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Tenggat sekarang benar\", function () {\r
+
+      \    const body = pm.response.json();\r
+
+      \    pm.expect(body.data.tenggat_sekarang).to.eql(\"2026-11-05\");\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Tenggat berikutnya benar\", function () {\r
+
+      \    const body = pm.response.json();\r
+
+      \    pm.expect(body.data.tenggat_berikutnya).to.eql(\"2026-12-05\");\r
+
+      });"
+    language: text/javascript
+examples: .resources/200 Tenggat berikutnya.resources/examples
+order: 12000

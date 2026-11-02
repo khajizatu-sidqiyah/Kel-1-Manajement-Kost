@@ -1,0 +1,81 @@
+$kind: http-example
+request:
+  url: "{{base_url}}/penghunian/58/hitung-dp"
+  method: POST
+  headers:
+    Accept: application/json
+    Content-Type: application/json
+    Authorization: Bearer 1|SGm785QgdMEnT3KPMYjM3R23IeYcfKBcRVclSGqG947e0637
+  body:
+    type: json
+    content: "{\r
+
+      \    \"id_kamar\": 1,\r
+
+      \    \"id_penghuni\": 32,\r
+
+      \    \"tanggal_mulai\": null,\r
+
+      \    \"skema_sewa\": \"bulanan\",\r
+
+      \    \"harga\": 600000,\r
+
+      \    \"dp_minimum\": 300000\r
+
+      }"
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Host: 127.0.0.1:8000
+    Connection: close
+    X-Powered-By: PHP/8.2.12
+    Cache-Control: no-cache, private
+    Date: Sun, 01 Nov 2026 01:47:45 GMT
+    Content-Type: application/json; charset=utf-8
+    Access-Control-Allow-Origin: "*"
+  body:
+    type: json
+    content: |-
+      {
+        "message": "Perhitungan sewa berhasil disimpan. Isi tanggal masuk untuk menentukan tenggat.",
+        "data": {
+          "id_penghunian": 58,
+          "id_kamar": 1,
+          "id_penghuni": 32,
+          "tanggal_mulai": null,
+          "tanggal_selesai": null,
+          "status": "aktif",
+          "created_at": "2026-10-20T08:39:09.000000Z",
+          "updated_at": "2026-11-01T01:47:45.000000Z",
+          "skema_sewa": "bulanan",
+          "total_sewa": "600000.00",
+          "dp_minimum": "300000.00",
+          "tenggat_pelunasan": null,
+          "status_pembayaran": "belum_lunas",
+          "penyewa_utama": true,
+          "kamar": {
+            "id_kamar": 1,
+            "no_kamar": "1",
+            "tipe_kamar": "Standard",
+            "harga": "600000.00",
+            "harga_tahunan": null,
+            "status": "Kosong",
+            "id_kost": 1,
+            "created_at": null,
+            "updated_at": "2026-10-17T13:34:30.000000Z"
+          },
+          "penghuni": {
+            "id_penghuni": 32,
+            "user_id": null,
+            "nama_penghuni": "Rina",
+            "no_telepon": "089684457261",
+            "email": "Rina@gmail.com",
+            "alamat": "Kuningan",
+            "created_at": "2026-10-20T08:03:33.000000Z",
+            "updated_at": "2026-10-20T08:03:33.000000Z"
+          },
+          "pembayaran": []
+        }
+      }
+order: 1000

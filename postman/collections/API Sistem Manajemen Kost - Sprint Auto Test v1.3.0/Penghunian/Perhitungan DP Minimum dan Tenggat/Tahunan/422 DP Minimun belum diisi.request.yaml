@@ -1,0 +1,76 @@
+$kind: http-request
+url: "{{base_url}}/penghunian/59/hitung-dp"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer 1|SGm785QgdMEnT3KPMYjM3R23IeYcfKBcRVclSGqG947e0637
+body:
+  type: json
+  content: "{\r
+
+    \    \"id_kamar\": 3,\r
+
+    \    \"id_penghuni\": 30,\r
+
+    \    \"tanggal_mulai\": \"2026-11-05\",\r
+
+    \    \"skema_sewa\": \"tahunan\",\r
+
+    \    \"harga\": 750000,\r
+
+    \    \"harga_tahunan\": 5000000,\r
+
+    \    \"dp_minimum\": null\r
+
+    }"
+scripts:
+  - type: afterResponse
+    code: "pm.test(\"Respons menggunakan JSON\", function () {\r
+
+      \    pm.response.to.be.json;\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Status HTTP 422\", function () {\r
+
+      \    pm.response.to.have.status(422);\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Pesan DP minimum tahunan belum tersedia\", function () {\r
+
+      \    const body = pm.response.json();\r
+
+      \    pm.expect(body.message)\r
+
+      \        .to.eql(\"Pengaturan DP minimum tahunan belum tersedia atau tidak valid.\");\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Kode error DP tahunan\", function () {\r
+
+      \    const body = pm.response.json();\r
+
+      \    pm.expect(body.error.code).to.eql(\"INVALID_ANNUAL_DP_SETTING\");\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Status error INVALID_ARGUMENT\", function () {\r
+
+      \    const body = pm.response.json();\r
+
+      \    pm.expect(body.error.status).to.eql(\"INVALID_ARGUMENT\");\r
+
+      });"
+    language: text/javascript
+examples: .resources/422 DP Minimun belum diisi.resources/examples
+order: 7000
