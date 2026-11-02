@@ -1,0 +1,26 @@
+$kind: http-example
+request:
+  url: "{{base_url}}/logout"
+  method: POST
+  headers:
+    Accept: application/json
+    Authorization: Bearer {{token}}
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Host: 127.0.0.1:8000
+    Connection: close
+    X-Powered-By: PHP/8.2.12
+    Cache-Control: no-cache, private
+    Date: Sat, 31 Oct 2026 04:25:34 GMT
+    Content-Type: application/json; charset=utf-8
+    Access-Control-Allow-Origin: "*"
+  body:
+    type: json
+    content: |-
+      {
+        "message": "Logout berhasil.",
+        "data": null
+      }
+order: 1000

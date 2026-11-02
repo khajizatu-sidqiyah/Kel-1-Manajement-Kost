@@ -1,0 +1,42 @@
+$kind: collection
+description: Collection pengujian API Laravel berdasarkan routes/api.php pada ZIP project. Semua request memiliki script Post-response (Tests). Jalankan di database lokal/testing. Isi environment owner_email dan owner_password, lalu jalankan login terlebih dahulu. Beberapa skenario bersifat destruktif dan skenario pembayaran membutuhkan data penghunian dengan skema sewa yang sudah dihitung.
+variables:
+  - key: base_url
+    value: http://127.0.0.1:8000/api
+    disabled: false
+    secret: false
+  - key: token
+    value: ""
+    disabled: false
+    secret: false
+  - key: owner_email
+    value: ""
+    disabled: false
+    secret: false
+  - key: owner_password
+    value: ""
+    disabled: false
+    secret: false
+  - key: id_penghuni
+    value: ""
+    disabled: false
+    secret: false
+  - key: id_kamar
+    value: ""
+    disabled: false
+    secret: false
+  - key: id_penghunian
+    value: ""
+    disabled: false
+    secret: false
+  - key: id_pembayaran
+    value: ""
+    disabled: false
+    secret: false
+  - key: bearer_token_13d1
+    secret: true
+    disabled: false
+auth:
+  type: bearer
+  credentials:
+    token: 26|s0jAOTfqTT08BL8hQHiiWpBOuieNtvLROPXNU3cS66bd27b4
