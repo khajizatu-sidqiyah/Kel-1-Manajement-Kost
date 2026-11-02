@@ -86,6 +86,12 @@
   /* ---------------------------------------------------------
      Render: tabel + filter + pagination
   --------------------------------------------------------- */
+  // Urutan tabel: lantai 1 dulu, lalu nomor kamar naik (numerik). Dalam satu kamar: penyewa utama di atas, lalu yang lebih dulu masuk.
+  const urutKamar = (a, b) =>
+    (Number(a.lantai) || 99) - (Number(b.lantai) || 99) ||
+    String(a.no_kamar).localeCompare(String(b.no_kamar), undefined, { numeric: true }) ||
+    Number(b.utama) - Number(a.utama) || a.id - b.id;
+
   function filtered() {
     const q = $("f-q").value.trim().toLowerCase();
     const lt = $("f-lantai").value, peran = $("f-peran").value, st = $("f-status").value;
@@ -96,7 +102,7 @@
       if (peran && (peran === "utama") !== r.utama) return false;
       if (st && (st === "lengkap") !== r.lengkap) return false;
       return true;
-    });
+    }).sort(urutKamar);
   }
 
   const peranPill = (r) => r.utama
