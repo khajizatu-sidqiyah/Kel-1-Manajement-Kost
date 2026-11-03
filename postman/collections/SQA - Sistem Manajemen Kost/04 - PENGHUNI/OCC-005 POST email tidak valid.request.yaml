@@ -1,0 +1,19 @@
+$kind: http-request
+url: "{{base_url}}/penghuni"
+method: POST
+headers:
+  Accept: application/json
+body:
+  type: json
+  content: |-
+    {
+      "nama_penghuni": "Testing Email",
+      "no_telepon": "081234567890",
+      "email": "bukan-email",
+      "alamat": "Kuningan"
+    }
+scripts:
+  - type: afterResponse
+    code: pm.test('Email invalid ditolak', function () { pm.response.to.have.status(422); });
+    language: text/javascript
+order: 5000

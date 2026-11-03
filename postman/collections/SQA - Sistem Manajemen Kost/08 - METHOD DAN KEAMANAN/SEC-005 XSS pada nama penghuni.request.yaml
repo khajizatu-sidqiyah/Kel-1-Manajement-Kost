@@ -1,0 +1,21 @@
+$kind: http-request
+url: "{{base_url}}/penghuni"
+method: POST
+headers:
+  Accept: application/json
+body:
+  type: json
+  content: |-
+    {
+      "nama_penghuni": "<script>alert('XSS')</script>",
+      "no_telepon": null,
+      "email": null,
+      "alamat": null
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Tidak terjadi server error', function () { pm.expect(pm.response.code).not.to.eql(500); });
+      pm.test('Respons tidak menjalankan script', function () { pm.expect(pm.response.text()).not.to.include('<script>alert'); });
+    language: text/javascript
+order: 5000

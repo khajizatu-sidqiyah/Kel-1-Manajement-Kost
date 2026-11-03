@@ -1,0 +1,18 @@
+$kind: http-request
+url: "{{base_url}}/kamar"
+method: POST
+headers:
+  Accept: application/json
+body:
+  type: json
+  content: |-
+    {
+      "no_kamar": "97",
+      "harga": 600000,
+      "status": "dipesan"
+    }
+scripts:
+  - type: afterResponse
+    code: pm.test('Status kamar invalid ditolak', function () { pm.response.to.have.status(422); });
+    language: text/javascript
+order: 5000

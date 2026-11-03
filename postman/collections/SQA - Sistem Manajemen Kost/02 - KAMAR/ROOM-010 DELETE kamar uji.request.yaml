@@ -1,0 +1,10 @@
+$kind: http-request
+url: "{{base_url}}/kamar/{{id_kamar}}"
+method: DELETE
+headers:
+  Accept: application/json
+scripts:
+  - type: afterResponse
+    code: pm.test('Hapus kamar sesuai kontrak', function () { pm.expect(pm.response.code).to.be.oneOf([200, 409, 404]); });
+    language: text/javascript
+order: 10000

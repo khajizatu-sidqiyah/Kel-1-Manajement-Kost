@@ -1,0 +1,10 @@
+$kind: http-request
+url: "{{base_url}}/penghuni/999999"
+method: GET
+headers:
+  Accept: application/json
+scripts:
+  - type: afterResponse
+    code: pm.test('ID penghuni tidak ditemukan', function () { pm.response.to.have.status(404); });
+    language: text/javascript
+order: 8000

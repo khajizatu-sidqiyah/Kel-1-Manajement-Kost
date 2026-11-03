@@ -1,0 +1,16 @@
+$kind: http-request
+url: "{{base_url}}/penghunian/{{id_penghunian}}/hitung-dp"
+method: POST
+headers:
+  Accept: application/json
+body:
+  type: json
+  content: |-
+    {
+      "skema_sewa": ""
+    }
+scripts:
+  - type: afterResponse
+    code: pm.test('Skema kosong ditolak', function () { pm.response.to.have.status(422); });
+    language: text/javascript
+order: 3000

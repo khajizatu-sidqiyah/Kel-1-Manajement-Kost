@@ -1,0 +1,10 @@
+$kind: http-request
+url: "{{base_url}}/kamar/{{id_kamar}}"
+method: GET
+headers:
+  Accept: application/json
+scripts:
+  - type: afterResponse
+    code: pm.test('Detail kamar berhasil', function () { pm.response.to.have.status(200); });
+    language: text/javascript
+order: 6000

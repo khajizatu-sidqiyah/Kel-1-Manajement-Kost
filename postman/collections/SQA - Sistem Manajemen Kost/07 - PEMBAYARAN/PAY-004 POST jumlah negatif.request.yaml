@@ -1,0 +1,20 @@
+$kind: http-request
+url: "{{base_url}}/pembayaran"
+method: POST
+headers:
+  Accept: application/json
+body:
+  type: json
+  content: |-
+    {
+      "id_penghunian": 1,
+      "jenis_pembayaran": "cicilan",
+      "tanggal_bayar": "2026-11-05",
+      "jumlah": -100000,
+      "metode_pembayaran": "transfer"
+    }
+scripts:
+  - type: afterResponse
+    code: pm.test('Jumlah negatif ditolak', function () { pm.response.to.have.status(422); });
+    language: text/javascript
+order: 4000

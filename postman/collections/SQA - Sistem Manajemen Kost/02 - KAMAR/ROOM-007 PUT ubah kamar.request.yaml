@@ -1,0 +1,20 @@
+$kind: http-request
+url: "{{base_url}}/kamar/{{id_kamar}}"
+method: PUT
+headers:
+  Accept: application/json
+body:
+  type: json
+  content: |-
+    {
+      "no_kamar": "99",
+      "tipe_kamar": "Deluxe AC",
+      "harga": 700000,
+      "status": "kosong",
+      "harga_tahunan": 7000000
+    }
+scripts:
+  - type: afterResponse
+    code: pm.test('Update kamar berhasil', function () { pm.response.to.have.status(200); });
+    language: text/javascript
+order: 7000

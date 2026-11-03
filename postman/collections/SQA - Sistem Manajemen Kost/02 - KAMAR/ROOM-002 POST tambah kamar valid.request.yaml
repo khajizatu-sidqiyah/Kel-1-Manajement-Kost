@@ -1,0 +1,23 @@
+$kind: http-request
+url: "{{base_url}}/kamar"
+method: POST
+headers:
+  Accept: application/json
+body:
+  type: json
+  content: |-
+    {
+      "no_kamar": "99",
+      "tipe_kamar": "Standard AC",
+      "harga": 600000,
+      "status": "kosong",
+      "harga_tahunan": 6000000
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Kamar berhasil dibuat', function () { pm.response.to.have.status(201); });
+      const b = pm.response.json();
+      if (b.data && b.data.id_kamar) pm.collectionVariables.set('id_kamar', String(b.data.id_kamar));
+    language: text/javascript
+order: 2000

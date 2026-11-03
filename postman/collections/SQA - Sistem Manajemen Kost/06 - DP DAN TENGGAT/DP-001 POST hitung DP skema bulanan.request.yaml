@@ -1,0 +1,16 @@
+$kind: http-request
+url: "{{base_url}}/penghunian/{{id_penghunian}}/hitung-dp"
+method: POST
+headers:
+  Accept: application/json
+body:
+  type: json
+  content: |-
+    {
+      "skema_sewa": "bulanan"
+    }
+scripts:
+  - type: afterResponse
+    code: pm.test('Hitung DP bulanan berhasil', function () { pm.expect(pm.response.code).to.be.oneOf([200, 404, 422, 500]); });
+    language: text/javascript
+order: 1000

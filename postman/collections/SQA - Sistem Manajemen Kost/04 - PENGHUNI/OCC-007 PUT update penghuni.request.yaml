@@ -1,0 +1,20 @@
+$kind: http-request
+url: "{{base_url}}/penghuni/15"
+method: PUT
+headers:
+  Accept: application/json
+body:
+  type: json
+  content: |-
+    {
+      "nama_penghuni": "Rina",
+      "no_telepon": "081299887766",
+      "email": "rina@gmail.com",
+      "alamat": "Kuningan"
+    }
+scripts:
+  - type: afterResponse
+    code: pm.test('Update penghuni berhasil', function () { pm.response.to.have.status(200); });
+    language: text/javascript
+examples: .resources/OCC-007 PUT update penghuni.resources/examples
+order: 7000

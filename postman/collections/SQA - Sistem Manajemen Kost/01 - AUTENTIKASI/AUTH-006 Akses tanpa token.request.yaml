@@ -1,0 +1,13 @@
+$kind: http-request
+url: "{{base_url}}/me"
+method: GET
+headers:
+  Accept: application/json
+auth:
+  type: noauth
+scripts:
+  - type: afterResponse
+    code: pm.test('Tanpa token ditolak', function () { pm.response.to.have.status(401); });
+    language: text/javascript
+examples: .resources/AUTH-006 Akses tanpa token.resources/examples
+order: 6000
