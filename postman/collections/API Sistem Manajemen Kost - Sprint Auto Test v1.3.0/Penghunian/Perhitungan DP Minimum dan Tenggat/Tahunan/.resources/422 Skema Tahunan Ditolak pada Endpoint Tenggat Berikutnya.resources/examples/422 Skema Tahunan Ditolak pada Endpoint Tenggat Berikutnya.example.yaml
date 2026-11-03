@@ -1,6 +1,6 @@
 $kind: http-example
 request:
-  url: "{{base_url}}/penghunian/58/hitung-dp"
+  url: "{{base_url}}/penghunian/63/tenggat-berikutnya"
   method: POST
   headers:
     Accept: application/json
@@ -10,17 +10,11 @@ request:
     type: json
     content: "{\r
 
-      \    \"id_kamar\": 1,\r
+      \    \"id_penghunian\": 63,\r
 
-      \    \"id_penghuni\": 32,\r
+      \    \"skema_sewa\": \"tahunan\",\r
 
-      \    \"tanggal_mulai\": \"2026-11-05\",\r
-
-      \    \"skema_sewa\": null,\r
-
-      \    \"harga\": 600000,\r
-
-      \    \"dp_minimum\": 300000\r
+      \    \"tanggal_mulai\": \"2026-11-05\"\r
 
       }"
 response:
@@ -31,23 +25,19 @@ response:
     Connection: close
     X-Powered-By: PHP/8.2.12
     Cache-Control: no-cache, private
-    Date: Sun, 01 Nov 2026 01:21:15 GMT
+    Date: Tue, 03 Nov 2026 03:07:05 GMT
     Content-Type: application/json; charset=utf-8
     Access-Control-Allow-Origin: "*"
   body:
     type: json
     content: |-
       {
-        "message": "Parameter permintaan tidak valid.",
+        "message": "Fitur ini hanya berlaku untuk sewa bulanan.",
         "error": {
-          "code": 422,
-          "message": "Validasi gagal.",
+          "code": "INVALID_RENT_SCHEME",
+          "message": "Fitur ini hanya berlaku untuk sewa bulanan.",
           "status": "INVALID_ARGUMENT",
-          "details": {
-            "skema_sewa": [
-              "Pilih skema sewa terlebih dahulu."
-            ]
-          }
+          "details": {}
         }
       }
 order: 1000

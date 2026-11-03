@@ -22,6 +22,10 @@ body:
     \    \"dp_minimum\": 300000\r
 
     }"
+auth:
+  type: bearer
+  credentials:
+    token: 1|SGm785QgdMEnT3KPMYjM3R23IeYcfKBcRVclSGqG947e0637
 scripts:
   - type: afterResponse
     code: "pm.test(\"Respons menggunakan JSON\", function () {\r

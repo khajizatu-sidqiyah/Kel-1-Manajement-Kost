@@ -10,17 +10,17 @@ request:
     type: json
     content: "{\r
 
-      \    \"id_kamar\": 1,\r
-
-      \    \"id_penghuni\": 32,\r
+      \    \"skema_sewa\": \"bulanan\",\r
 
       \    \"tanggal_mulai\": \"2026-11-05\",\r
 
-      \    \"skema_sewa\": \"bulanan\",\r
+      \    \"tanggal_selesai\": null,\r
 
-      \    \"harga\": 600000,\r
+      \    \"total_sewa\": 600000,\r
 
-      \    \"dp_minimum\": 300000\r
+      \    \"dp_minimum\": 300000,\r
+
+      \    \"tenggat_pelunasan\": \"2026-11-05\"\r
 
       }"
 response:
@@ -31,7 +31,7 @@ response:
     Connection: close
     X-Powered-By: PHP/8.2.12
     Cache-Control: no-cache, private
-    Date: Sun, 01 Nov 2026 02:29:43 GMT
+    Date: Mon, 02 Nov 2026 16:07:20 GMT
     Content-Type: application/json; charset=utf-8
     Access-Control-Allow-Origin: "*"
   body:
@@ -47,7 +47,7 @@ response:
           "tanggal_selesai": null,
           "status": "aktif",
           "created_at": "2026-10-20T08:39:09.000000Z",
-          "updated_at": "2026-11-01T02:29:43.000000Z",
+          "updated_at": "2026-11-02T16:07:20.000000Z",
           "skema_sewa": "bulanan",
           "total_sewa": "600000.00",
           "dp_minimum": "300000.00",

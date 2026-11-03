@@ -240,7 +240,7 @@ class PenghunianController extends Controller
     /**
      * Menampilkan detail penghunian.
      */
-    public function show($id)
+    public function show(int $id)
     {
         $penghunian = Penghunian::with([
             'kamar',
@@ -266,7 +266,7 @@ class PenghunianController extends Controller
     /**
      * Memperbarui tanggal penghunian.
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, int $id)
     {
         $penghunian = Penghunian::find($id);
 
@@ -308,7 +308,7 @@ class PenghunianController extends Controller
     /**
      * Mengubah penyewa utama pada satu kamar.
      */
-    public function setPenyewaUtama(Request $request, $id)
+    public function setPenyewaUtama(Request $request, int $id)
     {
         $validated = $request->validate([
             'id_kamar' => [
@@ -377,7 +377,7 @@ class PenghunianController extends Controller
      * Pencatatan diteruskan ke PembayaranController agar
      * tidak ada dua mekanisme pencatatan DP yang berbeda.
      */
-    public function catatDp(Request $request, $id)
+    public function catatDp(Request $request,int $id)
     {
         $penghunian = Penghunian::find($id);
 
@@ -403,7 +403,7 @@ class PenghunianController extends Controller
     /**
      * Menghitung total sewa, DP minimum, dan tenggat.
      */
-    public function hitung(Request $request, $id)
+    public function hitung(Request $request, int $id)
     {
         $data = $request->validate([
             'skema_sewa' => [
@@ -458,9 +458,19 @@ class PenghunianController extends Controller
         }
 
         /*
-         * Hitung harga berdasarkan skema.
+         * Harga yang digunakan harus sesuai dengan skema yang dipilih.
+         * Bulanan menggunakan kamar.harga, tahunan menggunakan kamar.harga_tahunan.
          */
         if ($data['skema_sewa'] === 'bulanan') {
+
+            if (!is_numeric($kamar->harga) || (float) $kamar->harga <= 0) {
+                return response()->json([
+                    'message' => 'Harga sewa bulanan kamar belum diisi atau tidak valid.',
+                    'error' => [
+                        'code' => 'INVALID_MONTHLY_RENT',
+                    ],
+                ], 422);
+            }
 
             $totalSewa = (float) $kamar->harga;
             $dpMinimum = $totalSewa * 0.5;
@@ -518,13 +528,15 @@ class PenghunianController extends Controller
 
             if ($data['skema_sewa'] === 'bulanan') {
 
+                // Bulanan: jatuh tempo mengikuti tanggal masuk.
                 $tenggat = $tanggalMulai->toDateString();
 
             } else {
 
+                // Tahunan: tiga bulan sejak tanggal masuk.
                 $tenggat = $tanggalMulai
                     ->copy()
-                    ->addMonthsNoOverflow(2)
+                    ->addMonthsNoOverflow(3)
                     ->toDateString();
             }
         }
@@ -557,7 +569,7 @@ class PenghunianController extends Controller
     /**
      * Mengubah tenggat pembayaran tahunan.
      */
-    public function ubahTenggat(Request $request, $id)
+    public function ubahTenggat(Request $request, int $id)
     {
         $validated = $request->validate([
             'tenggat_pelunasan' => [
@@ -629,7 +641,7 @@ class PenghunianController extends Controller
     /**
      * Menghitung tenggat bulanan berikutnya.
      */
-    public function tenggatBerikutnya($id)
+    public function tenggatBerikutnya(int $id)
     {
         $penghunian = Penghunian::find($id);
 
@@ -688,7 +700,7 @@ class PenghunianController extends Controller
     /**
      * Menyelesaikan penghunian.
      */
-    public function selesai($id)
+    public function selesai(int $id)
     {
         $hasil = DB::transaction(function () use ($id) {
 

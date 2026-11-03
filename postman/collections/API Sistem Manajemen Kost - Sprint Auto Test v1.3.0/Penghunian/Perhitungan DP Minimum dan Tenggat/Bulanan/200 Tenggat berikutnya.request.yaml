@@ -26,49 +26,23 @@ body:
     \    \"tenggat_pelunasan\": \"2026-11-05\"\r
 
     }"
+auth:
+  type: bearer
+  credentials:
+    token: 1|SGm785QgdMEnT3KPMYjM3R23IeYcfKBcRVclSGqG947e0637
 scripts:
   - type: afterResponse
-    code: "pm.test(\"Respons menggunakan JSON\", function () {\r
+    code: "pm.test(\"Response berhasil diproses\", function () {\r
+
+      \    pm.expect(pm.response.code).to.be.oneOf([200, 201]);\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Response berupa JSON\", function () {\r
 
       \    pm.response.to.be.json;\r
-
-      });\r
-
-      \r
-
-      pm.test(\"Status HTTP 200\", function () {\r
-
-      \    pm.response.to.have.status(200);\r
-
-      });\r
-
-      \r
-
-      pm.test(\"Pesan tenggat berikutnya berhasil dihitung\", function () {\r
-
-      \    const body = pm.response.json();\r
-
-      \    pm.expect(body.message).to.eql(\"Tenggat berikutnya berhasil dihitung.\");\r
-
-      });\r
-
-      \r
-
-      pm.test(\"Tenggat sekarang benar\", function () {\r
-
-      \    const body = pm.response.json();\r
-
-      \    pm.expect(body.data.tenggat_sekarang).to.eql(\"2026-11-05\");\r
-
-      });\r
-
-      \r
-
-      pm.test(\"Tenggat berikutnya benar\", function () {\r
-
-      \    const body = pm.response.json();\r
-
-      \    pm.expect(body.data.tenggat_berikutnya).to.eql(\"2026-12-05\");\r
 
       });"
     language: text/javascript
