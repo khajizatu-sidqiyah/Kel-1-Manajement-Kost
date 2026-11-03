@@ -1,0 +1,27 @@
+$kind: http-request
+url: "{{base_url}}/penghunian"
+method: GET
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer 1|SGm785QgdMEnT3KPMYjM3R23IeYcfKBcRVclSGqG947e0637
+scripts:
+  - type: afterResponse
+    code: "pm.test(\"Status code 200\", function () {\r
+
+      \    pm.response.to.have.status(200);\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Response memiliki data penghunian\", function () {\r
+
+      \    const json = pm.response.json();\r
+
+      \    pm.expect(json.data).to.be.an(\"array\");\r
+
+      });"
+    language: text/javascript
+examples: .resources/200 Menampilkan semua data penghunian.resources/examples
+order: 13000

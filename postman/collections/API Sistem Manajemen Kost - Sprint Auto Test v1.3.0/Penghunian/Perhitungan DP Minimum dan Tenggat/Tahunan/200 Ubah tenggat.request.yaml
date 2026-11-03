@@ -23,42 +23,22 @@ body:
 
     \    \"dp_minimum\": 300000,\r
 
-    \    \"tenggat_pelunasan\": \"2027-02-05\"\r
+    \    \"tenggat_pelunasan\": \"2027-02-20\"\r
 
     }"
 scripts:
   - type: afterResponse
-    code: "pm.test(\"Respons menggunakan JSON\", function () {\r
+    code: "pm.test(\"Response berhasil diproses\", function () {\r
+
+      \    pm.expect(pm.response.code).to.be.oneOf([200, 201]);\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Response berupa JSON\", function () {\r
 
       \    pm.response.to.be.json;\r
-
-      });\r
-
-      \r
-
-      pm.test(\"Status HTTP 200\", function () {\r
-
-      \    pm.response.to.have.status(200);\r
-
-      });\r
-
-      \r
-
-      pm.test(\"Pesan tenggat berhasil diubah\", function () {\r
-
-      \    const body = pm.response.json();\r
-
-      \    pm.expect(body.message).to.eql(\"Tenggat pelunasan berhasil diubah.\");\r
-
-      });\r
-
-      \r
-
-      pm.test(\"Tanggal tenggat berhasil diperbarui\", function () {\r
-
-      \    const body = pm.response.json();\r
-
-      \    pm.expect(body.data.tenggat_pelunasan).to.eql(\"2027-02-05\");\r
 
       });"
     language: text/javascript

@@ -24,7 +24,7 @@ request:
 
       \    \"dp_minimum\": 300000,\r
 
-      \    \"tenggat_pelunasan\": \"2027-02-05\"\r
+      \    \"tenggat_pelunasan\": \"2027-02-20\"\r
 
       }"
 response:
@@ -35,7 +35,7 @@ response:
     Connection: close
     X-Powered-By: PHP/8.2.12
     Cache-Control: no-cache, private
-    Date: Sun, 01 Nov 2026 02:20:07 GMT
+    Date: Mon, 02 Nov 2026 16:23:15 GMT
     Content-Type: application/json; charset=utf-8
     Access-Control-Allow-Origin: "*"
   body:
@@ -51,11 +51,11 @@ response:
           "tanggal_selesai": "2027-11-05T00:00:00.000000Z",
           "status": "aktif",
           "created_at": "2026-10-20T03:28:43.000000Z",
-          "updated_at": "2026-11-01T02:13:07.000000Z",
+          "updated_at": "2026-11-02T16:23:15.000000Z",
           "skema_sewa": "tahunan",
           "total_sewa": "5000000.00",
           "dp_minimum": "300000.00",
-          "tenggat_pelunasan": "2027-02-05T00:00:00.000000Z",
+          "tenggat_pelunasan": "2027-02-20T00:00:00.000000Z",
           "status_pembayaran": "belum_lunas",
           "penyewa_utama": true,
           "kamar": {
@@ -79,20 +79,7 @@ response:
             "created_at": "2026-10-04T04:26:00.000000Z",
             "updated_at": "2026-10-04T04:26:00.000000Z"
           },
-          "pembayaran": [
-            {
-              "id_pembayaran": 18,
-              "id_penghunian": 59,
-              "jenis_pembayaran": "dp",
-              "tanggal_bayar": "2026-10-29T00:00:00.000000Z",
-              "jumlah": "200000.00",
-              "metode_pembayaran": "transfer",
-              "bukti_pembayaran": null,
-              "status": "menunggu_verifikasi",
-              "created_at": "2026-10-28T23:19:40.000000Z",
-              "updated_at": "2026-10-28T23:19:40.000000Z"
-            }
-          ]
+          "pembayaran": []
         }
       }
 order: 1000
