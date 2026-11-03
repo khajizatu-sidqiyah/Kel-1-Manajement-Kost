@@ -379,16 +379,6 @@ class PenghunianController extends Controller
      */
     public function catatDp(Request $request,int $id)
     {
-        $penghunian = Penghunian::find($id);
-
-        if (!$penghunian || $penghunian->status !== 'aktif') {
-            return response()->json([
-                'message' => 'Data penghunian aktif tidak ditemukan.',
-                'error' => [
-                    'code' => 'OCCUPANCY_NOT_FOUND',
-                ],
-            ], 404);
-        }
 
         $request->merge([
             'id_penghunian' => $id,
