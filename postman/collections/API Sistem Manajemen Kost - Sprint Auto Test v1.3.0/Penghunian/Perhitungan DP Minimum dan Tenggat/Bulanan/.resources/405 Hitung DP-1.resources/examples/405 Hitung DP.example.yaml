@@ -1,6 +1,6 @@
 $kind: http-example
 request:
-  url: http://127.0.0.1:8000/api/penghunian/58/hitung-dp
+  url: "{{base_url}}/penghunian/58/hitung-dp"
   method: PUT
   headers:
     Accept: application/json
@@ -31,7 +31,7 @@ response:
     Connection: close
     X-Powered-By: PHP/8.2.12
     Cache-Control: no-cache, private
-    Date: Sat, 31 Oct 2026 06:34:25 GMT
+    Date: Mon, 02 Nov 2026 23:36:27 GMT
     Content-Type: application/json
     Access-Control-Allow-Origin: "*"
   body:

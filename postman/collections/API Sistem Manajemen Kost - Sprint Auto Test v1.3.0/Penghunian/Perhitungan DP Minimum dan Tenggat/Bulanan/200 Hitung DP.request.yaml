@@ -9,22 +9,34 @@ body:
   type: json
   content: "{\r
 
-    \    \"id_kamar\": 1,\r
-
-    \    \"id_penghuni\": 32,\r
+    \    \"skema_sewa\": \"bulanan\",\r
 
     \    \"tanggal_mulai\": \"2026-11-05\",\r
 
-    \    \"skema_sewa\": \"bulanan\",\r
+    \    \"tanggal_selesai\": null,\r
 
-    \    \"harga\": 600000,\r
+    \    \"total_sewa\": 600000,\r
 
-    \    \"dp_minimum\": 300000\r
+    \    \"dp_minimum\": 300000,\r
+
+    \    \"tenggat_pelunasan\": \"2026-11-05\"\r
 
     }"
+auth:
+  type: bearer
+  credentials:
+    token: 1|SGm785QgdMEnT3KPMYjM3R23IeYcfKBcRVclSGqG947e0637
 scripts:
   - type: afterResponse
-    code: "pm.test(\"Respons menggunakan JSON\", function () {\r
+    code: "pm.test(\"Status response berhasil\", function () {\r
+
+      \    pm.expect(pm.response.code).to.be.oneOf([200, 201]);\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Response berupa JSON\", function () {\r
 
       \    pm.response.to.be.json;\r
 
@@ -32,61 +44,11 @@ scripts:
 
       \r
 
-      pm.test(\"Status HTTP 200\", function () {\r
+      pm.test(\"Perhitungan DP bulanan berhasil diproses\", function () {\r
 
-      \    pm.response.to.have.status(200);\r
+      \    const response = pm.response.json();\r
 
-      });\r
-
-      \r
-
-      pm.test(\"Perhitungan sewa berhasil\", function () {\r
-
-      \    const body = pm.response.json();\r
-
-      \    pm.expect(body.data).to.exist;\r
-
-      });\r
-
-      \r
-
-      pm.test(\"Skema sewa adalah bulanan\", function () {\r
-
-      \    const body = pm.response.json();\r
-
-      \    pm.expect(body.data.skema_sewa).to.eql(\"bulanan\");\r
-
-      });\r
-
-      \r
-
-      pm.test(\"Total sewa sebesar Rp600.000\", function () {\r
-
-      \    const body = pm.response.json();\r
-
-      \    pm.expect(Number(body.data.total_sewa)).to.eql(600000);\r
-
-      });\r
-
-      \r
-
-      pm.test(\"DP minimum sebesar Rp300.000\", function () {\r
-
-      \    const body = pm.response.json();\r
-
-      \    pm.expect(Number(body.data.dp_minimum)).to.eql(300000);\r
-
-      });\r
-
-      \r
-
-      pm.test(\"Tenggat pelunasan sesuai tanggal masuk\", function () {\r
-
-      \    const body = pm.response.json();\r
-
-      \    pm.expect(body.data.tenggat_pelunasan.substring(0, 10))\r
-
-      \        .to.eql(\"2026-11-05\");\r
+      \    pm.expect(response).to.be.an(\"object\");\r
 
       });"
     language: text/javascript

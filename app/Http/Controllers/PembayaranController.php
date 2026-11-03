@@ -31,7 +31,7 @@ class PembayaranController extends Controller
     /**
      * Menampilkan detail pembayaran.
      */
-    public function show($id)
+    public function show(int $id)
     {
         $pembayaran = Pembayaran::with([
             'penghunian.kamar',
@@ -96,10 +96,6 @@ class PembayaranController extends Controller
                 'max:255',
             ],
 
-            'konfirmasi_dp' => [
-                'sometimes',
-                'boolean',
-            ],
         ]);
 
         return DB::transaction(function () use ($validated) {
@@ -138,15 +134,6 @@ class PembayaranController extends Controller
                 ->where('penyewa_utama', true)
                 ->lockForUpdate()
                 ->first();
-
-            if (!$penghunianUtama) {
-                return response()->json([
-                    'message' => 'Tambahkan atau tentukan penghuni utama terlebih dahulu.',
-                    'error' => [
-                        'code' => 'PRIMARY_TENANT_NOT_FOUND',
-                    ],
-                ], 422);
-            }
 
             /*
              * Pastikan skema sewa sudah dipilih.
@@ -267,33 +254,37 @@ class PembayaranController extends Controller
                 ], 422);
             }
 
-            /*
-             * Validasi DP minimum.
-             *
-             * Jika di bawah minimum, jangan simpan dahulu.
-             * Pemilik harus mengirim konfirmasi_dp=true.
+             /*
+             * DP di bawah minimum langsung ditolak.
+             * Tidak ada tahap konfirmasi/verifikasi karena pembayaran dicatat pemilik.
              */
             if ($jenis === 'dp') {
-                $dpMinimum = (float) $penghunianUtama->dp_minimum;
+                $dpMinimum = (float) ($penghunianUtama->dp_minimum ?? 0);
 
-                if ($dpMinimum > 0 && $jumlah < $dpMinimum) {
+                if ($dpMinimum <= 0) {
+                    return response()->json([
+                        'message' => 'DP minimum belum dihitung. Pilih skema sewa dan hitung DP terlebih dahulu.',
+                        'error' => [
+                            'code' => 'DP_MINIMUM_NOT_SET',
+                        ],
+                    ], 422);
+                }
 
-                    if (empty($validated['konfirmasi_dp'])) {
-                        return response()->json([
-                            'message' => 'DP berada di bawah batas minimum. Konfirmasi diperlukan untuk melanjutkan.',
-                            'error' => [
-                                'code' => 'DP_BELOW_MINIMUM',
-                                'dp_minimum' => $dpMinimum,
-                                'jumlah_dp' => $jumlah,
-                                'konfirmasi_diperlukan' => true,
-                            ],
-                        ], 422);
-                    }
+                if ($jumlah < $dpMinimum) {
+                    return response()->json([
+                        'message' => 'Pembayaran DP ditolak karena jumlahnya kurang dari DP minimum.',
+                        'error' => [
+                            'code' => 'DP_BELOW_MINIMUM',
+                            'dp_minimum' => $dpMinimum,
+                            'jumlah_dp' => $jumlah,
+                        ],
+                    ], 422);
                 }
             }
 
             /*
-             * Simpan pembayaran.
+             * Pemilik mencatat pembayaran, sehingga langsung dianggap sah
+             * dan tidak masuk antrean menunggu verifikasi.
              */
             $pembayaran = Pembayaran::create([
                 'id_penghunian' => $penghunianUtama->id_penghunian,
@@ -302,27 +293,28 @@ class PembayaranController extends Controller
                 'jumlah' => $jumlah,
                 'metode_pembayaran' => $validated['metode_pembayaran'],
                 'bukti_pembayaran' => $validated['bukti_pembayaran'] ?? null,
-                'status' => 'menunggu_verifikasi',
+                'status' => 'terverifikasi',
             ]);
 
-            /*
-             * Pembayaran yang baru dicatat belum dihitung
-             * sebagai pembayaran sah karena belum terverifikasi.
-             */
-            $sisaSetelahCatat = $sisaTagihan;
+            $totalTerbayarSetelahCatat = $totalTerbayar + $jumlah;
+            $sisaSetelahCatat = max(0, $totalSewa - $totalTerbayarSetelahCatat);
+            $statusPembayaran = $sisaSetelahCatat <= 0 ? 'lunas' : 'belum_lunas';
+
+            $penghunianUtama->update([
+                'status_pembayaran' => $statusPembayaran,
+            ]);
 
             return response()->json([
-                'message' => 'Pembayaran berhasil dicatat dan menunggu verifikasi.',
+                'message' => 'Pembayaran berhasil dicatat.',
                 'data' => [
                     'pembayaran' => $pembayaran->load([
                         'penghunian.kamar',
                         'penghunian.penghuni',
                     ]),
                     'total_sewa' => $totalSewa,
-                    'total_terbayar' => $totalTerbayar,
-                    'jumlah_menunggu_verifikasi' => $jumlah,
+                    'total_terbayar' => $totalTerbayarSetelahCatat,
                     'sisa_tagihan' => $sisaSetelahCatat,
-                    'status_pembayaran' => $penghunianUtama->status_pembayaran,
+                    'status_pembayaran' => $statusPembayaran,
                 ],
             ], 201);
         });
@@ -334,7 +326,7 @@ class PembayaranController extends Controller
      * Pembayaran yang sudah terverifikasi tidak boleh
      * diubah jumlah atau jenisnya secara langsung.
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, int $id)
     {
         $pembayaran = Pembayaran::find($id);
 
@@ -399,7 +391,7 @@ class PembayaranController extends Controller
      * Jika pembayaran terverifikasi, total pembayaran dihitung ulang.
      * Jika total sudah mencapai total sewa, status penghunian menjadi lunas.
      */
-    public function updateStatus(Request $request, $id)
+    public function updateStatus(Request $request, int $id)
     {
         $validated = $request->validate([
             'status' => [

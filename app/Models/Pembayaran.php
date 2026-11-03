@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 use App\Models\Penghunian;
 
 class Pembayaran extends Model
@@ -45,7 +46,7 @@ class Pembayaran extends Model
     /**
      * Scope untuk mengambil pembayaran yang sudah terverifikasi.
      */
-    public function scopeTerverifikasi($query)
+    public function scopeTerverifikasi(Builder $query): Builder
     {
         return $query->where('status', 'terverifikasi');
     }
@@ -53,7 +54,7 @@ class Pembayaran extends Model
     /**
      * Scope untuk mengambil pembayaran yang masih menunggu verifikasi.
      */
-    public function scopeMenungguVerifikasi($query)
+    public function scopeMenungguVerifikasi(Builder $query): Builder
     {
         return $query->where('status', 'menunggu_verifikasi');
     }
