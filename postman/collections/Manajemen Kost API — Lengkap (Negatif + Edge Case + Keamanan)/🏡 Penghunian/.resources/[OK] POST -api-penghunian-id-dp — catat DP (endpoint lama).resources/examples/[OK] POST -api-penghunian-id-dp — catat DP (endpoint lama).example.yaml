@@ -1,0 +1,90 @@
+$kind: http-example
+name: "[OK] POST /api/penghunian/:id/dp — catat DP (endpoint lama)"
+request:
+  url: "{{base_url}}/api/penghunian/16/dp"
+  method: POST
+  headers:
+    Accept: application/json
+    Content-Type: application/json
+    Authorization: Bearer {{token}}
+  body:
+    type: text
+    content: |-
+      {
+        "tanggal_bayar": "2026-11-01",
+        "jumlah": 500000,
+        "metode_pembayaran": "Transfer Bank"
+      }
+response:
+  statusCode: 201
+  statusText: Created
+  headers:
+    Host: localhost:8000
+    Connection: close
+    X-Powered-By: PHP/8.2.12
+    Cache-Control: no-cache, private
+    Date: Wed, 04 Nov 2026 01:28:44 GMT
+    Content-Type: application/json; charset=utf-8
+    Access-Control-Allow-Origin: "*"
+  body:
+    type: json
+    content: |-
+      {
+        "message": "Pembayaran berhasil dicatat.",
+        "data": {
+          "pembayaran": {
+            "id_penghunian": 16,
+            "jenis_pembayaran": "dp",
+            "tanggal_bayar": "2026-11-01T00:00:00.000000Z",
+            "jumlah": "500000.00",
+            "metode_pembayaran": "Transfer Bank",
+            "bukti_pembayaran": null,
+            "status": "terverifikasi",
+            "updated_at": "2026-11-04T01:28:44.000000Z",
+            "created_at": "2026-11-04T01:28:44.000000Z",
+            "id_pembayaran": 2,
+            "penghunian": {
+              "id_penghunian": 16,
+              "id_kamar": 1,
+              "id_penghuni": 15,
+              "tanggal_mulai": "2026-11-05T00:00:00.000000Z",
+              "tanggal_selesai": "2026-12-05T00:00:00.000000Z",
+              "status": "aktif",
+              "created_at": "2026-11-04T00:51:15.000000Z",
+              "updated_at": "2026-11-04T01:19:15.000000Z",
+              "penyewa_utama": true,
+              "skema_sewa": "bulanan",
+              "total_sewa": "750000.00",
+              "dp_minimum": "375000.00",
+              "tenggat_pelunasan": "2026-11-05T00:00:00.000000Z",
+              "status_pembayaran": "belum_lunas",
+              "kamar": {
+                "id_kamar": 1,
+                "no_kamar": "1",
+                "tipe_kamar": "Standard",
+                "harga": "750000.00",
+                "harga_tahunan": null,
+                "status": "terisi",
+                "id_kost": 1,
+                "created_at": null,
+                "updated_at": "2026-10-21T15:26:11.000000Z"
+              },
+              "penghuni": {
+                "id_penghuni": 15,
+                "user_id": null,
+                "nama_penghuni": "Rina",
+                "no_telepon": "081299887766",
+                "email": "rina@gmail.com",
+                "alamat": "Kuningan",
+                "created_at": "2026-10-21T13:19:16.000000Z",
+                "updated_at": "2026-11-03T08:46:47.000000Z"
+              }
+            }
+          },
+          "total_sewa": 750000,
+          "total_terbayar": 500000,
+          "sisa_tagihan": 250000,
+          "status_pembayaran": "belum_lunas"
+        }
+      }
+order: 1000

@@ -1,0 +1,25 @@
+$kind: http-request
+name: "[OK] POST /api/penghunian/:id/dp — catat DP (endpoint lama)"
+url: "{{base_url}}/api/penghunian/16/dp"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: |-
+    {
+      "tanggal_bayar": "2026-11-01",
+      "jumlah": 500000,
+      "metode_pembayaran": "Transfer Bank"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status 201 atau 422 (jika DP sudah ada)', () => {
+        pm.expect([201, 422]).to.include(pm.response.code);
+      });
+    language: text/javascript
+examples: .resources/[OK] POST -api-penghunian-id-dp — catat DP (endpoint lama).resources/examples
+order: 20000

@@ -1,0 +1,40 @@
+$kind: http-request
+url: "{{base_url}}/penghuni"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: json
+  content: |-
+    {
+      "nama_penghuni": "Cici",
+      "no_telepon": "081234567890",
+      "email": "cici@gmail.com",
+      "alamat": "Jogja"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("HTTP status = 201", function () {
+          pm.response.to.have.status(201);
+      });
+      pm.test("Response time < 3000 ms", function () {
+          pm.expect(pm.response.responseTime).to.be.below(3000);
+      });
+      pm.test("Response bukan HTML", function () {
+          pm.expect(pm.response.headers.get("Content-Type") || "").to.include("application/json");
+      });
+      pm.test("Tidak membocorkan error SQL/PHP", function () {
+          const body = pm.response.text().toLowerCase();
+          ["sqlstate", "mysql server", "syntax error", "stack trace", "vendor/laravel"].forEach(x => {
+              pm.expect(body).to.not.include(x);
+          });
+      });
+
+      const j=pm.response.json(); pm.expect(j.data.nama_penghuni).to.eql("Postman QA Rina");
+      pm.expect(j.data.id_penghuni).to.exist; pm.environment.set("id_penghuni",j.data.id_penghuni);
+    language: text/javascript
+examples: .resources/02 POST penghuni valid.resources/examples
+order: 2000

@@ -1,0 +1,22 @@
+$kind: http-request
+name: "[ERR-422] POST /api/penghunian — tanggal format tidak valid"
+url: "{{base_url}}/api/penghunian"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: |-
+    {
+      "id_kamar": 1,
+      "id_penghuni": 15,
+      "tanggal_mulai": "bukan-tanggal"
+    }
+scripts:
+  - type: afterResponse
+    code: pm.test('Status 422', () => pm.response.to.have.status(422));
+    language: text/javascript
+examples: .resources/[ERR-422] POST -api-penghunian — tanggal format tidak valid.resources/examples
+order: 6000

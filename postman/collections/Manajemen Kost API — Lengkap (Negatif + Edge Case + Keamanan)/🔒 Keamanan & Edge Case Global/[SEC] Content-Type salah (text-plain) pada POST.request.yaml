@@ -1,0 +1,19 @@
+$kind: http-request
+name: "[SEC] Content-Type salah (text/plain) pada POST"
+url: "{{base_url}}/api/kamar"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: text/plain
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: no_kamar=A01&harga=500000
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status bukan 200 — body tidak terparsing', () => {
+        pm.expect(pm.response.code).to.not.eql(200);
+      });
+    language: text/javascript
+order: 2000

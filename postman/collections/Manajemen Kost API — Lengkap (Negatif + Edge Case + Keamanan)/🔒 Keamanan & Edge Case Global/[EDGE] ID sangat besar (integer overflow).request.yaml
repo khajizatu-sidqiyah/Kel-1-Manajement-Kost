@@ -1,0 +1,14 @@
+$kind: http-request
+url: "{{base_url}}/api/kamar/99999999999999999999"
+method: GET
+headers:
+  Accept: application/json
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status 404 atau 422 — ID overflow harus ditangani', () => {
+        pm.expect([404, 422]).to.include(pm.response.code);
+      });
+    language: text/javascript
+order: 13000

@@ -1,0 +1,42 @@
+$kind: http-example
+request:
+  url: "{{base_url}}/api/login"
+  method: POST
+  headers:
+    Accept: application/json
+    Content-Type: application/json
+  body:
+    type: text
+    content: |-
+      {
+        "email": "penghuni.email",
+        "password": "password123"
+      }
+response:
+  statusCode: 422
+  statusText: Unprocessable Content
+  headers:
+    Host: localhost:8000
+    Connection: close
+    X-Powered-By: PHP/8.2.12
+    Cache-Control: no-cache, private
+    Date: Wed, 04 Nov 2026 00:36:00 GMT
+    Content-Type: application/json; charset=utf-8
+    Access-Control-Allow-Origin: "*"
+  body:
+    type: json
+    content: |-
+      {
+        "message": "Parameter permintaan tidak valid.",
+        "error": {
+          "code": 422,
+          "message": "Validasi gagal.",
+          "status": "INVALID_ARGUMENT",
+          "details": {
+            "email": [
+              "The email field must be a valid email address."
+            ]
+          }
+        }
+      }
+order: 1000

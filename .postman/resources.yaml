@@ -6,7 +6,8 @@ workspace:
 
 cloudResources:
   collections:
-    ../postman/collections/API Sistem Manajemen Kost - Sprint Auto Test v1.3.0: 6a56309b-08f3-4ced-a23e-9b5cc81111a7
+    ../postman/collections/Sistem Manajemen Kost - API Testing Lengkap (Postman): c6fbe8d2-386f-44a9-a051-a95f9c38770c
+    ../postman/collections/Manajemen Kost API — Lengkap (Negatif + Edge Case + Keamanan): 375dcae2-be6d-45ad-8b13-0e8004790481
 
 # All resources in the `postman/` folder are automatically registered in Local View.
 # Point to additional files outside the `postman/` folder to register them individually. Example:

@@ -1,0 +1,30 @@
+$kind: http-request
+name: "[OK] POST /api/penghunian — penghunian untuk penghuni existing"
+url: "{{base_url}}/api/penghunian"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: |-
+    {
+      "id_kamar": 1,
+      "id_penghuni": 15,
+      "tanggal_mulai": "2026-11-01",
+      "tanggal_selesai": "2026-11-30"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status 201', () => pm.response.to.have.status(201));
+      pm.test('id_penghunian tersimpan', () => {
+        const json = pm.response.json();
+        if (json.data && json.data.id_penghunian) {
+          pm.collectionVariables.set('penghunian_id', json.data.id_penghunian);
+        }
+      });
+    language: text/javascript
+examples: .resources/[OK] POST -api-penghunian — penghunian untuk penghuni existing.resources/examples
+order: 2000

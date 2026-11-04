@@ -1,0 +1,22 @@
+$kind: http-request
+name: "[OK] POST /api/penghunian/:id/hitung-dp — hitung DP tahunan"
+url: "{{base_url}}/api/penghunian/18/hitung-dp"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: |-
+    {
+      "skema_sewa": "tahunan"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status 200 atau 422 (jika harga_tahunan null)', () => {
+        pm.expect([200, 422]).to.include(pm.response.code);
+      });
+    language: text/javascript
+order: 16000

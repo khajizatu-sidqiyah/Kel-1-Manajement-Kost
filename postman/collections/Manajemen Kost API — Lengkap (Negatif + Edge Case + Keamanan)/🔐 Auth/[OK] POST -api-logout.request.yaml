@@ -1,0 +1,16 @@
+$kind: http-request
+name: "[OK] POST /api/logout"
+url: "{{base_url}}/api/logout"
+method: POST
+headers:
+  Accept: application/json
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status 200', () => pm.response.to.have.status(200));
+      pm.test('Pesan logout berhasil', () => {
+        pm.expect(pm.response.json().message).to.include('berhasil');
+      });
+    language: text/javascript
+order: 11000

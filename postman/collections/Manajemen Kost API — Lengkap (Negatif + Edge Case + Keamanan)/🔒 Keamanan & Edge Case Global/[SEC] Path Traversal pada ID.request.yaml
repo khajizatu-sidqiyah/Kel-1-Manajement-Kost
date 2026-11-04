@@ -1,0 +1,14 @@
+$kind: http-request
+url: "{{base_url}}/api/kamar/../../etc/passwd"
+method: GET
+headers:
+  Accept: application/json
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Tidak 500 — path traversal harus ditangkap router', () => {
+        pm.expect(pm.response.code).to.not.eql(500);
+      });
+    language: text/javascript
+order: 7000

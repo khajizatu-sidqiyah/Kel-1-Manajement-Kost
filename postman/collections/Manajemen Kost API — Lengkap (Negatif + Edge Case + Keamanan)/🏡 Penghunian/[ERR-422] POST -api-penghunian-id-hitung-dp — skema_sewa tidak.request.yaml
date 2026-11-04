@@ -1,0 +1,20 @@
+$kind: http-request
+name: "[ERR-422] POST /api/penghunian/:id/hitung-dp — skema_sewa tidak valid"
+url: "{{base_url}}/api/penghunian/16/hitung-dp"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: |-
+    {
+      "skema_sewa": "mingguan"
+    }
+scripts:
+  - type: afterResponse
+    code: pm.test('Status 422', () => pm.response.to.have.status(422));
+    language: text/javascript
+examples: .resources/[ERR-422] POST -api-penghunian-id-hitung-dp — skema_sewa tidak.resources/examples
+order: 17000

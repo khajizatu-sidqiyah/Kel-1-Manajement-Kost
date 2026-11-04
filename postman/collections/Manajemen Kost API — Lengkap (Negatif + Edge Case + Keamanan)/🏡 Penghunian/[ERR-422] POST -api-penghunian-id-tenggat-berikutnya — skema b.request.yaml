@@ -1,0 +1,15 @@
+$kind: http-request
+name: "[ERR-422] POST /api/penghunian/:id/tenggat-berikutnya — skema bukan bulanan"
+url: "{{base_url}}/api/penghunian/999999/tenggat-berikutnya"
+method: POST
+headers:
+  Accept: application/json
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status 422 — INVALID_RENT_SCHEME', () => {
+        pm.expect(pm.response.code).to.eql(422);
+      });
+    language: text/javascript
+order: 26000
