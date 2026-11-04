@@ -1,0 +1,28 @@
+$kind: http-request
+name: "[OK] POST /api/penghuni — tambah penghuni valid"
+url: "{{base_url}}/api/penghuni"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: |-
+    {
+      "nama_penghuni": "Dinda",
+      "no_telepon": "081234567890",
+      "email": "dinda@gmail.com",
+      "alamat": "Cirebon"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status 201', () => pm.response.to.have.status(201));
+      pm.test('id_penghuni tersimpan', () => {
+        const json = pm.response.json();
+        pm.expect(json.data).to.have.property('id_penghuni');
+        pm.collectionVariables.set('penghuni_id', json.data.id_penghuni);
+      });
+    language: text/javascript
+order: 2000

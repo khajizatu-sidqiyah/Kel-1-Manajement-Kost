@@ -1,0 +1,12 @@
+$kind: http-request
+name: "[ERR-404] DELETE /api/kamar/:id — ID tidak ada"
+url: "{{base_url}}/api/kamar/999999"
+method: DELETE
+headers:
+  Accept: application/json
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: pm.test('Status 404', () => pm.response.to.have.status(404));
+    language: text/javascript
+order: 20000

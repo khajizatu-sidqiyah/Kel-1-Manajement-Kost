@@ -1,0 +1,27 @@
+$kind: http-request
+name: "[ERR-422] POST /api/pembayaran — pelunasan tidak sama persis dengan sisa tagihan"
+url: "{{base_url}}/api/pembayaran"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: |-
+    {
+      "id_penghunian": 16,
+      "jenis_pembayaran": "pelunasan",
+      "tanggal_bayar": "2026-11-05",
+      "jumlah": 1,
+      "metode_pembayaran": "Cash"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status 422 — INVALID_FINAL_PAYMENT_AMOUNT', () => {
+        pm.expect(pm.response.code).to.eql(422);
+      });
+    language: text/javascript
+examples: .resources/[ERR-422] POST -api-pembayaran — pelunasan tidak sama persis d.resources/examples
+order: 10000

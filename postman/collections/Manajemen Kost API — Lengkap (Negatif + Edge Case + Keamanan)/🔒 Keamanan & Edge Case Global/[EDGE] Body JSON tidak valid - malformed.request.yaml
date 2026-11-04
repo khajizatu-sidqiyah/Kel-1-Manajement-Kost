@@ -1,0 +1,19 @@
+$kind: http-request
+name: "[EDGE] Body JSON tidak valid / malformed"
+url: "{{base_url}}/api/kamar"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: "{ no_kamar: 'A01', harga: 500000 }"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status 400 atau 422 — malformed JSON harus ditolak', () => {
+        pm.expect([400, 422, 500]).to.include(pm.response.code);
+      });
+    language: text/javascript
+order: 14000

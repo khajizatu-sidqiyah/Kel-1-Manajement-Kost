@@ -1,0 +1,23 @@
+$kind: http-request
+name: "[OK] PUT /api/pembayaran/:id/status — verifikasi pembayaran"
+url: "{{base_url}}/api/pembayaran/{{pembayaran_id}}/status"
+method: PUT
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: |-
+    {
+      "status": "terverifikasi"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status 200', () => pm.response.to.have.status(200));
+      pm.test('Status pembayaran = terverifikasi', () => {
+        pm.expect(pm.response.json().data.pembayaran.status).to.eql('terverifikasi');
+      });
+    language: text/javascript
+order: 20000

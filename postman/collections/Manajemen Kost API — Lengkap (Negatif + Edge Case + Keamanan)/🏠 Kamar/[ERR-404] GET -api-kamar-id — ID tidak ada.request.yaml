@@ -1,0 +1,16 @@
+$kind: http-request
+name: "[ERR-404] GET /api/kamar/:id — ID tidak ada"
+url: "{{base_url}}/api/kamar/999999"
+method: GET
+headers:
+  Accept: application/json
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status 404', () => pm.response.to.have.status(404));
+      pm.test('error.status = NOT_FOUND', () => {
+        pm.expect(pm.response.json().error.status).to.eql('NOT_FOUND');
+      });
+    language: text/javascript
+order: 13000

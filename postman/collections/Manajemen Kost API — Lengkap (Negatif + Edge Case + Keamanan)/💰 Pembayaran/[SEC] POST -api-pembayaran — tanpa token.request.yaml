@@ -1,0 +1,22 @@
+$kind: http-request
+name: "[SEC] POST /api/pembayaran — tanpa token"
+url: "{{base_url}}/api/pembayaran"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "id_penghunian": 1,
+      "jenis_pembayaran": "dp",
+      "tanggal_bayar": "2026-11-01",
+      "jumlah": 500000,
+      "metode_pembayaran": "Cash"
+    }
+scripts:
+  - type: afterResponse
+    code: pm.test('Status 401', () => pm.response.to.have.status(401));
+    language: text/javascript
+order: 26000

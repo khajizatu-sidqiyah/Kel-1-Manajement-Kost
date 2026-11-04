@@ -1,0 +1,22 @@
+$kind: http-request
+name: "[ERR-422] POST /api/penghunian/:id/hitung-dp — penghunian tidak aktif"
+url: "{{base_url}}/api/penghunian/16/hitung-dp"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: |-
+    {
+      "skema_sewa": "bulanan"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status 422 — OCCUPANCY_NOT_ACTIVE atau 404', () => {
+        pm.expect([404, 422]).to.include(pm.response.code);
+      });
+    language: text/javascript
+order: 18000

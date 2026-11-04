@@ -1,0 +1,19 @@
+$kind: http-request
+name: "[ERR-422] PUT /api/pembayaran/:id — jumlah = 0"
+url: "{{base_url}}/api/pembayaran/{{pembayaran_id}}"
+method: PUT
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: |-
+    {
+      "jumlah": 0
+    }
+scripts:
+  - type: afterResponse
+    code: pm.test('Status 422 — jumlah harus > 0', () => pm.response.to.have.status(422));
+    language: text/javascript
+order: 18000

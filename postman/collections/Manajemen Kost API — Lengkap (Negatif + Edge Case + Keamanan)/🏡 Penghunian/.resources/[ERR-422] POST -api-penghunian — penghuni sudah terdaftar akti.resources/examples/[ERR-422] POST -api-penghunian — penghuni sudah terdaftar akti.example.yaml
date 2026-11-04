@@ -1,0 +1,41 @@
+$kind: http-example
+name: "[ERR-422] POST /api/penghunian — penghuni sudah terdaftar aktif di kamar yang sama"
+request:
+  url: "{{base_url}}/api/penghunian"
+  method: POST
+  headers:
+    Accept: application/json
+    Content-Type: application/json
+    Authorization: Bearer {{token}}
+  body:
+    type: text
+    content: |-
+      {
+        "id_kamar": 1,
+        "id_penghuni": 15,
+        "tanggal_mulai": "2026-11-01"
+      }
+response:
+  statusCode: 422
+  statusText: Unprocessable Content
+  headers:
+    Host: localhost:8000
+    Connection: close
+    X-Powered-By: PHP/8.2.12
+    Cache-Control: no-cache, private
+    Date: Wed, 04 Nov 2026 00:53:38 GMT
+    Content-Type: application/json; charset=utf-8
+    Access-Control-Allow-Origin: "*"
+  body:
+    type: json
+    content: |-
+      {
+        "message": "Penghuni sudah terdaftar pada kamar ini.",
+        "error": {
+          "code": "TENANT_ALREADY_REGISTERED",
+          "message": "Penghuni sudah terdaftar pada kamar ini.",
+          "status": "INVALID_ARGUMENT",
+          "details": {}
+        }
+      }
+order: 1000

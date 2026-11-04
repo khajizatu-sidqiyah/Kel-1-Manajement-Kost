@@ -1,0 +1,23 @@
+$kind: http-request
+name: "[OK] PUT /api/pembayaran/:id — update data pembayaran (belum terverifikasi)"
+url: "{{base_url}}/api/pembayaran/{{pembayaran_id}}"
+method: PUT
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: |-
+    {
+      "metode_pembayaran": "Transfer BCA",
+      "bukti_pembayaran": "https://drive.google.com/bukti2.jpg"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status 200 atau 422 (jika sudah terverifikasi)', () => {
+        pm.expect([200, 422]).to.include(pm.response.code);
+      });
+    language: text/javascript
+order: 16000

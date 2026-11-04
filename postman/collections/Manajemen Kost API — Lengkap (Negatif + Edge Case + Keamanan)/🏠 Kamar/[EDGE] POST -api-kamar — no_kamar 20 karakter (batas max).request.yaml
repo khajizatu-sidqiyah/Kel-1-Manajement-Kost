@@ -1,0 +1,20 @@
+$kind: http-request
+name: "[EDGE] POST /api/kamar — no_kamar 20 karakter (batas max)"
+url: "{{base_url}}/api/kamar"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: |-
+    {
+      "no_kamar": "12345678901234567890",
+      "harga": 750000
+    }
+scripts:
+  - type: afterResponse
+    code: pm.test('Status 201 — tepat 20 karakter diizinkan', () => pm.response.to.have.status(201));
+    language: text/javascript
+order: 9000

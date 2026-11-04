@@ -1,0 +1,15 @@
+$kind: http-request
+name: "[OK] POST /api/penghunian/:id/tenggat-berikutnya — geser tenggat bulanan"
+url: "{{base_url}}/api/penghunian/{{penghunian_id}}/tenggat-berikutnya"
+method: POST
+headers:
+  Accept: application/json
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status 200 atau 422 (jika bukan bulanan)', () => {
+        pm.expect([200, 422]).to.include(pm.response.code);
+      });
+    language: text/javascript
+order: 25000

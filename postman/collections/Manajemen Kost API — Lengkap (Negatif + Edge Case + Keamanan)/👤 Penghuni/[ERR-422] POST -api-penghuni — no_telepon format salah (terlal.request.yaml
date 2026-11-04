@@ -1,0 +1,20 @@
+$kind: http-request
+name: "[ERR-422] POST /api/penghuni — no_telepon format salah (terlalu pendek)"
+url: "{{base_url}}/api/penghuni"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: |-
+    {
+      "nama_penghuni": "Siti",
+      "no_telepon": "08123"
+    }
+scripts:
+  - type: afterResponse
+    code: pm.test('Status 422 — no_telepon < 10 digit', () => pm.response.to.have.status(422));
+    language: text/javascript
+order: 4000

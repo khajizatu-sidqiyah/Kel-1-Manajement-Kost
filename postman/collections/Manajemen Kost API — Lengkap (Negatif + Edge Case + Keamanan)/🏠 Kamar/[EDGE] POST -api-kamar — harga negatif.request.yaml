@@ -1,0 +1,20 @@
+$kind: http-request
+name: "[EDGE] POST /api/kamar — harga negatif"
+url: "{{base_url}}/api/kamar"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: |-
+    {
+      "no_kamar": "EDGE02",
+      "harga": -500000
+    }
+scripts:
+  - type: afterResponse
+    code: pm.test('Status 422 — harga negatif tidak diizinkan', () => pm.response.to.have.status(422));
+    language: text/javascript
+order: 7000

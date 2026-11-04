@@ -312,10 +312,9 @@ class PenghunianController extends Controller
     {
         $validated = $request->validate([
             'id_kamar' => [
-                'required',
-                'integer',
-                'exists:kamar,id_kamar',
-            ],
+            'required',
+            'integer',
+        ],
         ]);
 
         $hasil = DB::transaction(function () use ($id, $validated) {

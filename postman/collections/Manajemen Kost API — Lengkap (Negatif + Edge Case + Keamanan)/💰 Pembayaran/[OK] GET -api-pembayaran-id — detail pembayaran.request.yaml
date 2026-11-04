@@ -1,0 +1,12 @@
+$kind: http-request
+name: "[OK] GET /api/pembayaran/:id — detail pembayaran"
+url: "{{base_url}}/api/pembayaran/16"
+method: GET
+headers:
+  Accept: application/json
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: pm.test('Status 200', () => pm.response.to.have.status(200));
+    language: text/javascript
+order: 14000
