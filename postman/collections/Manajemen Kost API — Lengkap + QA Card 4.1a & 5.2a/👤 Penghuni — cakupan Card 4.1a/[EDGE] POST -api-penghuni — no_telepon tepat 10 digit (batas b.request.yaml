@@ -1,0 +1,33 @@
+$kind: http-request
+name: "[EDGE] POST /api/penghuni — no_telepon tepat 10 digit (batas bawah valid)"
+url: "{{base_url}}/api/penghuni"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: |-
+    {
+      "nama_penghuni": "Edge Case User",
+      "no_telepon": "0812345678"
+    }
+scripts:
+  - type: afterResponse
+    code: >-
+      let res = {};
+
+      try { res = pm.response.json(); } catch (e) { /* body bukan JSON */ }
+
+
+      pm.test('Status 201 — 10 digit valid', () =>
+      pm.response.to.have.status(201));
+
+
+      pm.test('no_telepon 10 digit tersimpan utuh', () => {
+        pm.expect(res.data.no_telepon).to.eql('0812345678');
+        pm.expect(res.data.no_telepon).to.have.lengthOf(10);
+      });
+    language: text/javascript
+order: 6000

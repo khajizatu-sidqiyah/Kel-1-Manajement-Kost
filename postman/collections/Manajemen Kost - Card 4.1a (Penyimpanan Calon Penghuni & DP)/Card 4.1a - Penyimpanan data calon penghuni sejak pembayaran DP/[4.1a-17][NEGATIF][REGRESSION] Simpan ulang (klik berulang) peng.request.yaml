@@ -1,0 +1,38 @@
+$kind: http-request
+name: "[4.1a-17][NEGATIF][REGRESSION] Simpan ulang (klik berulang) penghuni yang sama di kamar yang sama -> tidak ada entri ganda"
+url: "{{base_url}}/api/penghunian"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: json
+  content: |-
+    {
+      "id_kamar": {{s_kamar}},
+      "id_penghuni": {{s_rina_penghuni}},
+      "tanggal_mulai": "2026-11-05"
+    }
+scripts:
+  - type: beforeRequest
+    code: |-
+      const { api, uniq, setv, getv, seq, mkKamar, mkOcc, hitung, bayar, payId } = eval(pm.collectionVariables.get('lib'));
+      seq([
+        n => mkKamar({}, id => { setv('s_kamar', id); n(); }),
+        n => mkOcc(getv('s_kamar'), 'Rina', {tanggal_mulai:'2026-11-05'}, r => { r = r || {}; setv('s_rina', r.penghunian); setv('s_rina_penghuni', r.penghuni); n(); })
+      ]);
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));
+      swaggerCheck('POST /penghunian');
+      pm.test('Status 409 - duplikat ditolak (Conflict)', () => pm.response.to.have.status(409));
+      apiGet('/api/penghunian', (err, j) => {
+        pm.test('Hanya ada 1 penghunian aktif Rina di kamar tsb', () => {
+          const same = j.data.filter(x => String(x.id_kamar) === String(getv('s_kamar')) && String(x.id_penghuni) === String(getv('s_rina_penghuni')) && x.status === 'aktif');
+          pm.expect(same).to.have.lengthOf(1);
+        });
+      });
+    language: text/javascript
+order: 17000

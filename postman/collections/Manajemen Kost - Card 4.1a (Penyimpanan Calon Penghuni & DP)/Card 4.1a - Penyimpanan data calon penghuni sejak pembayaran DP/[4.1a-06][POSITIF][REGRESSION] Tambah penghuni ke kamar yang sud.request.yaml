@@ -1,0 +1,36 @@
+$kind: http-request
+name: "[4.1a-06][POSITIF][REGRESSION] Tambah penghuni ke kamar yang sudah dihuni - penyewa utama tidak berubah"
+url: "{{base_url}}/api/penghunian/dengan-penghuni"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: json
+  content: |-
+    {
+      "id_kamar": {{s_kamar}},
+      "nama_penghuni": "Sari",
+      "alamat": "Kuningan"
+    }
+scripts:
+  - type: beforeRequest
+    code: |-
+      const { api, uniq, setv, getv, seq, mkKamar, mkOcc, hitung, bayar, payId } = eval(pm.collectionVariables.get('lib'));
+      seq([
+        n => mkKamar({}, id => { setv('s_kamar', id); n(); }),
+        n => mkOcc(getv('s_kamar'), 'Rina', {}, r => { r = r || {}; setv('s_rina', r.penghunian); setv('s_rina_penghuni', r.penghuni); n(); })
+      ]);
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));
+      swaggerCheck('POST /penghunian/dengan-penghuni');
+      pm.test('Status 201 - Sari tersimpan sebagai penghuni kamar', () => pm.response.to.have.status(201));
+      pm.test('Sari bukan penyewa utama', () => pm.expect(H(res.data).penyewa_utama).to.be.oneOf([false, 0]));
+      apiGet('/api/penghunian/' + getv('s_rina'), (err, j) => {
+        pm.test('Rina tetap menjadi penyewa utama', () => pm.expect(H(j.data).penyewa_utama).to.be.oneOf([true, 1]));
+      });
+    language: text/javascript
+order: 6000

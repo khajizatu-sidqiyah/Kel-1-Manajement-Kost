@@ -1,0 +1,32 @@
+$kind: http-request
+url: "{{base_url}}/api/pembayaran"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: |-
+    {
+      "id_penghunian": "{{penghunian_id}}",
+      "jenis_pembayaran": "dp",
+      "tanggal_bayar": "2026-11-04",
+      "jumlah": 500000,
+      "metode_pembayaran": "Cash' OR '1'='1'; DROP TABLE pembayaran; --"
+    }
+scripts:
+  - type: afterResponse
+    code: >-
+      pm.test('Server tidak 5xx', () =>
+      pm.expect(pm.response.code).to.be.below(500));
+
+      pm.test('Payload ditolak atau diperlakukan sebagai teks biasa', () =>
+      pm.expect([201,422]).to.include(pm.response.code));
+
+      pm.test('Tidak membocorkan SQL/stack trace', () => { const
+      b=pm.response.text().toLowerCase();
+      pm.expect(b).to.not.include('sqlstate');
+      pm.expect(b).to.not.include('stack trace'); });
+    language: text/javascript
+order: 17000

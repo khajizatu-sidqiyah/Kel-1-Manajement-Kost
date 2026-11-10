@@ -1,0 +1,798 @@
+$kind: http-example
+name: "[OK] GET /api/penghuni — daftar semua penghuni"
+request:
+  url: "{{base_url}}/api/penghuni"
+  method: GET
+  headers:
+    Accept: application/json
+    Authorization: Bearer {{token}}
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Host: localhost:8000
+    Connection: close
+    X-Powered-By: PHP/8.2.12
+    Cache-Control: no-cache, private
+    Date: Wed, 04 Nov 2026 10:25:44 GMT
+    Content-Type: application/json; charset=utf-8
+    Access-Control-Allow-Origin: "*"
+  body:
+    type: json
+    content: |-
+      {
+        "message": "",
+        "data": [
+          {
+            "id_penghuni": 1,
+            "user_id": 2,
+            "nama_penghuni": "Rina",
+            "no_telepon": "081299887766",
+            "email": "rina@gmail.com",
+            "alamat": "Kuningan",
+            "created_at": "2026-10-21T13:09:19.000000Z",
+            "updated_at": "2026-11-03T08:44:27.000000Z"
+          },
+          {
+            "id_penghuni": 2,
+            "user_id": null,
+            "nama_penghuni": "Teh Erin",
+            "no_telepon": "+62 853-1852-8347",
+            "email": "erin@gmail.com",
+            "alamat": "Cirebon",
+            "created_at": null,
+            "updated_at": null
+          },
+          {
+            "id_penghuni": 3,
+            "user_id": null,
+            "nama_penghuni": "Teh Azizah",
+            "no_telepon": "+62 896-7788-3738",
+            "email": "azizah@gmail.com",
+            "alamat": "Cirebon",
+            "created_at": null,
+            "updated_at": null
+          },
+          {
+            "id_penghuni": 4,
+            "user_id": null,
+            "nama_penghuni": "Aca",
+            "no_telepon": "+62 838-3285-0093",
+            "email": "aca@gmail.com",
+            "alamat": "Cirebon",
+            "created_at": null,
+            "updated_at": null
+          },
+          {
+            "id_penghuni": 5,
+            "user_id": null,
+            "nama_penghuni": "Risma",
+            "no_telepon": "+62 822-4260-0038",
+            "email": "risma@gmail.com",
+            "alamat": "Cirebon",
+            "created_at": null,
+            "updated_at": null
+          },
+          {
+            "id_penghuni": 6,
+            "user_id": null,
+            "nama_penghuni": "Syifa",
+            "no_telepon": "+62 895-6350-08600",
+            "email": "syifa@gmail.com",
+            "alamat": "Cirebon",
+            "created_at": null,
+            "updated_at": null
+          },
+          {
+            "id_penghuni": 7,
+            "user_id": null,
+            "nama_penghuni": "Indah",
+            "no_telepon": "+62 831-2016-4396",
+            "email": "indah@gmail.com",
+            "alamat": "Cirebon",
+            "created_at": null,
+            "updated_at": null
+          },
+          {
+            "id_penghuni": 8,
+            "user_id": null,
+            "nama_penghuni": "Nunu",
+            "no_telepon": "+62 838-7955-5420",
+            "email": "nunu@gmail.com",
+            "alamat": "Kalibuntu",
+            "created_at": null,
+            "updated_at": null
+          },
+          {
+            "id_penghuni": 9,
+            "user_id": null,
+            "nama_penghuni": "Syahra",
+            "no_telepon": "+62 823-1656-0422",
+            "email": "syahra@gmail.com",
+            "alamat": "Cirebon",
+            "created_at": null,
+            "updated_at": null
+          },
+          {
+            "id_penghuni": 10,
+            "user_id": null,
+            "nama_penghuni": "Nunun",
+            "no_telepon": "+62 812-1414-5457",
+            "email": "nunun@gmail.com",
+            "alamat": "Cirebon",
+            "created_at": null,
+            "updated_at": null
+          },
+          {
+            "id_penghuni": 11,
+            "user_id": null,
+            "nama_penghuni": "Jijah",
+            "no_telepon": "+62 838-2524-8419",
+            "email": "jijah@gmail.com",
+            "alamat": "Kalibuntu",
+            "created_at": null,
+            "updated_at": null
+          },
+          {
+            "id_penghuni": 12,
+            "user_id": null,
+            "nama_penghuni": "Elza",
+            "no_telepon": "+62 838-4146-0957",
+            "email": "elza@gmail.com",
+            "alamat": "Losari",
+            "created_at": null,
+            "updated_at": null
+          },
+          {
+            "id_penghuni": 13,
+            "user_id": null,
+            "nama_penghuni": "Salsa",
+            "no_telepon": "+62 831-2919-9063",
+            "email": "salsa@gmail.com",
+            "alamat": "Cirebon",
+            "created_at": null,
+            "updated_at": null
+          },
+          {
+            "id_penghuni": 14,
+            "user_id": null,
+            "nama_penghuni": "Dyas",
+            "no_telepon": "+62 822-8678-2116",
+            "email": "dyas@gmail.com",
+            "alamat": "Cirebon",
+            "created_at": null,
+            "updated_at": null
+          },
+          {
+            "id_penghuni": 15,
+            "user_id": null,
+            "nama_penghuni": "Postman QA Rina Updated",
+            "no_telepon": "081234567891",
+            "email": "ina@gmail.com",
+            "alamat": "Cirebon",
+            "created_at": "2026-10-21T13:19:16.000000Z",
+            "updated_at": "2026-11-04T09:52:37.000000Z"
+          },
+          {
+            "id_penghuni": 16,
+            "user_id": null,
+            "nama_penghuni": "Sari",
+            "no_telepon": "081234567890",
+            "email": null,
+            "alamat": "Bandung",
+            "created_at": "2026-10-21T15:26:11.000000Z",
+            "updated_at": "2026-10-21T15:26:11.000000Z"
+          },
+          {
+            "id_penghuni": 22,
+            "user_id": null,
+            "nama_penghuni": "Dinda",
+            "no_telepon": "08567890123",
+            "email": null,
+            "alamat": "Bogor",
+            "created_at": "2026-11-04T01:02:22.000000Z",
+            "updated_at": "2026-11-04T01:02:22.000000Z"
+          },
+          {
+            "id_penghuni": 24,
+            "user_id": null,
+            "nama_penghuni": "Budi Santoso",
+            "no_telepon": "081234567890",
+            "email": "budi@example.com",
+            "alamat": "Jl. Baru No. 99",
+            "created_at": "2026-11-04T09:28:04.000000Z",
+            "updated_at": "2026-11-04T09:28:11.000000Z"
+          },
+          {
+            "id_penghuni": 25,
+            "user_id": null,
+            "nama_penghuni": "Edge Case User",
+            "no_telepon": "0812345678",
+            "email": null,
+            "alamat": null,
+            "created_at": "2026-11-04T09:28:07.000000Z",
+            "updated_at": "2026-11-04T09:28:07.000000Z"
+          },
+          {
+            "id_penghuni": 26,
+            "user_id": null,
+            "nama_penghuni": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+            "no_telepon": null,
+            "email": null,
+            "alamat": null,
+            "created_at": "2026-11-04T09:28:08.000000Z",
+            "updated_at": "2026-11-04T09:28:08.000000Z"
+          },
+          {
+            "id_penghuni": 27,
+            "user_id": null,
+            "nama_penghuni": "<script>alert('xss')</script>",
+            "no_telepon": null,
+            "email": null,
+            "alamat": null,
+            "created_at": "2026-11-04T09:28:09.000000Z",
+            "updated_at": "2026-11-04T09:28:09.000000Z"
+          },
+          {
+            "id_penghuni": 29,
+            "user_id": null,
+            "nama_penghuni": "Ahmad Fauzi",
+            "no_telepon": "08567890123",
+            "email": null,
+            "alamat": "Jl. Sudirman No. 5",
+            "created_at": "2026-11-04T09:28:19.000000Z",
+            "updated_at": "2026-11-04T09:28:19.000000Z"
+          },
+          {
+            "id_penghuni": 30,
+            "user_id": null,
+            "nama_penghuni": "Penghuni Uji 784514561",
+            "no_telepon": "08134514561",
+            "email": null,
+            "alamat": "Jl. Uji",
+            "created_at": "2026-11-04T09:28:35.000000Z",
+            "updated_at": "2026-11-04T09:28:35.000000Z"
+          },
+          {
+            "id_penghuni": 31,
+            "user_id": null,
+            "nama_penghuni": "Penghuni Selesai",
+            "no_telepon": "08224517034",
+            "email": null,
+            "alamat": "Jl. Selesai",
+            "created_at": "2026-11-04T09:28:37.000000Z",
+            "updated_at": "2026-11-04T09:28:37.000000Z"
+          },
+          {
+            "id_penghuni": 32,
+            "user_id": null,
+            "nama_penghuni": "Penghuni Uji 784524761",
+            "no_telepon": "08134524761",
+            "email": null,
+            "alamat": "Jl. Uji",
+            "created_at": "2026-11-04T09:28:45.000000Z",
+            "updated_at": "2026-11-04T09:28:45.000000Z"
+          },
+          {
+            "id_penghuni": 33,
+            "user_id": null,
+            "nama_penghuni": "Penghuni Uji 784527002",
+            "no_telepon": "08134527002",
+            "email": null,
+            "alamat": "Jl. Uji",
+            "created_at": "2026-11-04T09:28:47.000000Z",
+            "updated_at": "2026-11-04T09:28:47.000000Z"
+          },
+          {
+            "id_penghuni": 34,
+            "user_id": null,
+            "nama_penghuni": "Penghuni Uji 784531113",
+            "no_telepon": "08134531113",
+            "email": null,
+            "alamat": "Jl. Uji",
+            "created_at": "2026-11-04T09:28:52.000000Z",
+            "updated_at": "2026-11-04T09:28:52.000000Z"
+          },
+          {
+            "id_penghuni": 35,
+            "user_id": null,
+            "nama_penghuni": "Penghuni Uji 784532850",
+            "no_telepon": "08134532850",
+            "email": null,
+            "alamat": "Jl. Uji",
+            "created_at": "2026-11-04T09:28:54.000000Z",
+            "updated_at": "2026-11-04T09:28:54.000000Z"
+          },
+          {
+            "id_penghuni": 36,
+            "user_id": null,
+            "nama_penghuni": "Budi Santoso",
+            "no_telepon": "081234567890",
+            "email": "budi@example.com",
+            "alamat": "Jl. Baru No. 99",
+            "created_at": "2026-11-04T09:31:26.000000Z",
+            "updated_at": "2026-11-04T09:31:36.000000Z"
+          },
+          {
+            "id_penghuni": 37,
+            "user_id": null,
+            "nama_penghuni": "Edge Case User",
+            "no_telepon": "0812345678",
+            "email": null,
+            "alamat": null,
+            "created_at": "2026-11-04T09:31:30.000000Z",
+            "updated_at": "2026-11-04T09:31:30.000000Z"
+          },
+          {
+            "id_penghuni": 38,
+            "user_id": null,
+            "nama_penghuni": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+            "no_telepon": null,
+            "email": null,
+            "alamat": null,
+            "created_at": "2026-11-04T09:31:32.000000Z",
+            "updated_at": "2026-11-04T09:31:32.000000Z"
+          },
+          {
+            "id_penghuni": 39,
+            "user_id": null,
+            "nama_penghuni": "<script>alert('xss')</script>",
+            "no_telepon": null,
+            "email": null,
+            "alamat": null,
+            "created_at": "2026-11-04T09:31:33.000000Z",
+            "updated_at": "2026-11-04T09:31:33.000000Z"
+          },
+          {
+            "id_penghuni": 41,
+            "user_id": null,
+            "nama_penghuni": "Ahmad Fauzi",
+            "no_telepon": "08567890123",
+            "email": null,
+            "alamat": "Jl. Sudirman No. 5",
+            "created_at": "2026-11-04T09:31:46.000000Z",
+            "updated_at": "2026-11-04T09:31:46.000000Z"
+          },
+          {
+            "id_penghuni": 42,
+            "user_id": null,
+            "nama_penghuni": "Penghuni Uji 784721251",
+            "no_telepon": "08134721251",
+            "email": null,
+            "alamat": "Jl. Uji",
+            "created_at": "2026-11-04T09:32:02.000000Z",
+            "updated_at": "2026-11-04T09:32:02.000000Z"
+          },
+          {
+            "id_penghuni": 43,
+            "user_id": null,
+            "nama_penghuni": "Penghuni Selesai",
+            "no_telepon": "08224723338",
+            "email": null,
+            "alamat": "Jl. Selesai",
+            "created_at": "2026-11-04T09:32:03.000000Z",
+            "updated_at": "2026-11-04T09:32:03.000000Z"
+          },
+          {
+            "id_penghuni": 44,
+            "user_id": null,
+            "nama_penghuni": "Penghuni Uji 784730609",
+            "no_telepon": "08134730609",
+            "email": null,
+            "alamat": "Jl. Uji",
+            "created_at": "2026-11-04T09:32:11.000000Z",
+            "updated_at": "2026-11-04T09:32:11.000000Z"
+          },
+          {
+            "id_penghuni": 45,
+            "user_id": null,
+            "nama_penghuni": "Penghuni Uji 784733043",
+            "no_telepon": "08134733043",
+            "email": null,
+            "alamat": "Jl. Uji",
+            "created_at": "2026-11-04T09:32:14.000000Z",
+            "updated_at": "2026-11-04T09:32:14.000000Z"
+          },
+          {
+            "id_penghuni": 46,
+            "user_id": null,
+            "nama_penghuni": "Penghuni Uji 784737949",
+            "no_telepon": "08134737949",
+            "email": null,
+            "alamat": "Jl. Uji",
+            "created_at": "2026-11-04T09:32:19.000000Z",
+            "updated_at": "2026-11-04T09:32:19.000000Z"
+          },
+          {
+            "id_penghuni": 47,
+            "user_id": null,
+            "nama_penghuni": "Penghuni Uji 784740867",
+            "no_telepon": "08134740867",
+            "email": null,
+            "alamat": "Jl. Uji",
+            "created_at": "2026-11-04T09:32:22.000000Z",
+            "updated_at": "2026-11-04T09:32:22.000000Z"
+          },
+          {
+            "id_penghuni": 48,
+            "user_id": null,
+            "nama_penghuni": "Budi Santoso",
+            "no_telepon": "081234567890",
+            "email": "budi@example.com",
+            "alamat": "Jl. Baru No. 99",
+            "created_at": "2026-11-04T09:48:56.000000Z",
+            "updated_at": "2026-11-04T09:49:03.000000Z"
+          },
+          {
+            "id_penghuni": 49,
+            "user_id": null,
+            "nama_penghuni": "Edge Case User",
+            "no_telepon": "0812345678",
+            "email": null,
+            "alamat": null,
+            "created_at": "2026-11-04T09:48:59.000000Z",
+            "updated_at": "2026-11-04T09:48:59.000000Z"
+          },
+          {
+            "id_penghuni": 50,
+            "user_id": null,
+            "nama_penghuni": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+            "no_telepon": null,
+            "email": null,
+            "alamat": null,
+            "created_at": "2026-11-04T09:49:00.000000Z",
+            "updated_at": "2026-11-04T09:49:00.000000Z"
+          },
+          {
+            "id_penghuni": 51,
+            "user_id": null,
+            "nama_penghuni": "<script>alert('xss')</script>",
+            "no_telepon": null,
+            "email": null,
+            "alamat": null,
+            "created_at": "2026-11-04T09:49:01.000000Z",
+            "updated_at": "2026-11-04T09:49:01.000000Z"
+          },
+          {
+            "id_penghuni": 53,
+            "user_id": null,
+            "nama_penghuni": "Ahmad Fauzi",
+            "no_telepon": "08567890123",
+            "email": null,
+            "alamat": "Jl. Sudirman No. 5",
+            "created_at": "2026-11-04T09:49:11.000000Z",
+            "updated_at": "2026-11-04T09:49:11.000000Z"
+          },
+          {
+            "id_penghuni": 54,
+            "user_id": null,
+            "nama_penghuni": "Penghuni Uji 785767987",
+            "no_telepon": "08135767987",
+            "email": null,
+            "alamat": "Jl. Uji",
+            "created_at": "2026-11-04T09:49:29.000000Z",
+            "updated_at": "2026-11-04T09:49:29.000000Z"
+          },
+          {
+            "id_penghuni": 55,
+            "user_id": null,
+            "nama_penghuni": "Penghuni Selesai",
+            "no_telepon": "08225771533",
+            "email": null,
+            "alamat": "Jl. Selesai",
+            "created_at": "2026-11-04T09:49:31.000000Z",
+            "updated_at": "2026-11-04T09:49:31.000000Z"
+          },
+          {
+            "id_penghuni": 56,
+            "user_id": null,
+            "nama_penghuni": "Penghuni Uji 785777771",
+            "no_telepon": "08135777771",
+            "email": null,
+            "alamat": "Jl. Uji",
+            "created_at": "2026-11-04T09:49:38.000000Z",
+            "updated_at": "2026-11-04T09:49:38.000000Z"
+          },
+          {
+            "id_penghuni": 57,
+            "user_id": null,
+            "nama_penghuni": "Penghuni Uji 785781063",
+            "no_telepon": "08135781063",
+            "email": null,
+            "alamat": "Jl. Uji",
+            "created_at": "2026-11-04T09:49:41.000000Z",
+            "updated_at": "2026-11-04T09:49:41.000000Z"
+          },
+          {
+            "id_penghuni": 58,
+            "user_id": null,
+            "nama_penghuni": "Penghuni Uji 785790996",
+            "no_telepon": "08135790996",
+            "email": null,
+            "alamat": "Jl. Uji",
+            "created_at": "2026-11-04T09:49:54.000000Z",
+            "updated_at": "2026-11-04T09:49:54.000000Z"
+          },
+          {
+            "id_penghuni": 59,
+            "user_id": null,
+            "nama_penghuni": "Penghuni Uji 785795562",
+            "no_telepon": "08135795562",
+            "email": null,
+            "alamat": "Jl. Uji",
+            "created_at": "2026-11-04T09:49:56.000000Z",
+            "updated_at": "2026-11-04T09:49:56.000000Z"
+          },
+          {
+            "id_penghuni": 60,
+            "user_id": null,
+            "nama_penghuni": "Cici",
+            "no_telepon": "081234567890",
+            "email": "cici@gmail.com",
+            "alamat": "Jogja",
+            "created_at": "2026-11-04T09:52:30.000000Z",
+            "updated_at": "2026-11-04T09:52:30.000000Z"
+          },
+          {
+            "id_penghuni": 61,
+            "user_id": null,
+            "nama_penghuni": "' OR '1'='1",
+            "no_telepon": "081234567890",
+            "email": "sqli@gmail.com",
+            "alamat": "Kuningan",
+            "created_at": "2026-11-04T09:52:34.000000Z",
+            "updated_at": "2026-11-04T09:52:34.000000Z"
+          },
+          {
+            "id_penghuni": 62,
+            "user_id": null,
+            "nama_penghuni": "<script>alert('XSS')</script>",
+            "no_telepon": "081234567890",
+            "email": "xss@example.com",
+            "alamat": "<img src=x onerror=alert(1)>",
+            "created_at": "2026-11-04T09:52:34.000000Z",
+            "updated_at": "2026-11-04T09:52:34.000000Z"
+          },
+          {
+            "id_penghuni": 63,
+            "user_id": null,
+            "nama_penghuni": "' OR 1=1 --",
+            "no_telepon": "081234567890",
+            "email": "sqli.qa@example.com",
+            "alamat": "Test",
+            "created_at": "2026-11-04T09:53:17.000000Z",
+            "updated_at": "2026-11-04T09:53:17.000000Z"
+          },
+          {
+            "id_penghuni": 64,
+            "user_id": null,
+            "nama_penghuni": "<img src=x onerror=alert(1)>",
+            "no_telepon": "081234567890",
+            "email": "xss.qa@example.com",
+            "alamat": "<svg onload=alert(1)>",
+            "created_at": "2026-11-04T09:53:18.000000Z",
+            "updated_at": "2026-11-04T09:53:18.000000Z"
+          },
+          {
+            "id_penghuni": 65,
+            "user_id": null,
+            "nama_penghuni": "Budi Santoso",
+            "no_telepon": "081234567890",
+            "email": "budi@example.com",
+            "alamat": "Jl. Baru No. 99",
+            "created_at": "2026-11-04T09:57:59.000000Z",
+            "updated_at": "2026-11-04T09:58:06.000000Z"
+          },
+          {
+            "id_penghuni": 66,
+            "user_id": null,
+            "nama_penghuni": "Edge Case User",
+            "no_telepon": "0812345678",
+            "email": null,
+            "alamat": null,
+            "created_at": "2026-11-04T09:58:02.000000Z",
+            "updated_at": "2026-11-04T09:58:02.000000Z"
+          },
+          {
+            "id_penghuni": 67,
+            "user_id": null,
+            "nama_penghuni": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+            "no_telepon": null,
+            "email": null,
+            "alamat": null,
+            "created_at": "2026-11-04T09:58:03.000000Z",
+            "updated_at": "2026-11-04T09:58:03.000000Z"
+          },
+          {
+            "id_penghuni": 68,
+            "user_id": null,
+            "nama_penghuni": "<script>alert('xss')</script>",
+            "no_telepon": null,
+            "email": null,
+            "alamat": null,
+            "created_at": "2026-11-04T09:58:04.000000Z",
+            "updated_at": "2026-11-04T09:58:04.000000Z"
+          },
+          {
+            "id_penghuni": 70,
+            "user_id": null,
+            "nama_penghuni": "Ahmad Fauzi",
+            "no_telepon": "08567890123",
+            "email": null,
+            "alamat": "Jl. Sudirman No. 5",
+            "created_at": "2026-11-04T09:58:13.000000Z",
+            "updated_at": "2026-11-04T09:58:13.000000Z"
+          },
+          {
+            "id_penghuni": 71,
+            "user_id": null,
+            "nama_penghuni": "Penghuni Uji 786313511",
+            "no_telepon": "08136313511",
+            "email": null,
+            "alamat": "Jl. Uji",
+            "created_at": "2026-11-04T09:58:34.000000Z",
+            "updated_at": "2026-11-04T09:58:34.000000Z"
+          },
+          {
+            "id_penghuni": 72,
+            "user_id": null,
+            "nama_penghuni": "Penghuni Selesai",
+            "no_telepon": "08226315391",
+            "email": null,
+            "alamat": "Jl. Selesai",
+            "created_at": "2026-11-04T09:58:35.000000Z",
+            "updated_at": "2026-11-04T09:58:35.000000Z"
+          },
+          {
+            "id_penghuni": 73,
+            "user_id": null,
+            "nama_penghuni": "Penghuni Uji 786321668",
+            "no_telepon": "08136321668",
+            "email": null,
+            "alamat": "Jl. Uji",
+            "created_at": "2026-11-04T09:58:42.000000Z",
+            "updated_at": "2026-11-04T09:58:42.000000Z"
+          },
+          {
+            "id_penghuni": 74,
+            "user_id": null,
+            "nama_penghuni": "Penghuni Uji 786324293",
+            "no_telepon": "08136324293",
+            "email": null,
+            "alamat": "Jl. Uji",
+            "created_at": "2026-11-04T09:58:46.000000Z",
+            "updated_at": "2026-11-04T09:58:46.000000Z"
+          },
+          {
+            "id_penghuni": 75,
+            "user_id": null,
+            "nama_penghuni": "Penghuni Uji 786328995",
+            "no_telepon": "08136328995",
+            "email": null,
+            "alamat": "Jl. Uji",
+            "created_at": "2026-11-04T09:58:49.000000Z",
+            "updated_at": "2026-11-04T09:58:49.000000Z"
+          },
+          {
+            "id_penghuni": 76,
+            "user_id": null,
+            "nama_penghuni": "Penghuni Uji 786330645",
+            "no_telepon": "08136330645",
+            "email": null,
+            "alamat": "Jl. Uji",
+            "created_at": "2026-11-04T09:58:51.000000Z",
+            "updated_at": "2026-11-04T09:58:51.000000Z"
+          },
+          {
+            "id_penghuni": 77,
+            "user_id": null,
+            "nama_penghuni": "Budi Santoso",
+            "no_telepon": "081234567890",
+            "email": "budi@example.com",
+            "alamat": "Jl. Baru No. 99",
+            "created_at": "2026-11-04T10:01:56.000000Z",
+            "updated_at": "2026-11-04T10:02:02.000000Z"
+          },
+          {
+            "id_penghuni": 78,
+            "user_id": null,
+            "nama_penghuni": "Edge Case User",
+            "no_telepon": "0812345678",
+            "email": null,
+            "alamat": null,
+            "created_at": "2026-11-04T10:01:58.000000Z",
+            "updated_at": "2026-11-04T10:01:58.000000Z"
+          },
+          {
+            "id_penghuni": 79,
+            "user_id": null,
+            "nama_penghuni": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+            "no_telepon": null,
+            "email": null,
+            "alamat": null,
+            "created_at": "2026-11-04T10:01:59.000000Z",
+            "updated_at": "2026-11-04T10:01:59.000000Z"
+          },
+          {
+            "id_penghuni": 80,
+            "user_id": null,
+            "nama_penghuni": "<script>alert('xss')</script>",
+            "no_telepon": null,
+            "email": null,
+            "alamat": null,
+            "created_at": "2026-11-04T10:02:00.000000Z",
+            "updated_at": "2026-11-04T10:02:00.000000Z"
+          },
+          {
+            "id_penghuni": 82,
+            "user_id": null,
+            "nama_penghuni": "Ahmad Fauzi",
+            "no_telepon": "08567890123",
+            "email": null,
+            "alamat": "Jl. Sudirman No. 5",
+            "created_at": "2026-11-04T10:02:08.000000Z",
+            "updated_at": "2026-11-04T10:02:08.000000Z"
+          },
+          {
+            "id_penghuni": 83,
+            "user_id": null,
+            "nama_penghuni": "Penghuni Uji 786544479",
+            "no_telepon": "08136544479",
+            "email": null,
+            "alamat": "Jl. Uji",
+            "created_at": "2026-11-04T10:02:25.000000Z",
+            "updated_at": "2026-11-04T10:02:25.000000Z"
+          },
+          {
+            "id_penghuni": 84,
+            "user_id": null,
+            "nama_penghuni": "Penghuni Selesai",
+            "no_telepon": "08226548342",
+            "email": null,
+            "alamat": "Jl. Selesai",
+            "created_at": "2026-11-04T10:02:29.000000Z",
+            "updated_at": "2026-11-04T10:02:29.000000Z"
+          },
+          {
+            "id_penghuni": 85,
+            "user_id": null,
+            "nama_penghuni": "Penghuni Uji 786555687",
+            "no_telepon": "08136555687",
+            "email": null,
+            "alamat": "Jl. Uji",
+            "created_at": "2026-11-04T10:02:37.000000Z",
+            "updated_at": "2026-11-04T10:02:37.000000Z"
+          },
+          {
+            "id_penghuni": 86,
+            "user_id": null,
+            "nama_penghuni": "Penghuni Uji 786558746",
+            "no_telepon": "08136558746",
+            "email": null,
+            "alamat": "Jl. Uji",
+            "created_at": "2026-11-04T10:02:39.000000Z",
+            "updated_at": "2026-11-04T10:02:39.000000Z"
+          },
+          {
+            "id_penghuni": 87,
+            "user_id": null,
+            "nama_penghuni": "Penghuni Uji 786563567",
+            "no_telepon": "08136563567",
+            "email": null,
+            "alamat": "Jl. Uji",
+            "created_at": "2026-11-04T10:02:44.000000Z",
+            "updated_at": "2026-11-04T10:02:44.000000Z"
+          },
+          {
+            "id_penghuni": 88,
+            "user_id": null,
+            "nama_penghuni": "Penghuni Uji 786565417",
+            "no_telepon": "08136565417",
+            "email": null,
+            "alamat": "Jl. Uji",
+            "created_at": "2026-11-04T10:02:46.000000Z",
+            "updated_at": "2026-11-04T10:02:46.000000Z"
+          }
+        ]
+      }
+order: 1000

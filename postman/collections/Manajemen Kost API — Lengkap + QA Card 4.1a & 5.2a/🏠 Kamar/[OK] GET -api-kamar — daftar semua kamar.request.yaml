@@ -1,0 +1,32 @@
+$kind: http-request
+name: "[OK] GET /api/kamar — daftar semua kamar"
+url: "{{base_url}}/api/kamar"
+method: GET
+headers:
+  Accept: application/json
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: >-
+      let res = {};
+
+      try { res = pm.response.json(); } catch (e) { /* body bukan JSON */ }
+
+
+      pm.test('Status 200', () => pm.response.to.have.status(200));
+
+      pm.test('data adalah array', () => {
+        pm.expect(pm.response.json().data).to.be.an('array');
+      });
+
+
+      pm.test('data berupa array & tiap item berupa objek', () => {
+        pm.expect(res.data).to.be.an('array');
+        res.data.forEach(i => pm.expect(i).to.be.an('object'));
+      });
+
+      pm.test('Item pertama (jika ada) memuat id_kamar', () => {
+        if (res.data.length > 0) pm.expect(JSON.stringify(res.data[0])).to.include('id_kamar');
+      });
+    language: text/javascript
+order: 1000

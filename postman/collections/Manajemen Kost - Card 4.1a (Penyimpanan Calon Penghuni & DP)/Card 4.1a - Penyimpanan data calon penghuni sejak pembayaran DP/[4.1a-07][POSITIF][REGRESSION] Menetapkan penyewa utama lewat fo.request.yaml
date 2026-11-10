@@ -1,0 +1,40 @@
+$kind: http-request
+name: "[4.1a-07][POSITIF][REGRESSION] Menetapkan penyewa utama lewat form - hanya satu penyewa utama per kamar"
+url: "{{base_url}}/api/penghunian/{{s_sari}}/penyewa-utama"
+method: PUT
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: json
+  content: |-
+    {
+      "id_kamar": {{s_kamar}},
+      "id_penghunian": {{s_sari}}
+    }
+scripts:
+  - type: beforeRequest
+    code: |-
+      const { api, uniq, setv, getv, seq, mkKamar, mkOcc, hitung, bayar, payId } = eval(pm.collectionVariables.get('lib'));
+      seq([
+        n => mkKamar({}, id => { setv('s_kamar', id); n(); }),
+        n => mkOcc(getv('s_kamar'), 'Rina', {}, r => { r = r || {}; setv('s_rina', r.penghunian); setv('s_rina_penghuni', r.penghuni); n(); }),
+        n => mkOcc(getv('s_kamar'), 'Sari', {}, r => { r = r || {}; setv('s_sari', r.penghunian); setv('s_sari_penghuni', r.penghuni); n(); })
+      ]);
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));
+      swaggerCheck('PUT /penghunian/{id}/penyewa-utama');
+      pm.test('Status 200 - penyewa utama diganti', () => pm.response.to.have.status(200));
+      pm.test('Sari menjadi penyewa utama', () => pm.expect(res.data.penyewa_utama).to.be.oneOf([true, 1]));
+      apiGet('/api/penghunian', (err, j) => {
+        const rows = (j.data || []).filter(x => String(x.id_kamar) === String(getv('s_kamar')) && x.status === 'aktif');
+        pm.test('Rina tidak lagi bertanda penyewa utama', () => {
+          pm.expect(rows.find(x => String(x.id_penghunian) === String(getv('s_rina'))).penyewa_utama).to.be.oneOf([false, 0]);
+        });
+        pm.test('Hanya ada satu penyewa utama di kamar', () => pm.expect(rows.filter(x => x.penyewa_utama === true || x.penyewa_utama === 1)).to.have.lengthOf(1));
+      });
+    language: text/javascript
+order: 7000

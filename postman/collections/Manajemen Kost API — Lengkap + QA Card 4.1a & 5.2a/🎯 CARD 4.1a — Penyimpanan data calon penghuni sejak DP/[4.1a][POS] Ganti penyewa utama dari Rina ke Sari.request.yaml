@@ -1,0 +1,23 @@
+$kind: http-request
+url: "{{base_url}}/api/penghunian/{{qa41a_penghunian_tambahan_id}}/penyewa-utama"
+method: PUT
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: |-
+    {
+      "id_kamar": "{{kamar_id}}"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      let res = {}; try { res = pm.response.json(); } catch(e) {}
+      pm.test('Status 200 — penyewa utama berhasil diganti', () => pm.response.to.have.status(200));
+      pm.test('Penghunian Sari menjadi penyewa utama', () => { const s=res.data?.penghunian || res.data; if (s && s.is_penyewa_utama !== undefined) pm.expect([true,1,'1']).to.include(s.is_penyewa_utama); });
+      pm.test('Respons tidak memuat lebih dari satu penanda penyewa utama', () => { const t=JSON.stringify(res.data || {}); pm.expect(t).to.not.match(/"is_penyewa_utama"\s*:\s*true[^}]*"is_penyewa_utama"\s*:\s*true/); });
+    language: text/javascript
+examples: .resources/[4.1a][POS] Ganti penyewa utama dari Rina ke Sari.resources/examples
+order: 8000

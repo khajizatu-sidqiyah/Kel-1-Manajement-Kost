@@ -1,0 +1,31 @@
+$kind: http-request
+name: "[SEC] POST /api/logout — tanpa token"
+url: "{{base_url}}/api/logout"
+method: POST
+headers:
+  Accept: application/json
+scripts:
+  - type: afterResponse
+    code: >-
+      let res = {};
+
+      try { res = pm.response.json(); } catch (e) { /* body bukan JSON */ }
+
+
+      pm.test('Status 401', () => pm.response.to.have.status(401));
+
+
+      pm.test('401 - tidak ada data sensitif di respons', () => {
+        pm.expect(res.data || {}).to.not.have.property('token');
+        pm.expect(res.data || {}).to.not.have.property('password');
+      });
+
+      pm.test('401 - ada pesan / objek error', () => {
+        pm.expect(res.message || res.error, 'respons harus memuat message atau error').to.exist;
+      });
+
+      pm.test('401 - jika ada error.status maka UNAUTHENTICATED', () => {
+        if (res.error && res.error.status) pm.expect(res.error.status).to.eql('UNAUTHENTICATED');
+      });
+    language: text/javascript
+order: 12000

@@ -1,0 +1,58 @@
+$kind: http-request
+name: "[OK] PUT /api/penghunian/:id/selesai — selesaikan penghunian"
+url: "{{base_url}}/api/penghunian/{{penghunian_selesai_id}}/selesai"
+method: PUT
+headers:
+  Accept: application/json
+  Authorization: Bearer {{token}}
+scripts:
+  - type: beforeRequest
+    code: |-
+      // Buat kamar + penghuni + penghunian sementara; penghunian itulah yang diselesaikan
+      const base = pm.variables.replaceIn('{{base_url}}');
+      const headers = {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + pm.collectionVariables.get('token')
+      };
+      pm.sendRequest({
+        url: base + '/api/kamar', method: 'POST', header: headers,
+        body: { mode: 'raw', raw: JSON.stringify({ no_kamar: 'SLS' + String(Date.now()).slice(-9), harga: 500000 }) }
+      }, (e1, r1) => {
+        if (e1) { console.error(e1); return; }
+        pm.sendRequest({
+          url: base + '/api/penghunian/dengan-penghuni', method: 'POST', header: headers,
+          body: { mode: 'raw', raw: JSON.stringify({
+            id_kamar: r1.json().data.id_kamar,
+            nama_penghuni: 'Penghuni Selesai',
+            no_telepon: '0822' + String(Date.now()).slice(-7),
+            alamat: 'Jl. Selesai',
+            tanggal_mulai: '2026-11-01'
+          }) }
+        }, (e2, r2) => {
+          if (e2) { console.error(e2); return; }
+          pm.collectionVariables.set('penghunian_selesai_id', r2.json().data.penghunian.id_penghunian);
+        });
+      });
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      let res = {};
+      try { res = pm.response.json(); } catch (e) { /* body bukan JSON */ }
+
+      pm.test('Status 200', () => pm.response.to.have.status(200));
+      pm.test('Status penghunian = selesai', () => {
+        pm.expect(pm.response.json().data.status).to.eql('selesai');
+      });
+
+      pm.test('Envelope sukses: message (string) & data ada', () => {
+        pm.expect(res).to.have.property('message');
+        pm.expect(res.message).to.be.a('string');
+        pm.expect(res).to.have.property('data');
+      });
+      pm.test('status = selesai & bukan penyewa utama lagi', () => {
+        pm.expect(res.data.status).to.eql('selesai');
+        pm.expect(res.data.penyewa_utama).to.be.oneOf([false, 0]);
+      });
+    language: text/javascript
+order: 27000

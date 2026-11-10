@@ -72,11 +72,12 @@ class AuthController extends Controller
         $user = User::where('email', $request->input('email'))->where('role', 'pemilik')->first();
         if (!$user || !\Illuminate\Support\Facades\Hash::check($request->input('password'), $user->password)) {
             return response()->json(['message' => 'Email atau kata sandi tidak sesuai.', 'error' => [
-                'code' => 401, 'message' => 'Kredensial tidak valid.', 'status' => 'UNAUTHENTICATED', 'details' => (object) [],
+                'code' => 401, 'message' => 'Kredensial tidak valid.', 'status' => 'UNAUTHORIZED', 'details' => (object) [],
             ]], 401);
         }
         $token = $user->createToken('postman-api')->plainTextToken;
         return response()->json(['message' => 'Login berhasil.', 'data' => [
+            'access_token' => $token,
             'token' => $token,
             'token_type' => 'Bearer',
             'user' => ['id' => $user->id, 'name' => $user->name, 'email' => $user->email, 'role' => $user->role],

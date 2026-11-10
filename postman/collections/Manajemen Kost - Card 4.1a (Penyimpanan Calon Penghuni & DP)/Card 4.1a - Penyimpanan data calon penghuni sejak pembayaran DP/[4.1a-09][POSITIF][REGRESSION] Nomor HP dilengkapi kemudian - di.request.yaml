@@ -1,0 +1,40 @@
+$kind: http-request
+name: "[4.1a-09][POSITIF][REGRESSION] Nomor HP dilengkapi kemudian - diperbarui tanpa entri baru"
+url: "{{base_url}}/api/penghuni/{{s_rina_penghuni}}"
+method: PUT
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: json
+  content: |-
+    {
+      "nama_penghuni": "Rina",
+      "no_telepon": "081234567890",
+      "alamat": "Kuningan"
+    }
+scripts:
+  - type: beforeRequest
+    code: |-
+      const { api, uniq, setv, getv, seq, mkKamar, mkOcc, hitung, bayar, payId } = eval(pm.collectionVariables.get('lib'));
+      seq([
+        n => mkKamar({}, id => { setv('s_kamar', id); n(); }),
+        n => mkOcc(getv('s_kamar'), 'Rina', {}, r => { r = r || {}; setv('s_rina', r.penghunian); setv('s_rina_penghuni', r.penghuni); n(); }),
+        n => api('GET', '/api/penghuni', null, j => { setv('s_count_before', ((j && j.data) || []).length); n(); })
+      ]);
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));
+      swaggerCheck('PUT /penghuni/{id}');
+      pm.test('Status 200 - data penghuni diperbarui', () => pm.response.to.have.status(200));
+      pm.test('Nomor HP terisi & ID penghuni sama', () => {
+        pm.expect(res.data.no_telepon).to.eql('081234567890');
+        pm.expect(String(res.data.id_penghuni)).to.eql(String(getv('s_rina_penghuni')));
+      });
+      apiGet('/api/penghuni', (err, j) => {
+        pm.test('Jumlah penghuni tidak bertambah', () => pm.expect(j.data.length).to.eql(Number(getv('s_count_before'))));
+      });
+    language: text/javascript
+order: 9000

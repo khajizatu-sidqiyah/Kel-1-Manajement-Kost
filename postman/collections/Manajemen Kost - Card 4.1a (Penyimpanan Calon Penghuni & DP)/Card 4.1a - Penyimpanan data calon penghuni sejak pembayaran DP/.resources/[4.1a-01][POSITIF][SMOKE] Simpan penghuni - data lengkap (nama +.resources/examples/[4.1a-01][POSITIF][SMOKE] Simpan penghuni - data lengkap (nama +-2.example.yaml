@@ -1,0 +1,80 @@
+$kind: http-example
+name: "[4.1a-01][POSITIF][SMOKE] Simpan penghuni - data lengkap (nama + nomor HP) -> tersimpan"
+request:
+  url: "{{base_url}}/api/penghunian/dengan-penghuni"
+  method: POST
+  headers:
+    Accept: application/json
+    Content-Type: application/json
+    Authorization: Bearer {{token}}
+  body:
+    type: json
+    content: |-
+      {
+        "id_kamar": {{s_kamar}},
+        "nama_penghuni": "Rina",
+        "no_telepon": "081234567890"
+      }
+response:
+  statusCode: 201
+  statusText: Created
+  headers:
+    Host: 127.0.0.1:8000
+    Connection: close
+    X-Powered-By: PHP/8.2.12
+    Cache-Control: no-cache, private
+    Date: Thu, 05 Nov 2026 05:06:06 GMT
+    Content-Type: application/json; charset=utf-8
+    Access-Control-Allow-Origin: "*"
+  body:
+    type: json
+    content: |-
+      {
+        "message": "Penghuni dan penghunian berhasil ditambahkan.",
+        "data": {
+          "penghuni": {
+            "nama_penghuni": "Rina",
+            "no_telepon": "081234567890",
+            "alamat": null,
+            "updated_at": "2026-11-05T05:06:06.000000Z",
+            "created_at": "2026-11-05T05:06:06.000000Z",
+            "id_penghuni": 24
+          },
+          "penghunian": {
+            "id_kamar": 34,
+            "id_penghuni": 24,
+            "tanggal_mulai": null,
+            "tanggal_selesai": null,
+            "status": "aktif",
+            "penyewa_utama": true,
+            "status_pembayaran": "belum_lunas",
+            "updated_at": "2026-11-05T05:06:06.000000Z",
+            "created_at": "2026-11-05T05:06:06.000000Z",
+            "id_penghunian": 23,
+            "kamar_sudah_ada_dp": false,
+            "kamar": {
+              "id_kamar": 34,
+              "no_kamar": "K5516530317",
+              "tipe_kamar": null,
+              "harga": "600000.00",
+              "harga_tahunan": "5000000.00",
+              "status": "terisi",
+              "id_kost": 1,
+              "created_at": "2026-11-05T05:06:05.000000Z",
+              "updated_at": "2026-11-05T05:06:06.000000Z"
+            },
+            "penghuni": {
+              "id_penghuni": 24,
+              "user_id": null,
+              "nama_penghuni": "Rina",
+              "no_telepon": "081234567890",
+              "email": null,
+              "alamat": null,
+              "created_at": "2026-11-05T05:06:06.000000Z",
+              "updated_at": "2026-11-05T05:06:06.000000Z"
+            },
+            "pembayaran": []
+          }
+        }
+      }
+order: 3000

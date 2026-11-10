@@ -1,0 +1,32 @@
+$kind: http-request
+name: "[4.1a-30][EDGE][REGRESSION] Nama berisi tag HTML (XSS) -> tidak menyebabkan error server & respons tetap JSON"
+url: "{{base_url}}/api/penghunian/dengan-penghuni"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: json
+  content: |-
+    {
+      "id_kamar": {{s_kamar}},
+      "nama_penghuni": "<script>alert(1)</script>"
+    }
+scripts:
+  - type: beforeRequest
+    code: |-
+      const { api, uniq, setv, getv, seq, mkKamar, mkOcc, hitung, bayar, payId } = eval(pm.collectionVariables.get('lib'));
+      seq([
+        n => mkKamar({}, id => { setv('s_kamar', id); n(); })
+      ]);
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));
+      swaggerCheck('POST /penghunian/dengan-penghuni');
+
+      pm.test('Diproses aman (201 atau 422)', () => pm.expect([201, 422]).to.include(pm.response.code));
+      pm.test('Respons bukan HTML', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.not.include('text/html'));
+    language: text/javascript
+order: 30000

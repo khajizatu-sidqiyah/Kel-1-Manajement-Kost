@@ -1,0 +1,59 @@
+$kind: http-request
+name: "[OK] POST /api/kamar — tambah kamar valid"
+url: "{{base_url}}/api/kamar"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: |-
+    {
+      "no_kamar": "A01",
+      "tipe_kamar": "Standard",
+      "harga": 1000000,
+      "harga_tahunan": 10000000,
+      "status": "kosong"
+    }
+scripts:
+  - type: beforeRequest
+    code: |-
+      // no_kamar dibuat unik supaya request ini tidak gagal (duplikat) saat dijalankan berulang
+      const body = JSON.parse(pm.request.body.raw);
+      body.no_kamar = 'A' + String(Date.now()).slice(-9);
+      pm.request.body.update(JSON.stringify(body, null, 2));
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      let res = {};
+      try { res = pm.response.json(); } catch (e) { /* body bukan JSON */ }
+
+      pm.test('Status 201', () => pm.response.to.have.status(201));
+      pm.test('Kamar berhasil dibuat', () => {
+        const json = pm.response.json();
+        pm.expect(json.data).to.have.property('id_kamar');
+        pm.collectionVariables.set('kamar_id', json.data.id_kamar);
+      });
+
+      pm.test('Envelope sukses: message (string) & data ada', () => {
+        pm.expect(res).to.have.property('message');
+        pm.expect(res.message).to.be.a('string');
+        pm.expect(res).to.have.property('data');
+      });
+      pm.test('Data kamar tersimpan sesuai payload', () => {
+        const sent = JSON.parse(pm.request.body.raw);
+        const d = res.data;
+        pm.expect(d.id_kamar).to.be.a('number');
+        pm.expect(d.no_kamar).to.eql(sent.no_kamar);
+        pm.expect(d.tipe_kamar).to.eql('Standard');
+        pm.expect(Number(d.harga)).to.eql(1000000);
+        pm.expect(Number(d.harga_tahunan)).to.eql(10000000);
+        pm.expect(d.status).to.eql('kosong');
+      });
+      pm.test('kamar_id tersimpan di collection variable', () => {
+        pm.expect(String(pm.collectionVariables.get('kamar_id'))).to.eql(String(res.data.id_kamar));
+      });
+    language: text/javascript
+examples: .resources/[OK] POST -api-kamar — tambah kamar valid.resources/examples
+order: 3000

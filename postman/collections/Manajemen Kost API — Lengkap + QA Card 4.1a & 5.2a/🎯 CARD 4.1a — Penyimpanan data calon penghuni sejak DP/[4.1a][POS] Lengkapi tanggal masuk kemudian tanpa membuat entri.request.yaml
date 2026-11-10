@@ -1,0 +1,25 @@
+$kind: http-request
+name: "[4.1a][POS] Lengkapi tanggal masuk kemudian tanpa membuat entri ganda"
+url: "{{base_url}}/api/penghunian/{{qa41a_penghunian_utama_id}}"
+method: PUT
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: |-
+    {
+      "tanggal_mulai": "2026-11-05"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      let res = {}; try { res = pm.response.json(); } catch(e) {}
+      pm.test('Status 200 — tanggal masuk diperbarui', () => pm.response.to.have.status(200));
+      pm.test('Tanggal masuk tersimpan', () => pm.expect(String(res.data.tanggal_mulai).slice(0,10)).to.eql('2026-11-05'));
+      pm.test('ID penghunian tetap sama', () => pm.expect(String(res.data.id_penghunian)).to.eql(String(pm.collectionVariables.get('qa41a_penghunian_utama_id'))));
+    language: text/javascript
+examples: .resources/[4.1a][POS] Lengkapi tanggal masuk kemudian tanpa membuat
+  entri.resources/examples
+order: 7000

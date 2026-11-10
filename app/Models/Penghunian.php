@@ -27,6 +27,17 @@ class Penghunian extends Model
         'status_pembayaran',
     ];
 
+    protected $appends = [
+        'kamar_sudah_ada_dp',
+    ];
+
+    public function getKamarSudahAdaDpAttribute(): bool
+    {
+        return \App\Models\Pembayaran::whereIn('id_penghunian', function($q) {
+            $q->select('id_penghunian')->from('penghunian')->where('id_kamar', $this->id_kamar);
+        })->where('jenis_pembayaran', 'dp')->exists();
+    }
+
     /**
      * Konversi tipe data otomatis.
      */
@@ -39,8 +50,8 @@ class Penghunian extends Model
 
             'penyewa_utama' => 'boolean',
 
-            'total_sewa' => 'decimal:2',
-            'dp_minimum' => 'decimal:2',
+            'total_sewa' => 'float',
+            'dp_minimum' => 'float',
         ];
     }
 

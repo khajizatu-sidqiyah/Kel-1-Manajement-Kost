@@ -1,0 +1,31 @@
+$kind: http-request
+url: "{{base_url}}/api/penghunian/dengan-penghuni"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: json
+  content: |-
+    {
+      "id_kamar": {{s_kamar}},
+      "nama_penghuni": "Rina",
+      "alamat": "Kuningan"
+    }
+scripts:
+  - type: beforeRequest
+    code: |-
+      const { api, uniq, setv, getv, seq, mkKamar, mkOcc, hitung, bayar, payId } = eval(pm.collectionVariables.get('lib'));
+      seq([
+        n => mkKamar({}, id => { setv('s_kamar', id); n(); })
+      ]);
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));
+      swaggerCheck('POST /penghunian/dengan-penghuni');
+      pm.test('Status 201 - penghuni pertama tersimpan', () => pm.response.to.have.status(201));
+      pm.test('Rina tercatat sebagai penyewa utama', () => pm.expect(H(res.data).penyewa_utama).to.be.oneOf([true, 1]));
+    language: text/javascript
+order: 5000

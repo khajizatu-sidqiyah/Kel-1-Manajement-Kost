@@ -1,0 +1,30 @@
+$kind: http-request
+url: "{{base_url}}/api/login"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "email": "{{email_pemilik}}",
+      "password": "{{password_pemilik}}"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));
+      swaggerCheck('POST /login');
+      pm.test('Status 200 - login berhasil', () => pm.response.to.have.status(200));
+      pm.test('[Swagger] data.access_token (bukan "token") + token_type Bearer', () => {
+        pm.expect(res.data).to.have.property('access_token');
+        pm.expect(res.data.access_token).to.be.a('string').and.not.empty;
+        pm.expect(res.data.token_type).to.eql('Bearer');
+      });
+      // rantai token: pakai access_token (kontrak); fallback ke token (implementasi saat ini) agar tes lain tetap jalan
+      const tk = res.data && (res.data.access_token || res.data.token);
+      if (tk) { pm.collectionVariables.set('token', tk); try { pm.environment.set('token', tk); } catch(e){} }
+    language: text/javascript
+examples: .resources/[AUTH] Login pemilik.resources/examples
+order: 1000

@@ -1,0 +1,22 @@
+$kind: http-request
+url: "{{base_url}}/api/kamar/../../etc/passwd"
+method: GET
+headers:
+  Accept: application/json
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      let res = {};
+      try { res = pm.response.json(); } catch (e) { /* body bukan JSON */ }
+
+      pm.test('Tidak 500 — path traversal harus ditangkap router', () => {
+        pm.expect(pm.response.code).to.not.eql(500);
+      });
+
+      pm.test('Path traversal ditolak (404/422) dan tanpa isi file sistem', () => {
+        pm.expect([404, 422]).to.include(pm.response.code);
+        pm.expect(pm.response.text()).to.not.include('root:');
+      });
+    language: text/javascript
+order: 7000

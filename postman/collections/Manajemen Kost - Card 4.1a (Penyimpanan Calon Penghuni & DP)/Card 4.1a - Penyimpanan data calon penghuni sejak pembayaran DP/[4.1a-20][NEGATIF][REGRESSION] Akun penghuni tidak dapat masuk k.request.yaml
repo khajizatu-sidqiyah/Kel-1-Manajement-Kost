@@ -1,0 +1,23 @@
+$kind: http-request
+name: "[4.1a-20][NEGATIF][REGRESSION] Akun penghuni tidak dapat masuk ke API pemilik"
+url: "{{base_url}}/api/login"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "email": "penghuni@gmail.com",
+      "password": "password123"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));
+      swaggerCheck('POST /login');
+      pm.test('Status 401 - akun penghuni ditolak', () => pm.response.to.have.status(401));
+      pm.test('Tidak ada token diterbitkan', () => pm.expect(JSON.stringify(res)).to.not.match(/access_token|"token"/));
+    language: text/javascript
+order: 20000

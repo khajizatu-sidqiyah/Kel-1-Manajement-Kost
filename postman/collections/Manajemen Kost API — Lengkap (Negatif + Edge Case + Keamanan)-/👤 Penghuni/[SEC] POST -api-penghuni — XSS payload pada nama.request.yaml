@@ -1,0 +1,31 @@
+$kind: http-request
+name: "[SEC] POST /api/penghuni — XSS payload pada nama"
+url: "{{base_url}}/api/penghuni"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: |-
+    {
+      "nama_penghuni": "<script>alert('xss')</script>"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      let res = {};
+      try { res = pm.response.json(); } catch (e) { /* body bukan JSON */ }
+
+      pm.test('Tidak 500 — XSS tidak boleh crash server', () => {
+        pm.expect(pm.response.code).to.not.eql(500);
+      });
+
+      pm.test('Payload XSS diproses aman (201 atau 422)', () => pm.expect([201, 422]).to.include(pm.response.code));
+      pm.test('Respons bukan HTML (script tidak bisa tereksekusi di browser)', () => {
+        pm.expect(pm.response.headers.get('Content-Type') || '').to.not.include('text/html');
+      });
+    language: text/javascript
+examples: .resources/[SEC] POST -api-penghuni — XSS payload pada nama.resources/examples
+order: 9000

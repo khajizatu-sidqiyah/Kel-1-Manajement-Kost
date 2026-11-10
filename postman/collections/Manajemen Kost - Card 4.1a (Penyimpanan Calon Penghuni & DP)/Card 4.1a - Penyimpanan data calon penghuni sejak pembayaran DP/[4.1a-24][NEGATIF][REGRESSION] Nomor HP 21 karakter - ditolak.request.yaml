@@ -1,0 +1,32 @@
+$kind: http-request
+name: "[4.1a-24][NEGATIF][REGRESSION] Nomor HP 21 karakter -> ditolak"
+url: "{{base_url}}/api/penghunian/dengan-penghuni"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: json
+  content: |-
+    {
+      "id_kamar": {{s_kamar}},
+      "nama_penghuni": "Rina",
+      "no_telepon": "000000000000000000000"
+    }
+scripts:
+  - type: beforeRequest
+    code: |-
+      const { api, uniq, setv, getv, seq, mkKamar, mkOcc, hitung, bayar, payId } = eval(pm.collectionVariables.get('lib'));
+      seq([
+        n => mkKamar({}, id => { setv('s_kamar', id); n(); })
+      ]);
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));
+      swaggerCheck('POST /penghunian/dengan-penghuni');
+      pm.test('Status 422 - HP 21 karakter ditolak', () => pm.response.to.have.status(422));
+      pm.test('error.details menyebut no_telepon', () => pm.expect(JSON.stringify(res.error.details || {})).to.include('no_telepon'));
+    language: text/javascript
+order: 24000

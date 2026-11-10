@@ -1,0 +1,45 @@
+$kind: http-example
+name: "[ERR-422] POST /api/kamar — status nilai tidak valid"
+request:
+  url: "{{base_url}}/api/kamar"
+  method: POST
+  headers:
+    Accept: application/json
+    Content-Type: application/json
+    Authorization: Bearer {{token}}
+  body:
+    type: text
+    content: |-
+      {
+        "no_kamar": "B01",
+        "harga": 500000,
+        "status": "tidak_valid"
+      }
+response:
+  statusCode: 422
+  statusText: Unprocessable Content
+  headers:
+    Host: localhost:8000
+    Connection: close
+    X-Powered-By: PHP/8.2.12
+    Cache-Control: no-cache, private
+    Date: Wed, 04 Nov 2026 10:14:52 GMT
+    Content-Type: application/json; charset=utf-8
+    Access-Control-Allow-Origin: "*"
+  body:
+    type: json
+    content: |-
+      {
+        "message": "Parameter permintaan tidak valid.",
+        "error": {
+          "code": 422,
+          "message": "Validasi gagal.",
+          "status": "INVALID_ARGUMENT",
+          "details": {
+            "status": [
+              "The selected status is invalid."
+            ]
+          }
+        }
+      }
+order: 1000

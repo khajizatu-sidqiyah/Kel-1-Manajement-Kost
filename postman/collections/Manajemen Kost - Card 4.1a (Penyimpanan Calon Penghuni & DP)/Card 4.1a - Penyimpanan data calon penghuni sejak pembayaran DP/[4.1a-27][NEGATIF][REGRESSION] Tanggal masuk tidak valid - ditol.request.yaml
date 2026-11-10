@@ -1,0 +1,33 @@
+$kind: http-request
+name: "[4.1a-27][NEGATIF][REGRESSION] Tanggal masuk tidak valid -> ditolak"
+url: "{{base_url}}/api/penghunian/dengan-penghuni"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: json
+  content: |-
+    {
+      "id_kamar": {{s_kamar}},
+      "nama_penghuni": "Rina",
+      "alamat": "Kuningan",
+      "tanggal_mulai": "bukan-tanggal"
+    }
+scripts:
+  - type: beforeRequest
+    code: |-
+      const { api, uniq, setv, getv, seq, mkKamar, mkOcc, hitung, bayar, payId } = eval(pm.collectionVariables.get('lib'));
+      seq([
+        n => mkKamar({}, id => { setv('s_kamar', id); n(); })
+      ]);
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));
+      swaggerCheck('POST /penghunian/dengan-penghuni');
+      pm.test('Status 422 - tanggal tidak valid ditolak', () => pm.response.to.have.status(422));
+      pm.test('error.details menyebut tanggal_mulai', () => pm.expect(JSON.stringify(res.error.details || {})).to.include('tanggal_mulai'));
+    language: text/javascript
+order: 27000

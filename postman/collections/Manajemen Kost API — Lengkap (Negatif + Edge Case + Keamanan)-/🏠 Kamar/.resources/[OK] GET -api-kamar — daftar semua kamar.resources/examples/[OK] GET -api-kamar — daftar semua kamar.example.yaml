@@ -1,0 +1,1771 @@
+$kind: http-example
+name: "[OK] GET /api/kamar — daftar semua kamar"
+request:
+  url: "{{base_url}}/api/kamar"
+  method: GET
+  headers:
+    Accept: application/json
+    Authorization: Bearer {{token}}
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Host: localhost:8000
+    Connection: close
+    X-Powered-By: PHP/8.2.12
+    Cache-Control: no-cache, private
+    Date: Wed, 04 Nov 2026 10:10:12 GMT
+    Content-Type: application/json; charset=utf-8
+    Access-Control-Allow-Origin: "*"
+  body:
+    type: json
+    content: |-
+      {
+        "message": "",
+        "data": [
+          {
+            "id_kamar": 1,
+            "no_kamar": "1",
+            "tipe_kamar": "Standard",
+            "harga": "750000.00",
+            "harga_tahunan": null,
+            "status": "terisi",
+            "id_kost": 1,
+            "created_at": null,
+            "updated_at": "2026-10-21T15:26:11.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 2,
+            "no_kamar": "2",
+            "tipe_kamar": "Standard",
+            "harga": "750000.00",
+            "harga_tahunan": null,
+            "status": "terisi",
+            "id_kost": 1,
+            "created_at": null,
+            "updated_at": null,
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 3,
+            "no_kamar": "3",
+            "tipe_kamar": "Standard",
+            "harga": "750000.00",
+            "harga_tahunan": "5000000.00",
+            "status": "terisi",
+            "id_kost": 1,
+            "created_at": null,
+            "updated_at": "2026-11-04T01:55:53.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 4,
+            "no_kamar": "4",
+            "tipe_kamar": "Standard",
+            "harga": "750000.00",
+            "harga_tahunan": null,
+            "status": "terisi",
+            "id_kost": 1,
+            "created_at": null,
+            "updated_at": null,
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 5,
+            "no_kamar": "5",
+            "tipe_kamar": "Standard",
+            "harga": "750000.00",
+            "harga_tahunan": null,
+            "status": "terisi",
+            "id_kost": 1,
+            "created_at": null,
+            "updated_at": null,
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 6,
+            "no_kamar": "6",
+            "tipe_kamar": "Standard",
+            "harga": "750000.00",
+            "harga_tahunan": null,
+            "status": "terisi",
+            "id_kost": 1,
+            "created_at": null,
+            "updated_at": null,
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 7,
+            "no_kamar": "7",
+            "tipe_kamar": "Standard",
+            "harga": "750000.00",
+            "harga_tahunan": null,
+            "status": "Kosong",
+            "id_kost": 1,
+            "created_at": null,
+            "updated_at": null,
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 8,
+            "no_kamar": "8",
+            "tipe_kamar": "Standard",
+            "harga": "750000.00",
+            "harga_tahunan": null,
+            "status": "terisi",
+            "id_kost": 1,
+            "created_at": null,
+            "updated_at": null,
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 9,
+            "no_kamar": "9",
+            "tipe_kamar": "Standard",
+            "harga": "750000.00",
+            "harga_tahunan": null,
+            "status": "Kosong",
+            "id_kost": 1,
+            "created_at": null,
+            "updated_at": null,
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 10,
+            "no_kamar": "10",
+            "tipe_kamar": "Standard",
+            "harga": "750000.00",
+            "harga_tahunan": null,
+            "status": "Kosong",
+            "id_kost": 1,
+            "created_at": null,
+            "updated_at": null,
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 11,
+            "no_kamar": "11",
+            "tipe_kamar": "Standard",
+            "harga": "750000.00",
+            "harga_tahunan": null,
+            "status": "Kosong",
+            "id_kost": 1,
+            "created_at": null,
+            "updated_at": null,
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 12,
+            "no_kamar": "12",
+            "tipe_kamar": "Standard",
+            "harga": "750000.00",
+            "harga_tahunan": null,
+            "status": "terisi",
+            "id_kost": 1,
+            "created_at": null,
+            "updated_at": null,
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 13,
+            "no_kamar": "13",
+            "tipe_kamar": "Standard",
+            "harga": "750000.00",
+            "harga_tahunan": null,
+            "status": "terisi",
+            "id_kost": 1,
+            "created_at": null,
+            "updated_at": null,
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 14,
+            "no_kamar": "14",
+            "tipe_kamar": "Standard",
+            "harga": "750000.00",
+            "harga_tahunan": null,
+            "status": "Kosong",
+            "id_kost": 1,
+            "created_at": null,
+            "updated_at": null,
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 15,
+            "no_kamar": "15",
+            "tipe_kamar": "Standard",
+            "harga": "750000.00",
+            "harga_tahunan": null,
+            "status": "Kosong",
+            "id_kost": 1,
+            "created_at": null,
+            "updated_at": null,
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 16,
+            "no_kamar": "16",
+            "tipe_kamar": "Standard",
+            "harga": "750000.00",
+            "harga_tahunan": null,
+            "status": "Kosong",
+            "id_kost": 1,
+            "created_at": null,
+            "updated_at": null,
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 17,
+            "no_kamar": "17",
+            "tipe_kamar": "Standard",
+            "harga": "750000.00",
+            "harga_tahunan": null,
+            "status": "Kosong",
+            "id_kost": 1,
+            "created_at": null,
+            "updated_at": null,
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 18,
+            "no_kamar": "18",
+            "tipe_kamar": "Standard",
+            "harga": "750000.00",
+            "harga_tahunan": null,
+            "status": "Kosong",
+            "id_kost": 1,
+            "created_at": null,
+            "updated_at": null,
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 19,
+            "no_kamar": "19",
+            "tipe_kamar": "Standard",
+            "harga": "750000.00",
+            "harga_tahunan": null,
+            "status": "Kosong",
+            "id_kost": 1,
+            "created_at": null,
+            "updated_at": null,
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 20,
+            "no_kamar": "20",
+            "tipe_kamar": "Standard",
+            "harga": "750000.00",
+            "harga_tahunan": null,
+            "status": "Kosong",
+            "id_kost": 1,
+            "created_at": null,
+            "updated_at": null,
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 21,
+            "no_kamar": "21",
+            "tipe_kamar": "Standard",
+            "harga": "750000.00",
+            "harga_tahunan": null,
+            "status": "Kosong",
+            "id_kost": 1,
+            "created_at": null,
+            "updated_at": null,
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 22,
+            "no_kamar": "22",
+            "tipe_kamar": "Standard",
+            "harga": "750000.00",
+            "harga_tahunan": null,
+            "status": "terisi",
+            "id_kost": 1,
+            "created_at": null,
+            "updated_at": null,
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 23,
+            "no_kamar": "23",
+            "tipe_kamar": "Standard",
+            "harga": "750000.00",
+            "harga_tahunan": null,
+            "status": "terisi",
+            "id_kost": 1,
+            "created_at": null,
+            "updated_at": null,
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 24,
+            "no_kamar": "24",
+            "tipe_kamar": null,
+            "harga": "750000.00",
+            "harga_tahunan": null,
+            "status": "kosong",
+            "id_kost": 1,
+            "created_at": "2026-10-21T13:14:44.000000Z",
+            "updated_at": "2026-10-21T13:14:44.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 25,
+            "no_kamar": "24",
+            "tipe_kamar": null,
+            "harga": "750000.00",
+            "harga_tahunan": null,
+            "status": "kosong",
+            "id_kost": 1,
+            "created_at": "2026-10-22T08:15:41.000000Z",
+            "updated_at": "2026-10-22T08:15:41.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 26,
+            "no_kamar": "24",
+            "tipe_kamar": "Standard",
+            "harga": "750000.00",
+            "harga_tahunan": null,
+            "status": "kosong",
+            "id_kost": 1,
+            "created_at": "2026-11-02T23:56:53.000000Z",
+            "updated_at": "2026-11-02T23:56:53.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 27,
+            "no_kamar": "QA-1793671438",
+            "tipe_kamar": "Standard",
+            "harga": "600000.00",
+            "harga_tahunan": "6000000.00",
+            "status": "kosong",
+            "id_kost": 1,
+            "created_at": "2026-11-03T02:03:59.000000Z",
+            "updated_at": "2026-11-03T02:03:59.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 28,
+            "no_kamar": "A784469070",
+            "tipe_kamar": "Deluxe",
+            "harga": "1200000.00",
+            "harga_tahunan": "10000000.00",
+            "status": "terisi",
+            "id_kost": 1,
+            "created_at": "2026-11-04T09:27:49.000000Z",
+            "updated_at": "2026-11-04T09:28:15.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 29,
+            "no_kamar": "EDGE01",
+            "tipe_kamar": null,
+            "harga": "0.00",
+            "harga_tahunan": null,
+            "status": "kosong",
+            "id_kost": 1,
+            "created_at": "2026-11-04T09:27:51.000000Z",
+            "updated_at": "2026-11-04T09:27:51.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 30,
+            "no_kamar": "17937844734476729124",
+            "tipe_kamar": null,
+            "harga": "750000.00",
+            "harga_tahunan": null,
+            "status": "kosong",
+            "id_kost": 1,
+            "created_at": "2026-11-04T09:27:53.000000Z",
+            "updated_at": "2026-11-04T09:27:53.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 32,
+            "no_kamar": "T784514561",
+            "tipe_kamar": null,
+            "harga": "1000000.00",
+            "harga_tahunan": "10000000.00",
+            "status": "terisi",
+            "id_kost": 1,
+            "created_at": "2026-11-04T09:28:35.000000Z",
+            "updated_at": "2026-11-04T09:28:35.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 33,
+            "no_kamar": "SLS784516369",
+            "tipe_kamar": null,
+            "harga": "500000.00",
+            "harga_tahunan": null,
+            "status": "kosong",
+            "id_kost": 1,
+            "created_at": "2026-11-04T09:28:36.000000Z",
+            "updated_at": "2026-11-04T09:28:38.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 34,
+            "no_kamar": "T784524761",
+            "tipe_kamar": null,
+            "harga": "1000000.00",
+            "harga_tahunan": "10000000.00",
+            "status": "terisi",
+            "id_kost": 1,
+            "created_at": "2026-11-04T09:28:45.000000Z",
+            "updated_at": "2026-11-04T09:28:45.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 35,
+            "no_kamar": "T784527002",
+            "tipe_kamar": null,
+            "harga": "1000000.00",
+            "harga_tahunan": "10000000.00",
+            "status": "terisi",
+            "id_kost": 1,
+            "created_at": "2026-11-04T09:28:47.000000Z",
+            "updated_at": "2026-11-04T09:28:47.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 36,
+            "no_kamar": "T784531113",
+            "tipe_kamar": null,
+            "harga": "1000000.00",
+            "harga_tahunan": "10000000.00",
+            "status": "terisi",
+            "id_kost": 1,
+            "created_at": "2026-11-04T09:28:51.000000Z",
+            "updated_at": "2026-11-04T09:28:52.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 37,
+            "no_kamar": "T784532850",
+            "tipe_kamar": null,
+            "harga": "1000000.00",
+            "harga_tahunan": "10000000.00",
+            "status": "terisi",
+            "id_kost": 1,
+            "created_at": "2026-11-04T09:28:53.000000Z",
+            "updated_at": "2026-11-04T09:28:54.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 38,
+            "no_kamar": "A01",
+            "tipe_kamar": null,
+            "harga": "500000.00",
+            "harga_tahunan": null,
+            "status": "kosong",
+            "id_kost": 1,
+            "created_at": "2026-11-04T09:29:09.000000Z",
+            "updated_at": "2026-11-04T09:29:09.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 39,
+            "no_kamar": "HACK01",
+            "tipe_kamar": null,
+            "harga": "500000.00",
+            "harga_tahunan": null,
+            "status": "kosong",
+            "id_kost": 1,
+            "created_at": "2026-11-04T09:29:14.000000Z",
+            "updated_at": "2026-11-04T09:29:14.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 40,
+            "no_kamar": "A784663343",
+            "tipe_kamar": "Deluxe",
+            "harga": "1200000.00",
+            "harga_tahunan": "10000000.00",
+            "status": "terisi",
+            "id_kost": 1,
+            "created_at": "2026-11-04T09:31:04.000000Z",
+            "updated_at": "2026-11-04T09:31:42.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 41,
+            "no_kamar": "EDGE01",
+            "tipe_kamar": null,
+            "harga": "0.00",
+            "harga_tahunan": null,
+            "status": "kosong",
+            "id_kost": 1,
+            "created_at": "2026-11-04T09:31:07.000000Z",
+            "updated_at": "2026-11-04T09:31:07.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 42,
+            "no_kamar": "17937846696828271323",
+            "tipe_kamar": null,
+            "harga": "750000.00",
+            "harga_tahunan": null,
+            "status": "kosong",
+            "id_kost": 1,
+            "created_at": "2026-11-04T09:31:10.000000Z",
+            "updated_at": "2026-11-04T09:31:10.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 44,
+            "no_kamar": "T784721251",
+            "tipe_kamar": null,
+            "harga": "1000000.00",
+            "harga_tahunan": "10000000.00",
+            "status": "terisi",
+            "id_kost": 1,
+            "created_at": "2026-11-04T09:32:01.000000Z",
+            "updated_at": "2026-11-04T09:32:02.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 45,
+            "no_kamar": "SLS784722915",
+            "tipe_kamar": null,
+            "harga": "500000.00",
+            "harga_tahunan": null,
+            "status": "kosong",
+            "id_kost": 1,
+            "created_at": "2026-11-04T09:32:03.000000Z",
+            "updated_at": "2026-11-04T09:32:04.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 46,
+            "no_kamar": "T784730609",
+            "tipe_kamar": null,
+            "harga": "1000000.00",
+            "harga_tahunan": "10000000.00",
+            "status": "terisi",
+            "id_kost": 1,
+            "created_at": "2026-11-04T09:32:11.000000Z",
+            "updated_at": "2026-11-04T09:32:11.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 47,
+            "no_kamar": "T784733043",
+            "tipe_kamar": null,
+            "harga": "1000000.00",
+            "harga_tahunan": "10000000.00",
+            "status": "terisi",
+            "id_kost": 1,
+            "created_at": "2026-11-04T09:32:13.000000Z",
+            "updated_at": "2026-11-04T09:32:14.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 48,
+            "no_kamar": "T784737949",
+            "tipe_kamar": null,
+            "harga": "1000000.00",
+            "harga_tahunan": "10000000.00",
+            "status": "terisi",
+            "id_kost": 1,
+            "created_at": "2026-11-04T09:32:18.000000Z",
+            "updated_at": "2026-11-04T09:32:19.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 49,
+            "no_kamar": "T784740867",
+            "tipe_kamar": null,
+            "harga": "1000000.00",
+            "harga_tahunan": "10000000.00",
+            "status": "terisi",
+            "id_kost": 1,
+            "created_at": "2026-11-04T09:32:21.000000Z",
+            "updated_at": "2026-11-04T09:32:22.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 50,
+            "no_kamar": "A01",
+            "tipe_kamar": null,
+            "harga": "500000.00",
+            "harga_tahunan": null,
+            "status": "kosong",
+            "id_kost": 1,
+            "created_at": "2026-11-04T09:32:39.000000Z",
+            "updated_at": "2026-11-04T09:32:39.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 51,
+            "no_kamar": "HACK01",
+            "tipe_kamar": null,
+            "harga": "500000.00",
+            "harga_tahunan": null,
+            "status": "kosong",
+            "id_kost": 1,
+            "created_at": "2026-11-04T09:32:44.000000Z",
+            "updated_at": "2026-11-04T09:32:44.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 52,
+            "no_kamar": "A785716216",
+            "tipe_kamar": "Deluxe",
+            "harga": "1200000.00",
+            "harga_tahunan": "10000000.00",
+            "status": "terisi",
+            "id_kost": 1,
+            "created_at": "2026-11-04T09:48:36.000000Z",
+            "updated_at": "2026-11-04T09:49:08.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 53,
+            "no_kamar": "EDGE01",
+            "tipe_kamar": null,
+            "harga": "0.00",
+            "harga_tahunan": null,
+            "status": "kosong",
+            "id_kost": 1,
+            "created_at": "2026-11-04T09:48:39.000000Z",
+            "updated_at": "2026-11-04T09:48:39.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 54,
+            "no_kamar": "17937857242148106461",
+            "tipe_kamar": null,
+            "harga": "750000.00",
+            "harga_tahunan": null,
+            "status": "kosong",
+            "id_kost": 1,
+            "created_at": "2026-11-04T09:48:44.000000Z",
+            "updated_at": "2026-11-04T09:48:44.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 56,
+            "no_kamar": "T785767987",
+            "tipe_kamar": null,
+            "harga": "1000000.00",
+            "harga_tahunan": "10000000.00",
+            "status": "terisi",
+            "id_kost": 1,
+            "created_at": "2026-11-04T09:49:28.000000Z",
+            "updated_at": "2026-11-04T09:49:29.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 57,
+            "no_kamar": "SLS785771083",
+            "tipe_kamar": null,
+            "harga": "500000.00",
+            "harga_tahunan": null,
+            "status": "kosong",
+            "id_kost": 1,
+            "created_at": "2026-11-04T09:49:31.000000Z",
+            "updated_at": "2026-11-04T09:49:32.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 58,
+            "no_kamar": "T785777771",
+            "tipe_kamar": null,
+            "harga": "1000000.00",
+            "harga_tahunan": "10000000.00",
+            "status": "terisi",
+            "id_kost": 1,
+            "created_at": "2026-11-04T09:49:38.000000Z",
+            "updated_at": "2026-11-04T09:49:38.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 59,
+            "no_kamar": "T785781063",
+            "tipe_kamar": null,
+            "harga": "1000000.00",
+            "harga_tahunan": "10000000.00",
+            "status": "terisi",
+            "id_kost": 1,
+            "created_at": "2026-11-04T09:49:41.000000Z",
+            "updated_at": "2026-11-04T09:49:42.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 60,
+            "no_kamar": "T785790996",
+            "tipe_kamar": null,
+            "harga": "1000000.00",
+            "harga_tahunan": "10000000.00",
+            "status": "terisi",
+            "id_kost": 1,
+            "created_at": "2026-11-04T09:49:52.000000Z",
+            "updated_at": "2026-11-04T09:49:54.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 61,
+            "no_kamar": "T785795562",
+            "tipe_kamar": null,
+            "harga": "1000000.00",
+            "harga_tahunan": "10000000.00",
+            "status": "terisi",
+            "id_kost": 1,
+            "created_at": "2026-11-04T09:49:56.000000Z",
+            "updated_at": "2026-11-04T09:49:56.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 62,
+            "no_kamar": "A01",
+            "tipe_kamar": null,
+            "harga": "500000.00",
+            "harga_tahunan": null,
+            "status": "kosong",
+            "id_kost": 1,
+            "created_at": "2026-11-04T09:50:11.000000Z",
+            "updated_at": "2026-11-04T09:50:11.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 63,
+            "no_kamar": "HACK01",
+            "tipe_kamar": null,
+            "harga": "500000.00",
+            "harga_tahunan": null,
+            "status": "kosong",
+            "id_kost": 1,
+            "created_at": "2026-11-04T09:50:16.000000Z",
+            "updated_at": "2026-11-04T09:50:16.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 64,
+            "no_kamar": "QA-1793785960",
+            "tipe_kamar": "Deluxe QA",
+            "harga": "650000.00",
+            "harga_tahunan": "6000000.00",
+            "status": "kosong",
+            "id_kost": 1,
+            "created_at": "2026-11-04T09:52:40.000000Z",
+            "updated_at": "2026-11-04T09:52:46.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 65,
+            "no_kamar": "A786264785",
+            "tipe_kamar": "Deluxe",
+            "harga": "1200000.00",
+            "harga_tahunan": "10000000.00",
+            "status": "terisi",
+            "id_kost": 1,
+            "created_at": "2026-11-04T09:57:45.000000Z",
+            "updated_at": "2026-11-04T09:58:10.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 66,
+            "no_kamar": "EDGE01",
+            "tipe_kamar": null,
+            "harga": "0.00",
+            "harga_tahunan": null,
+            "status": "kosong",
+            "id_kost": 1,
+            "created_at": "2026-11-04T09:57:46.000000Z",
+            "updated_at": "2026-11-04T09:57:46.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 67,
+            "no_kamar": "17937862677753163150",
+            "tipe_kamar": null,
+            "harga": "750000.00",
+            "harga_tahunan": null,
+            "status": "kosong",
+            "id_kost": 1,
+            "created_at": "2026-11-04T09:57:48.000000Z",
+            "updated_at": "2026-11-04T09:57:48.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 69,
+            "no_kamar": "T786313511",
+            "tipe_kamar": null,
+            "harga": "1000000.00",
+            "harga_tahunan": "10000000.00",
+            "status": "terisi",
+            "id_kost": 1,
+            "created_at": "2026-11-04T09:58:34.000000Z",
+            "updated_at": "2026-11-04T09:58:34.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 70,
+            "no_kamar": "SLS786314988",
+            "tipe_kamar": null,
+            "harga": "500000.00",
+            "harga_tahunan": null,
+            "status": "kosong",
+            "id_kost": 1,
+            "created_at": "2026-11-04T09:58:35.000000Z",
+            "updated_at": "2026-11-04T09:58:36.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 71,
+            "no_kamar": "T786321668",
+            "tipe_kamar": null,
+            "harga": "1000000.00",
+            "harga_tahunan": "10000000.00",
+            "status": "terisi",
+            "id_kost": 1,
+            "created_at": "2026-11-04T09:58:42.000000Z",
+            "updated_at": "2026-11-04T09:58:42.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 72,
+            "no_kamar": "T786324293",
+            "tipe_kamar": null,
+            "harga": "1000000.00",
+            "harga_tahunan": "10000000.00",
+            "status": "terisi",
+            "id_kost": 1,
+            "created_at": "2026-11-04T09:58:44.000000Z",
+            "updated_at": "2026-11-04T09:58:46.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 73,
+            "no_kamar": "T786328995",
+            "tipe_kamar": null,
+            "harga": "1000000.00",
+            "harga_tahunan": "10000000.00",
+            "status": "terisi",
+            "id_kost": 1,
+            "created_at": "2026-11-04T09:58:49.000000Z",
+            "updated_at": "2026-11-04T09:58:49.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 74,
+            "no_kamar": "T786330645",
+            "tipe_kamar": null,
+            "harga": "1000000.00",
+            "harga_tahunan": "10000000.00",
+            "status": "terisi",
+            "id_kost": 1,
+            "created_at": "2026-11-04T09:58:51.000000Z",
+            "updated_at": "2026-11-04T09:58:51.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 75,
+            "no_kamar": "A01",
+            "tipe_kamar": null,
+            "harga": "500000.00",
+            "harga_tahunan": null,
+            "status": "kosong",
+            "id_kost": 1,
+            "created_at": "2026-11-04T09:59:06.000000Z",
+            "updated_at": "2026-11-04T09:59:06.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 76,
+            "no_kamar": "HACK01",
+            "tipe_kamar": null,
+            "harga": "500000.00",
+            "harga_tahunan": null,
+            "status": "kosong",
+            "id_kost": 1,
+            "created_at": "2026-11-04T09:59:11.000000Z",
+            "updated_at": "2026-11-04T09:59:11.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 77,
+            "no_kamar": "A786504313",
+            "tipe_kamar": "Deluxe",
+            "harga": "1200000.00",
+            "harga_tahunan": "10000000.00",
+            "status": "terisi",
+            "id_kost": 1,
+            "created_at": "2026-11-04T10:01:44.000000Z",
+            "updated_at": "2026-11-04T10:02:06.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 78,
+            "no_kamar": "EDGE01",
+            "tipe_kamar": null,
+            "harga": "0.00",
+            "harga_tahunan": null,
+            "status": "kosong",
+            "id_kost": 1,
+            "created_at": "2026-11-04T10:01:46.000000Z",
+            "updated_at": "2026-11-04T10:01:46.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 79,
+            "no_kamar": "17937865071611843339",
+            "tipe_kamar": null,
+            "harga": "750000.00",
+            "harga_tahunan": null,
+            "status": "kosong",
+            "id_kost": 1,
+            "created_at": "2026-11-04T10:01:47.000000Z",
+            "updated_at": "2026-11-04T10:01:47.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 81,
+            "no_kamar": "T786544479",
+            "tipe_kamar": null,
+            "harga": "1000000.00",
+            "harga_tahunan": "10000000.00",
+            "status": "terisi",
+            "id_kost": 1,
+            "created_at": "2026-11-04T10:02:24.000000Z",
+            "updated_at": "2026-11-04T10:02:25.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 82,
+            "no_kamar": "SLS786546491",
+            "tipe_kamar": null,
+            "harga": "500000.00",
+            "harga_tahunan": null,
+            "status": "kosong",
+            "id_kost": 1,
+            "created_at": "2026-11-04T10:02:27.000000Z",
+            "updated_at": "2026-11-04T10:02:30.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 83,
+            "no_kamar": "T786555687",
+            "tipe_kamar": null,
+            "harga": "1000000.00",
+            "harga_tahunan": "10000000.00",
+            "status": "terisi",
+            "id_kost": 1,
+            "created_at": "2026-11-04T10:02:36.000000Z",
+            "updated_at": "2026-11-04T10:02:37.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 84,
+            "no_kamar": "T786558746",
+            "tipe_kamar": null,
+            "harga": "1000000.00",
+            "harga_tahunan": "10000000.00",
+            "status": "terisi",
+            "id_kost": 1,
+            "created_at": "2026-11-04T10:02:39.000000Z",
+            "updated_at": "2026-11-04T10:02:39.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 85,
+            "no_kamar": "T786563567",
+            "tipe_kamar": null,
+            "harga": "1000000.00",
+            "harga_tahunan": "10000000.00",
+            "status": "terisi",
+            "id_kost": 1,
+            "created_at": "2026-11-04T10:02:44.000000Z",
+            "updated_at": "2026-11-04T10:02:44.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 86,
+            "no_kamar": "T786565417",
+            "tipe_kamar": null,
+            "harga": "1000000.00",
+            "harga_tahunan": "10000000.00",
+            "status": "terisi",
+            "id_kost": 1,
+            "created_at": "2026-11-04T10:02:46.000000Z",
+            "updated_at": "2026-11-04T10:02:46.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 87,
+            "no_kamar": "A01",
+            "tipe_kamar": null,
+            "harga": "500000.00",
+            "harga_tahunan": null,
+            "status": "kosong",
+            "id_kost": 1,
+            "created_at": "2026-11-04T10:03:04.000000Z",
+            "updated_at": "2026-11-04T10:03:04.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          },
+          {
+            "id_kamar": 88,
+            "no_kamar": "HACK01",
+            "tipe_kamar": null,
+            "harga": "500000.00",
+            "harga_tahunan": null,
+            "status": "kosong",
+            "id_kost": 1,
+            "created_at": "2026-11-04T10:03:08.000000Z",
+            "updated_at": "2026-11-04T10:03:08.000000Z",
+            "kos": {
+              "id_kost": 1,
+              "nama_kost": "Kost Putri Cirebon",
+              "alamat": "Cirebon",
+              "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+              "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+              "id_pemilik": 1,
+              "created_at": "2026-10-21T13:11:17.000000Z",
+              "updated_at": "2026-10-21T13:11:17.000000Z"
+            }
+          }
+        ]
+      }
+order: 1000

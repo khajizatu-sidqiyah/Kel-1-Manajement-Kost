@@ -1,0 +1,23 @@
+$kind: http-request
+name: "[EDGE] GET /api/kamar/:id — ID string (bukan angka)"
+url: "{{base_url}}/api/kamar/abc"
+method: GET
+headers:
+  Accept: application/json
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      let res = {};
+      try { res = pm.response.json(); } catch (e) { /* body bukan JSON */ }
+
+      pm.test('Status 404 (whereNumber gagal cocokkan route)', () => {
+        pm.expect([404, 422]).to.include(pm.response.code);
+      });
+
+      pm.test('ID non-numerik tidak mengembalikan data', () => {
+        pm.expect(res.data === undefined || res.data === null).to.be.true;
+      });
+    language: text/javascript
+examples: .resources/[EDGE] GET -api-kamar-id — ID string (bukan angka).resources/examples
+order: 14000

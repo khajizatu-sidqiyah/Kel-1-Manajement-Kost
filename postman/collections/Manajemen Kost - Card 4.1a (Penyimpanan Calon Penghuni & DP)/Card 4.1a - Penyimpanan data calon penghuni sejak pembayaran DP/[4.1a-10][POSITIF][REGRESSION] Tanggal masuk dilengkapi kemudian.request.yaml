@@ -1,0 +1,40 @@
+$kind: http-request
+name: "[4.1a-10][POSITIF][REGRESSION] Tanggal masuk dilengkapi kemudian - tersimpan tanpa entri baru"
+url: "{{base_url}}/api/penghunian/{{s_rina}}"
+method: PUT
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: json
+  content: |-
+    {
+      "id_kamar": {{s_kamar}},
+      "id_penghuni": {{s_rina_penghuni}},
+      "tanggal_mulai": "2026-11-05"
+    }
+scripts:
+  - type: beforeRequest
+    code: |-
+      const { api, uniq, setv, getv, seq, mkKamar, mkOcc, hitung, bayar, payId } = eval(pm.collectionVariables.get('lib'));
+      seq([
+        n => mkKamar({}, id => { setv('s_kamar', id); n(); }),
+        n => mkOcc(getv('s_kamar'), 'Rina', {}, r => { r = r || {}; setv('s_rina', r.penghunian); setv('s_rina_penghuni', r.penghuni); n(); }),
+        n => api('GET', '/api/penghunian', null, j => { setv('s_count_before', ((j && j.data) || []).length); n(); })
+      ]);
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));
+      swaggerCheck('PUT /penghunian/{id}');
+      pm.test('Status 200 - tanggal masuk tersimpan', () => pm.response.to.have.status(200));
+      pm.test('tanggal_mulai = 5 November 2026 & ID penghunian sama', () => {
+        pm.expect(JSON.stringify(H(res.data).tanggal_mulai)).to.include('2026-11-05');
+        pm.expect(String(H(res.data).id_penghunian)).to.eql(String(getv('s_rina')));
+      });
+      apiGet('/api/penghunian', (err, j) => {
+        pm.test('Jumlah penghunian tidak bertambah', () => pm.expect(j.data.length).to.eql(Number(getv('s_count_before'))));
+      });
+    language: text/javascript
+order: 10000

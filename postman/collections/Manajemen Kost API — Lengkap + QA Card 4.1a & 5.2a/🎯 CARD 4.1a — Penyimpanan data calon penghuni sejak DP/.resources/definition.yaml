@@ -1,0 +1,16 @@
+$kind: collection
+description: |-
+  PRECONDITION: Isi variable kamar_id dengan ID kamar yang benar-benar kosong dan masih boleh dipilih. Jalankan request secara berurutan; request pertama membuat penghuni pertama, request kelima membuat penghuni kedua, lalu request berikutnya melengkapi data dan mengganti penyewa utama. Jangan jalankan ulang pada database yang sama tanpa menyiapkan kamar uji baru.
+
+  Checklist UI manual (tidak dapat dibuktikan hanya lewat API):
+  1. Daftar penghuni kosong menampilkan “Belum ada data penghuni” dan tombol “Tambah penghuni”.
+  2. Setelah penghuni pertama disimpan, layar konfirmasi tampil dan tombol “Catat DP sekarang” tersedia hanya untuk penyewa utama.
+  3. Tombol “Catat DP sekarang” membuka form dengan kamar dan jenis DP terisi otomatis; kamar terkunci/tidak dapat diganti.
+  4. Penghuni tambahan tidak menampilkan tombol Catat DP sekarang.
+  5. Setelah penghuni disimpan, denah kamar berubah menjadi terisi.
+  6. Setelah dua penghuni berada di kamar, kamar tidak dapat dipilih untuk penghuni ketiga.
+  7. Penghuni tambahan tanpa persetujuan penyewa utama ditolak.
+  8. Saat koneksi terputus atau sinyal lambat, pesan/progress tampil, isian tidak hilang, dan klik ulang tidak membuat data ganda.
+  9. Uji akses tanpa login dan akun penghuni: harus ditolak.
+  10. Uji tampilan lebar 360px dan 1024px (DoD).
+order: 7000

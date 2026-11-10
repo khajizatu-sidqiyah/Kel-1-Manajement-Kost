@@ -1,0 +1,22 @@
+$kind: http-request
+url: "{{base_url}}/api/penghunian/dengan-penghuni"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer 999|tokenpalsutokenpalsutokenpalsu
+body:
+  type: json
+  content: |-
+    {
+      "id_kamar": 1,
+      "nama_penghuni": "Rina"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));
+      swaggerCheck('POST /penghunian/dengan-penghuni');
+      pm.test('Status 401 - token palsu ditolak', () => pm.response.to.have.status(401));
+    language: text/javascript
+order: 19000

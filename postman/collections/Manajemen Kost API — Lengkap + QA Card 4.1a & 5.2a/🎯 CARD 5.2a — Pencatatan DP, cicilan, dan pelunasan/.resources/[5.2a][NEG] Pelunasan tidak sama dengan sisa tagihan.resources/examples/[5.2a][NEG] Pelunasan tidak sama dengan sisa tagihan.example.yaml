@@ -1,0 +1,42 @@
+$kind: http-example
+request:
+  url: "{{base_url}}/api/pembayaran"
+  method: POST
+  headers:
+    Accept: application/json
+    Content-Type: application/json
+    Authorization: Bearer {{token}}
+  body:
+    type: text
+    content: |-
+      {
+        "id_penghunian": "{{penghunian_id}}",
+        "jenis_pembayaran": "pelunasan",
+        "tanggal_bayar": "2026-11-05",
+        "jumlah": 1,
+        "metode_pembayaran": "Cash"
+      }
+response:
+  statusCode: 422
+  statusText: Unprocessable Content
+  headers:
+    Host: localhost:8000
+    Connection: close
+    X-Powered-By: PHP/8.2.12
+    Cache-Control: no-cache, private
+    Date: Wed, 04 Nov 2026 16:24:15 GMT
+    Content-Type: application/json; charset=utf-8
+    Access-Control-Allow-Origin: "*"
+  body:
+    type: json
+    content: |-
+      {
+        "message": "Jumlah pelunasan harus sama dengan sisa tagihan.",
+        "error": {
+          "code": "INVALID_FINAL_PAYMENT_AMOUNT",
+          "message": "Jumlah pelunasan harus sama dengan sisa tagihan.",
+          "status": "INVALID_ARGUMENT",
+          "details": {}
+        }
+      }
+order: 1000

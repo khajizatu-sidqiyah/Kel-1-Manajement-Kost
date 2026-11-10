@@ -1,0 +1,33 @@
+$kind: http-request
+url: "{{base_url}}/api/penghunian/{{penghunian_id}}/hitung-dp"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: |-
+    {
+      "skema_sewa": "bulanan"
+    }
+scripts:
+  - type: afterResponse
+    code: >-
+      let res = {}; try { res = pm.response.json(); } catch(e) {}
+
+      pm.test('Status 200 — perhitungan DP berhasil', () =>
+      pm.response.to.have.status(200));
+
+      pm.test('DP minimum tersedia dan bernilai positif', () =>
+      pm.expect(Number(res.data.dp_minimum)).to.be.above(0));
+
+      pm.test('Tenggat tersedia', () => pm.expect(res.data.tenggat ||
+      res.data.tenggat_pelunasan).to.exist);
+
+      pm.test('Skema bulanan tersimpan/terbaca', () =>
+      pm.expect(JSON.stringify(res.data).toLowerCase()).to.include('bulanan'));
+    language: text/javascript
+examples: .resources/[5.2a][POS] Hitung DP minimum dan tenggat untuk skema
+  bulanan.resources/examples
+order: 1000

@@ -1,0 +1,40 @@
+$kind: http-request
+name: "[ERR-404] POST /api/penghunian/:id/hitung-dp — penghunian tidak ditemukan"
+url: "{{base_url}}/api/penghunian/999999/hitung-dp"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: |-
+    {
+      "skema_sewa": "bulanan"
+    }
+scripts:
+  - type: afterResponse
+    code: >-
+      let res = {};
+
+      try { res = pm.response.json(); } catch (e) { /* body bukan JSON */ }
+
+
+      pm.test('Status 404 - penghunian 999999 tidak ditemukan', () =>
+      pm.response.to.have.status(404));
+
+
+      pm.test('404 - error.status = NOT_FOUND', () => {
+        pm.expect(res).to.have.property('error');
+        pm.expect(res.error.status).to.eql('NOT_FOUND');
+      });
+
+      pm.test('404 - tidak ada data yang dikembalikan', () => {
+        pm.expect(res.data === undefined || res.data === null).to.be.true;
+      });
+
+      pm.test('404 - error.code = OCCUPANCY_NOT_FOUND', () => {
+        pm.expect(res.error.code).to.eql('OCCUPANCY_NOT_FOUND');
+      });
+    language: text/javascript
+order: 18000

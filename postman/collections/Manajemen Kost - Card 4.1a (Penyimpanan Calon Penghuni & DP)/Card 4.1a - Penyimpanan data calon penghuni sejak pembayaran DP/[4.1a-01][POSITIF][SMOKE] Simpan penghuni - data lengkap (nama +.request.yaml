@@ -1,0 +1,41 @@
+$kind: http-request
+name: "[4.1a-01][POSITIF][SMOKE] Simpan penghuni - data lengkap (nama + nomor HP) -> tersimpan"
+url: "{{base_url}}/api/penghunian/dengan-penghuni"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: json
+  content: |-
+    {
+      "id_kamar": {{s_kamar}},
+      "nama_penghuni": "Rina",
+      "no_telepon": "081234567890"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: 1|iBDYRfG3vIBbw3QZq7XkZvcFrSxpTVrbu6yP1uDZ9be4f2e4
+scripts:
+  - type: beforeRequest
+    code: |-
+      const { api, uniq, setv, getv, seq, mkKamar, mkOcc, hitung, bayar, payId } = eval(pm.collectionVariables.get('lib'));
+      seq([
+        n => mkKamar({}, id => { setv('s_kamar', id); n(); })
+      ]);
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));
+      swaggerCheck('POST /penghunian/dengan-penghuni');
+      pm.test('Status 201 - data lengkap tersimpan', () => pm.response.to.have.status(201));
+      pm.test('Pesan sukses tampil', () => pm.expect(res.message).to.be.a('string').and.not.empty);
+      pm.test('Data penghuni tersimpan (Rina, 081234567890)', () => {
+        const p = (res.data && res.data.penghuni) || res.data;
+        pm.expect(p.nama_penghuni).to.eql('Rina');
+        pm.expect(p.no_telepon).to.eql('081234567890');
+      });
+    language: text/javascript
+order: 1000

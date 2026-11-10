@@ -1,0 +1,49 @@
+$kind: http-request
+name: "[OK] DELETE /api/penghuni/:id — hapus penghuni"
+url: "{{base_url}}/api/penghuni/{{penghuni_hapus_id}}"
+method: DELETE
+headers:
+  Accept: application/json
+  Authorization: Bearer {{token}}
+scripts:
+  - type: beforeRequest
+    code: |-
+      // Buat penghuni sementara agar penghuni_id utama tidak hilang untuk folder berikutnya
+      pm.sendRequest({
+        url: pm.variables.replaceIn('{{base_url}}') + '/api/penghuni',
+        method: 'POST',
+        header: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + pm.collectionVariables.get('token')
+        },
+        body: { mode: 'raw', raw: JSON.stringify({ nama_penghuni: 'Penghuni Sementara', no_telepon: '0811' + String(Date.now()).slice(-7), alamat: 'Jl. Sementara' }) }
+      }, (err, resp) => {
+        if (err) { console.error('Gagal membuat penghuni sementara:', err); return; }
+        pm.collectionVariables.set('penghuni_hapus_id', resp.json().data.id_penghuni);
+      });
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      let res = {};
+      try { res = pm.response.json(); } catch (e) { /* body bukan JSON */ }
+
+      pm.test('Status 200', () => pm.response.to.have.status(200));
+
+      pm.test('Envelope sukses: message (string) & data ada', () => {
+        pm.expect(res).to.have.property('message');
+        pm.expect(res.message).to.be.a('string');
+        pm.expect(res).to.have.property('data');
+      });
+      pm.sendRequest({
+        url: pm.variables.replaceIn('{{base_url}}') + '/api/penghuni/' + pm.collectionVariables.get('penghuni_hapus_id'),
+        method: 'GET',
+        header: { 'Accept': 'application/json', 'Authorization': 'Bearer ' + pm.collectionVariables.get('token') }
+      }, (err, resp) => {
+        pm.test('Penghuni yang dihapus tidak bisa diakses lagi (GET -> 404)', () => {
+          pm.expect(err).to.be.null;
+          pm.expect(resp.code).to.eql(404);
+        });
+      });
+    language: text/javascript
+order: 14000

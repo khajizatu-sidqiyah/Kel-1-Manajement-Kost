@@ -1,0 +1,34 @@
+$kind: http-request
+name: "[OK] PUT /api/penghuni/:id — update sebagian field"
+url: "{{base_url}}/api/penghuni/{{penghuni_id}}"
+method: PUT
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: |-
+    {
+      "alamat": "Jl. Baru No. 99"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      let res = {};
+      try { res = pm.response.json(); } catch (e) { /* body bukan JSON */ }
+
+      pm.test('Status 200', () => pm.response.to.have.status(200));
+
+      pm.test('Envelope sukses: message (string) & data ada', () => {
+        pm.expect(res).to.have.property('message');
+        pm.expect(res.message).to.be.a('string');
+        pm.expect(res).to.have.property('data');
+      });
+      pm.test('alamat berubah sesuai payload & field lain tidak hilang', () => {
+        pm.expect(res.data.alamat).to.eql('Jl. Baru No. 99');
+        pm.expect(res.data.nama_penghuni, 'nama_penghuni tetap ada').to.be.a('string').and.not.empty;
+      });
+    language: text/javascript
+examples: .resources/[OK] PUT -api-penghuni-id — update sebagian field.resources/examples
+order: 12000

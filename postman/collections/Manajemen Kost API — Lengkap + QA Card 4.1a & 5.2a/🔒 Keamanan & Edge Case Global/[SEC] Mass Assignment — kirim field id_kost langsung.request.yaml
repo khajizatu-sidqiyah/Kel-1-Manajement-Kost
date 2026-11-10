@@ -1,0 +1,43 @@
+$kind: http-request
+url: "{{base_url}}/api/kamar"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: |-
+    {
+      "no_kamar": "HACK01",
+      "harga": 500000,
+      "id_kost": 99,
+      "id_kamar": 9999
+    }
+scripts:
+  - type: afterResponse
+    code: >-
+      let res = {};
+
+      try { res = pm.response.json(); } catch (e) { /* body bukan JSON */ }
+
+
+      pm.test('Tidak 500 — mass assignment harus dicegah fillable model', () =>
+      {
+        pm.expect(pm.response.code).to.not.eql(500);
+      });
+
+
+      pm.test('Diproses normal (201) atau ditolak (422)', () => pm.expect([201,
+      422]).to.include(pm.response.code));
+
+      pm.test('Mass assignment: id_kost / id_kamar dari klien tidak dipakai', ()
+      => {
+        if (pm.response.code === 201) {
+          const d = res.data;
+          if (d.id_kost !== undefined) pm.expect(Number(d.id_kost)).to.not.eql(99);
+          pm.expect(Number(d.id_kamar)).to.not.eql(9999);
+        }
+      });
+    language: text/javascript
+order: 11000

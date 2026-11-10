@@ -1,0 +1,41 @@
+$kind: http-request
+name: "[OK] PUT /api/pembayaran/:id/status — tolak pembayaran"
+url: "{{base_url}}/api/pembayaran/{{pembayaran_id}}/status"
+method: PUT
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: |-
+    {
+      "status": "ditolak"
+    }
+scripts:
+  - type: afterResponse
+    code: >-
+      let res = {};
+
+      try { res = pm.response.json(); } catch (e) { /* body bukan JSON */ }
+
+
+      pm.test('Status 200', () => pm.response.to.have.status(200));
+
+      pm.test('Status pembayaran = ditolak', () => {
+        pm.expect(pm.response.json().data.pembayaran.status).to.eql('ditolak');
+      });
+
+
+      pm.test('Envelope sukses: message (string) & data ada', () => {
+        pm.expect(res).to.have.property('message');
+        pm.expect(res.message).to.be.a('string');
+        pm.expect(res).to.have.property('data');
+      });
+
+      pm.test('Pembayaran ditolak tidak dihitung: total_terbayar = 0', () => {
+        pm.expect(Number(res.data.total_terbayar)).to.eql(0);
+        pm.expect(Number(res.data.sisa_tagihan)).to.eql(Number(res.data.total_sewa));
+      });
+    language: text/javascript
+order: 21000

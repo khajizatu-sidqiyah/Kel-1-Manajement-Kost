@@ -1,0 +1,24 @@
+$kind: http-request
+name: "[OK] GET /api/pembayaran/:id — detail pembayaran"
+url: "{{base_url}}/api/pembayaran/{{pembayaran_id}}"
+method: GET
+headers:
+  Accept: application/json
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: >-
+      let res = {};
+
+      try { res = pm.response.json(); } catch (e) { /* body bukan JSON */ }
+
+
+      pm.test('Status 200', () => pm.response.to.have.status(200));
+
+
+      pm.test('Detail sesuai ID yang diminta (pembayaran_id)', () => {
+        const d = (res.data && res.data.pembayaran) || res.data;
+        pm.expect(String(d.id_pembayaran)).to.eql(String(pm.collectionVariables.get('pembayaran_id')));
+      });
+    language: text/javascript
+order: 14000

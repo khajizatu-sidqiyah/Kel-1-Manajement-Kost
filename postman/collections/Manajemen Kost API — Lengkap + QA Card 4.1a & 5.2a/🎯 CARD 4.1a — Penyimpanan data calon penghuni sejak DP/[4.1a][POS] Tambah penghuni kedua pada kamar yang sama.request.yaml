@@ -1,0 +1,29 @@
+$kind: http-request
+url: "{{base_url}}/api/penghunian/dengan-penghuni"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: |-
+    {
+      "id_kamar": "{{kamar_id}}",
+      "nama_penghuni": "Sari",
+      "no_telepon": "081234567899",
+      "alamat": "Cirebon",
+      "tanggal_mulai": "2026-11-04"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      let res = {}; try { res = pm.response.json(); } catch(e) {}
+      pm.test('Status 201 — penghuni tambahan tersimpan', () => pm.response.to.have.status(201));
+      pm.test('Penghuni tambahan terhubung ke kamar yang sama', () => pm.expect(String(res.data.penghunian.id_kamar)).to.eql(String(pm.collectionVariables.get('kamar_id'))));
+      pm.test('Penghuni tambahan bukan penyewa utama', () => pm.expect([false,0,'0']).to.include(res.data.penghunian.is_penyewa_utama));
+      pm.test('Simpan ID penghuni tambahan', () => { pm.collectionVariables.set('qa41a_penghuni_tambahan_id',res.data.penghuni.id_penghuni); pm.collectionVariables.set('qa41a_penghunian_tambahan_id',res.data.penghunian.id_penghunian); });
+    language: text/javascript
+examples: .resources/[4.1a][POS] Tambah penghuni kedua pada kamar yang
+  sama.resources/examples
+order: 5000

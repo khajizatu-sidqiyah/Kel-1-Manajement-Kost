@@ -1,0 +1,26 @@
+$kind: http-request
+name: "[OK] GET /api/me — profil user aktif"
+url: "{{base_url}}/api/me"
+method: GET
+headers:
+  Accept: application/json
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      let res = {};
+      try { res = pm.response.json(); } catch (e) { /* body bukan JSON */ }
+
+      pm.test('Status 200', () => pm.response.to.have.status(200));
+      pm.test('Memiliki role', () => {
+        pm.expect(pm.response.json().data).to.have.property('role');
+      });
+
+      pm.test('role berupa string tidak kosong', () => pm.expect(res.data.role).to.be.a('string').and.not.empty);
+      pm.test('Profil tidak membocorkan password / remember_token', () => {
+        pm.expect(res.data).to.not.have.property('password');
+        pm.expect(res.data).to.not.have.property('remember_token');
+      });
+    language: text/javascript
+examples: .resources/[OK] GET -api-me — profil user aktif.resources/examples
+order: 7000

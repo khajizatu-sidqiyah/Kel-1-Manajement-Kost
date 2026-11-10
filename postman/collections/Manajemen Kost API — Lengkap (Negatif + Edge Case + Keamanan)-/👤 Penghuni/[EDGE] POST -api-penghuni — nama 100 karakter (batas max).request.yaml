@@ -1,0 +1,26 @@
+$kind: http-request
+name: "[EDGE] POST /api/penghuni — nama 100 karakter (batas max)"
+url: "{{base_url}}/api/penghuni"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: |-
+    {
+      "nama_penghuni": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      let res = {};
+      try { res = pm.response.json(); } catch (e) { /* body bukan JSON */ }
+
+      pm.test('Status 201 — nama tepat 100 char', () => pm.response.to.have.status(201));
+
+      pm.test('nama_penghuni tersimpan 100 karakter', () => pm.expect(res.data.nama_penghuni).to.have.lengthOf(100));
+    language: text/javascript
+examples: .resources/[EDGE] POST -api-penghuni — nama 100 karakter (batas max).resources/examples
+order: 8000

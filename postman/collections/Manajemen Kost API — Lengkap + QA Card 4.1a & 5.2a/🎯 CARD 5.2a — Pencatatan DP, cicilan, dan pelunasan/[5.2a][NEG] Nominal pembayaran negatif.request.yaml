@@ -1,0 +1,35 @@
+$kind: http-request
+url: "{{base_url}}/api/pembayaran"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: |-
+    {
+      "id_penghunian": "{{penghunian_id}}",
+      "jenis_pembayaran": "cicilan",
+      "tanggal_bayar": "2026-11-04",
+      "jumlah": -1,
+      "metode_pembayaran": "Cash"
+    }
+scripts:
+  - type: afterResponse
+    code: >-
+      let res = {}; try { res = pm.response.json(); } catch (e) {}
+
+      pm.test('Status 422 — validasi menolak input', () =>
+      pm.response.to.have.status(422));
+
+      pm.test('Respons JSON dan memuat error', () => {
+      pm.expect(pm.response.headers.get('Content-Type') ||
+      '').to.include('application/json'); pm.expect(res.error || res.errors ||
+      res.message).to.exist; });
+
+      pm.test('Tidak ada data tersimpan pada respons gagal', () =>
+      pm.expect(res.data === undefined || res.data === null).to.be.true);
+    language: text/javascript
+examples: .resources/[5.2a][NEG] Nominal pembayaran negatif.resources/examples
+order: 7000

@@ -1,0 +1,36 @@
+$kind: http-request
+name: "[ERR-422] POST /api/penghunian/dengan-penghuni — alamat kosong"
+url: "{{base_url}}/api/penghunian/dengan-penghuni"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: |-
+    {
+      "id_kamar": {{kamar_id}},
+      "nama_penghuni": "Ahmad Fauzi"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      let res = {};
+      try { res = pm.response.json(); } catch (e) { /* body bukan JSON */ }
+
+      pm.test('Status 422 — alamat wajib diisi', () => pm.response.to.have.status(422));
+
+      pm.test('422 - error.status = INVALID_ARGUMENT', () => {
+        pm.expect(res).to.have.property('error');
+        pm.expect(res.error.status).to.eql('INVALID_ARGUMENT');
+      });
+      pm.test('422 - error.details memuat field: alamat', () => {
+        const details = JSON.stringify(res.error.details || {});
+        ["alamat"].forEach(f => pm.expect(details, 'field ' + f).to.include(f));
+      });
+      pm.test('422 - tidak ada data yang tersimpan', () => {
+        pm.expect(res.data === undefined || res.data === null).to.be.true;
+      });
+    language: text/javascript
+order: 8000

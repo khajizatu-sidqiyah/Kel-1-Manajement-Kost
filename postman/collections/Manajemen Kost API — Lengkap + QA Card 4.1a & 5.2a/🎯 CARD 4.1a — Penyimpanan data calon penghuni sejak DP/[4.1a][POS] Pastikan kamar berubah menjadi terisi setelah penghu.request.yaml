@@ -1,0 +1,22 @@
+$kind: http-request
+name: "[4.1a][POS] Pastikan kamar berubah menjadi terisi setelah penghuni disimpan"
+url: "{{base_url}}/api/kamar/{{kamar_id}}"
+method: GET
+headers:
+  Accept: application/json
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: >-
+      let res = {}; try { res = pm.response.json(); } catch(e) {}
+
+      pm.test('Status 200 — detail kamar tersedia', () =>
+      pm.response.to.have.status(200));
+
+      pm.test('Status kamar menunjukkan terisi', () => { const d=res.data?.kamar
+      || res.data; pm.expect(['terisi','Terisi']).to.include(d.status ||
+      d.status_kamar); });
+    language: text/javascript
+examples: .resources/[4.1a][POS] Pastikan kamar berubah menjadi terisi setelah
+  penghu.resources/examples
+order: 9000
