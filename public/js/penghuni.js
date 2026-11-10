@@ -2,17 +2,20 @@
 // Bergantung pada rooms-api.js skrng menjadi kamar-api(dimuat lebih dulu): loadRooms(), fmtNo(), fmtTanggal(), lantaiDariNomor().
 //
 // Endpoint (kontrak API Kelompok 1):
-//   GET   /api/penghunian               -> daftar penghunian (+ relasi kamar & penghuni)
-//   GET   /api/kamar                    -> lewat loadRooms() di rooms-api.js skrng menjadi kamar-api
-//   POST  /api/penghuni                 -> buat penghuni baru
-//   POST  /api/penghunian               -> catat penghuni menempati kamar
-//   PUT   /api/penghunian/{id}/selesai  -> akhiri penghunian
+//   GET   /api/penghunian                  -> daftar penghunian (+ relasi kamar & penghuni)
+//   GET   /api/kamar                       -> lewat loadRooms() di rooms-api.js skrng menjadi kamar-api
+//   POST  /api/penghuni                    -> buat penghuni baru
+//   POST  /api/penghunian                  -> catat penghuni menempati kamar
+//   PUT   /api/penghunian/{id}/selesai     -> akhiri penghunian
 // Semua request API membawa token Bearer dari localStorage (disimpan login.js), karena route API memakai auth:sanctum.
 (function () {
   "use strict";
 
-  const PER_PAGE = 4; // desain: "Menampilkan 1–4 dari 9 penyewa"
-  const state = { rows: [], rooms: [], tab: "aktif", page: 1, loading: true, error: false };
+  const PER_PAGE = 10; // desain: "Menampilkan 1–10 dari 24 penyewa"
+  const state = { rows: [], rooms: [], tab: "aktif", page: 1, showAll: false, loading: true, error: false };
+  // Filter yang sedang diterapkan -> dikirim ke BE sebagai query string (skema[]=bulanan&lantai[]=2 ...)
+  const FILTER_KEYS = ["skema", "status_data", "peran", "lantai"];
+  const applied = { skema: [], status_data: [], peran: [], lantai: [] };
   const modal = { open: false, kamarId: null, saving: false };
 
   const $ = (id) => document.getElementById(id);
@@ -21,11 +24,11 @@
   const AUTH = { Authorization: `Bearer ${localStorage.getItem("token") || ""}` };
   const JSON_HEADERS = { Accept: "application/json", "Content-Type": "application/json", ...AUTH };
 
-  // "2026-11-05" -> "5 Nov 2026" (tanpa nol di depan, sesuai desain)
+  // "2026-11-05" -> "05 Nov 2026" (sesuai desain)
   const BLN = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
   const tgl = (iso) => {
     const [y, m, d] = String(iso || "").slice(0, 10).split("-");
-    return y && BLN[m - 1] ? `${Number(d)} ${BLN[m - 1]} ${y}` : "";
+    return y && BLN[m - 1] ? `${String(Number(d)).padStart(2, "0")} ${BLN[m - 1]} ${y}` : "";
   };
 
   /* ---------------------------------------------------------
@@ -53,8 +56,18 @@
     };
   }
 
+  // Pencarian & filter dikerjakan BE. FE hanya menyusun parameter: q, skema[], status_data[], peran[], lantai[]
+  function buildQuery() {
+    const qs = new URLSearchParams();
+    const q = $("f-q").value.trim();
+    if (q) qs.set("q", q);
+    FILTER_KEYS.forEach((k) => applied[k].forEach((v) => qs.append(k + "[]", v)));
+    const str = qs.toString();
+    return str ? "?" + str : "";
+  }
+
   async function loadPenghunian() {
-    const res = await fetch("/api/penghunian", { headers: { Accept: "application/json", ...AUTH } });
+    const res = await fetch("/api/penghunian" + buildQuery(), { headers: { Accept: "application/json", ...AUTH } });
     if (res.status === 401) { localStorage.removeItem("token"); location.href = "/login"; return []; }
     if (!res.ok) throw new Error("HTTP " + res.status);
     const rows = (await res.json()).data;
@@ -69,18 +82,17 @@
     const aktif = state.rows.filter((r) => r.status === "aktif");
     const arsip = state.rows.filter((r) => r.status !== "aktif");
     const utama = aktif.filter((r) => r.utama).length;
-    const card = (iconL, label, n, iconR) => `
+    const card = (iconL, label, n) => `
       <div class="pg-stat">
         <span class="ico">${ic(iconL)}</span>
         <span class="lbl">${label}</span>
         <div class="val"><b>${n}</b><span>Orang</span></div>
-        <span class="ico br">${ic(iconR)}</span>
       </div>`;
     $("pg-stats").innerHTML =
-      card("users", "Total Penyewa Aktif", aktif.length, "user-check") +
-      card("user", "Penyewa Utama", utama, "crown") +
-      card("users", "Penghuni Tambahan", aktif.length - utama, "user-plus2") +
-      card("archive", "Data Diarsipkan", arsip.length, "file");
+      card("users", "Total Penyewa Aktif", aktif.length) +
+      card("user", "Penyewa Utama", utama) +
+      card("users", "Penghuni Tambahan", aktif.length - utama) +
+      card("archive", "Data Diarsipkan", arsip.length);
   }
 
   /* ---------------------------------------------------------
@@ -93,37 +105,30 @@
     Number(b.utama) - Number(a.utama) || a.id - b.id;
 
   function filtered() {
-    const q = $("f-q").value.trim().toLowerCase();
-    const lt = $("f-lantai").value, peran = $("f-peran").value, st = $("f-status").value;
     return state.rows.filter((r) => {
-      if ((state.tab === "aktif") !== (r.status === "aktif")) return false;
-      if (q && !(r.nama.toLowerCase().includes(q) || String(r.no_kamar).toLowerCase().includes(q) || fmtNo(r.no_kamar).includes(q))) return false;
-      if (lt && String(r.lantai) !== lt) return false;
-      if (peran && (peran === "utama") !== r.utama) return false;
-      if (st && (st === "lengkap") !== r.lengkap) return false;
-      return true;
+      // Pencarian & filter sudah diproses BE; FE hanya memisahkan tab aktif/arsip.
+      return (state.tab === "aktif") === (r.status === "aktif");
     }).sort(urutKamar);
   }
 
   const peranPill = (r) => r.utama
-    ? `<span class="pill pill--ok pill--utama">${ic("crown")}Penyewa Utama</span>`
-    : `<span class="pill pill--add">${ic("user")}<span>Penghuni<br>Tambahan</span></span>`;
+    ? `<span class="pill pill--ok pill--utama">Penyewa Utama</span>`
+    : `<span class="pill pill--add">Penghuni Tambahan</span>`;
   const statusPill = (r) => r.lengkap
-    ? `<span class="pill pill--ok pill--lengkap">${ic("check")}Lengkap</span>`
-    : `<span class="pill pill--warn">${ic("warn")}<span>Data belum<br>lengkap</span></span>`;
+    ? `<span class="pill pill--ok pill--lengkap">Lengkap</span>`
+    : `<span class="pill pill--warn">Data belum lengkap</span>`;
 
   function rowHtml(r, no) {
     const aktif = r.status === "aktif";
     return `<tr data-id="${r.id}">
       <td class="no">${no}</td>
       <td class="nama">${esc(r.nama)}</td>
-      <td class="kamar"><b>Kamar ${esc(fmtNo(r.no_kamar))}</b>${r.lantai ? `<small>Lt. ${esc(r.lantai)}</small>` : ""}</td>
-      <td class="hp">${r.hp ? esc(r.hp) : '<span class="empty">Belum diisi</span>'}</td>
+      <td class="kamar">${esc(fmtNo(r.no_kamar))}${r.lantai ? ` (Lt. ${esc(r.lantai)})` : ""}</td>
+      <td class="hp">${r.hp ? esc(fmtHp(r.hp)) : '<span class="empty">Belum diisi</span>'}</td>
       <td class="tgl">${r.mulai ? esc(tgl(r.mulai)) : '<span class="empty">Belum diisi</span>'}</td>
       <td class="ta-c">${peranPill(r)}</td>
       <td class="ta-c">${statusPill(r)}</td>
       <td class="aksi-td"><div class="aksi">
-        <button type="button" data-act="lihat" aria-label="Lihat detail ${esc(r.nama)}">${ic("eye")}</button>
         <button type="button" data-act="ubah" aria-label="Ubah ${esc(r.nama)}">${ic("edit")}</button>
         ${aktif ? `<button type="button" data-act="menu" aria-label="Menu lainnya" aria-haspopup="menu">${ic("dots")}</button>` : `<span style="width:24px"></span>`}
       </div></td>
@@ -132,10 +137,11 @@
 
   function renderTable() {
     const list = filtered();
-    const pages = Math.max(1, Math.ceil(list.length / PER_PAGE));
+    const perPage = state.showAll ? Math.max(list.length, 1) : PER_PAGE; // "Lihat semua data" = semua baris dalam 1 halaman
+    const pages = Math.max(1, Math.ceil(list.length / perPage));
     state.page = Math.min(state.page, pages);
-    const start = (state.page - 1) * PER_PAGE;
-    const slice = list.slice(start, start + PER_PAGE);
+    const start = (state.page - 1) * perPage;
+    const slice = list.slice(start, start + perPage);
     const box = $("pg-state");
 
     if (state.loading) {
@@ -161,9 +167,41 @@
 
     // Pagination
     let nav = `<button type="button" data-p="${state.page - 1}" aria-label="Sebelumnya" ${state.page <= 1 ? "disabled" : ""}>${ic("chev-l")}</button>`;
-    for (let p = 1; p <= pages; p++) nav += `<button type="button" data-p="${p}" class="${p === state.page ? "is-on" : ""}" ${p === state.page ? 'aria-current="page"' : ""}>${p}</button>`;
+    for (let p = 1; p <= pages; p++) nav += `<button type="button" data-p="${p}" class="${p === state.page && !state.showAll ? "is-on" : ""}" ${p === state.page && !state.showAll ? 'aria-current="page"' : ""}>${p}</button>`;
+    nav += `<button type="button" class="pager-all" data-all="1" aria-pressed="${state.showAll}">Lihat semua data</button>`;
     nav += `<button type="button" data-p="${state.page + 1}" aria-label="Berikutnya" ${state.page >= pages ? "disabled" : ""}>${ic("chev-r")}</button>`;
     $("pg-pager").innerHTML = nav;
+  }
+
+  /* ---------------------------------------------------------
+     Panel Filter (default tertutup, badge hanya muncul bila ada filter)
+  --------------------------------------------------------- */
+  function initFilterPanel() {
+    const panel = $("fp-panel"), btn = $("fp-toggle"), wrap = $("fp-wrap");
+    const boxes = () => panel.querySelectorAll('input[type="checkbox"]');
+    const setOpen = (open) => { panel.hidden = !open; btn.setAttribute("aria-expanded", String(open)); };
+    const syncBadge = () => {
+      const n = FILTER_KEYS.reduce((t, k) => t + applied[k].length, 0);
+      $("fp-badge").textContent = n; $("fp-badge").hidden = n === 0;
+      btn.classList.toggle("has-filter", n > 0);
+    };
+    const syncBoxes = () => boxes().forEach((c) => { c.checked = applied[c.name].includes(c.value); }); // kembalikan ke filter yang berlaku
+    const apply = () => {
+      FILTER_KEYS.forEach((k) => { applied[k] = [...panel.querySelectorAll(`input[name="${k}"]:checked`)].map((c) => c.value); });
+      syncBadge(); setOpen(false); state.page = 1; state.showAll = false; refresh();
+    };
+    const reset = () => {
+      boxes().forEach((c) => { c.checked = false; });
+      FILTER_KEYS.forEach((k) => { applied[k] = []; });
+      syncBadge(); setOpen(false); state.page = 1; state.showAll = false; refresh();
+    };
+    btn.addEventListener("click", (e) => { e.stopPropagation(); if (panel.hidden) { syncBoxes(); setOpen(true); } else setOpen(false); });
+    $("fp-close").addEventListener("click", () => { syncBoxes(); setOpen(false); });
+    $("fp-apply").addEventListener("click", apply);
+    $("fp-reset").addEventListener("click", reset);
+    document.addEventListener("click", (e) => { if (!panel.hidden && !wrap.contains(e.target)) { syncBoxes(); setOpen(false); } });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !panel.hidden) { syncBoxes(); setOpen(false); btn.focus(); } });
+    syncBadge();
   }
 
   async function refresh() {
@@ -210,7 +248,7 @@
   const BIAYA_TAMBAHAN = 300000;  // "+Rp 300.000/bln"
 
   const modals = {
-    add:  { p: "a", root: () => $("pm"), kamarId: null, saving: false, row: null },
+    add:  { p: "a", root: () => $("pm"), kamarId: null, saving: false, row: null, label: "Simpan Penghuni" },
     edit: { p: "e", root: () => $("pe"), kamarId: null, saving: false, row: null },
   };
   const rp = (n) => "Rp " + Number(n).toLocaleString("id-ID");
@@ -219,13 +257,13 @@
   const nowStr = () => { const d = new Date(), z = (n) => String(n).padStart(2, "0"); return `${tgl(d.toISOString().slice(0, 10))}, ${z(d.getHours())}:${z(d.getMinutes())}`; };
   const fmtHp = (hp) => String(hp || "").replace(/\D/g, "").replace(/^(\d{4})(\d{4})(\d+)$/, "$1-$2-$3") || "-";
 
-  // Penghuni aktif pada sebuah kamar (opsional: abaikan 1 penghunian yang sedang diedit)
-  function kamarCtx(idKamar, excludeId) {
-    const list = state.rows.filter((r) => r.status === "aktif" && r.id_kamar === idKamar && r.id !== excludeId);
+  // Penghuni aktif pada sebuah kamar (hanya kecualikan ID jika memeriksa kamar asal DAN kamarnya sedang dipindah)
+  function kamarCtx(idKamar, excludeId, originalKamarId) {
+    const list = state.rows.filter((r) => r.status === "aktif" && r.id_kamar === idKamar && (r.id !== excludeId || idKamar !== originalKamarId));
     return { list, count: list.length, utama: list.find((r) => r.utama) || list[0] || null, penuh: list.length >= KAPASITAS };
   }
-  function badge(k, excludeId, long) {
-    const c = kamarCtx(k.id, excludeId);
+  function badge(k, excludeId, originalKamarId, long) {
+    const c = kamarCtx(k.id, excludeId, originalKamarId);
     if (!c.count) return '<span class="pm-badge">Kosong</span>';
     const txt = `Terisi (${c.count}/${KAPASITAS} Penghuni)` + (long ? ` - Kapasitas ${KAPASITAS} Orang` : "");
     return `<span class="pm-badge ${c.penuh ? "pm-badge--full" : "pm-badge--busy"}">${c.penuh ? "Penuh" : txt}</span>`;
@@ -237,20 +275,21 @@
   function renderPick(m) {
     const k = selKamar(m);
     $(m.p + "-pick").innerHTML = k
-      ? `${ic("home")}<span>${kamarName(k)}</span>${badge(k, exId(m), m.p === "a")}<span class="grow"></span>${ic("chev", "i ch")}`
-      : `${ic("home")}<span style="color:#94A3B8">Pilih kamar</span><span class="grow"></span>${ic("chev", "i ch")}`;
+      ? `${ic("home")}<span>${kamarName(k)}</span>${badge(k, exId(m), m.row?.id_kamar)}<span class="grow"></span>${ic("chev", "i ch")}`
+      : `${ic("home")}<span class="ph">${m.p === "a" ? "Pilih kamar yang akan ditempati oleh penyewa." : "Pilih kamar"}</span><span class="grow"></span>${ic("chev", "i ch")}`;
   }
   function renderList(m) {
     $(m.p + "-list").innerHTML = state.rooms.length
       ? state.rooms.map((k) => {
-          const penuh = kamarCtx(k.id, exId(m)).penuh && k.id !== m.kamarId;
-          return `<button type="button" role="option" data-k="${k.id}" aria-selected="${k.id === m.kamarId}" ${penuh ? "disabled" : ""}>${ic("home")}<span>${kamarName(k)}</span>${badge(k, exId(m))}</button>`;
+          const penuh = kamarCtx(k.id, exId(m), m.row?.id_kamar).penuh && k.id !== m.kamarId;
+          return `<button type="button" role="option" data-k="${k.id}" aria-selected="${k.id === m.kamarId}" ${penuh ? "disabled" : ""}>${ic("home")}<span>${kamarName(k)}</span>${badge(k, exId(m), m.row?.id_kamar)}</button>`;
         }).join("")
       : '<p class="pm-help" style="padding:10px">Belum ada kamar.</p>';
   }
   function toggleList(m, open) {
-    $(m.p + "-list").hidden = !open; $(m.p + "-pick").setAttribute("aria-expanded", open);
-    if (open) renderList(m);
+    const list = $(m.p + "-list");
+    list.hidden = !open; $(m.p + "-pick").setAttribute("aria-expanded", open);
+    if (open) { renderList(m); list.scrollTop = 0; } // selalu mulai dari kamar paling atas
   }
 
   // Tanggal: teks terformat ("15 Feb 2024") di atas <input type=date> transparan
@@ -268,53 +307,72 @@
     $(p + "-wnama").classList.toggle("has-err", on);
     const h = $(p + "-hnama");
     h.classList.toggle("err", on);
-    h.textContent = on ? msg : (p === "a" ? "Nama lengkap sesuai tanda pengenal / KTP." : "Nama penghuni wajib diisi.");
+    h.textContent = on ? msg : "Nama penghuni wajib diisi.";
   }
   function formError(p, msg) { $(p + "-error").textContent = msg || ""; $(p + "-error").hidden = !msg; }
 
-  /* ---- Render isi modal TAMBAH (skenario 3) ---- */
+  /* ---- Render isi modal TAMBAH: tampilan & peran mengikuti kondisi kamar yang dipilih ----
+         belum pilih / kamar kosong  -> kotak info hijau, tombol "Simpan Penghuni"
+         kamar sudah dihuni (1/2)    -> kartu penyewa utama + kartu peran oranye, tombol "Konfirmasi & Tambah Penghuni" */
+  function ownerHtml(u) {
+    return `<div class="pm-owner">
+      <span class="pm-av">${esc(inisial(u.nama))}</span>
+      <div>
+        <div class="nm">${esc(u.nama)}<span class="tg">Penyewa Utama${u.mulai ? " Sejak " + esc(blnTahun(u.mulai)) : ""}</span></div>
+        <div class="sub">WA: ${u.hp ? esc(fmtHp(u.hp)) : "belum diisi"}<span style="margin: 0 6px;">&bull;</span><b>Kontrak Aktif</b></div>
+      </div>
+      <span class="rt">Pemegang Kontrak Utama</span>
+    </div>`;
+  }
   function renderAdd() {
-    const m = modals.add, k = selKamar(m), c = k ? kamarCtx(k.id) : { count: 0, utama: null, penuh: false };
-    const adaUtama = c.count > 0 && c.utama;
-    const owner = $("a-owner");
+    const m = modals.add, k = selKamar(m);
+    const c = k ? kamarCtx(k.id) : { count: 0, utama: null, penuh: false };
+    const terisi = !!(k && c.count);
+    const noK = k ? esc(fmtNo(k.no_kamar)) : "";
 
-    // Kartu penghuni utama saat ini
-    owner.hidden = !adaUtama;
-    if (adaUtama) {
-      const u = c.utama;
-      owner.innerHTML = `<span class="pm-av">${esc(inisial(u.nama))}</span>
-        <div><div class="nm">${esc(u.nama)}${u.mulai ? `<span class="tg">Penyewa Utama Sejak ${esc(blnTahun(u.mulai))}</span>` : '<span class="tg">Penyewa Utama</span>'}</div>
-        <div class="sub">WA: ${esc(fmtHp(u.hp))} &nbsp;•&nbsp; <b>Kontrak Aktif</b></div></div>
-        <span class="rt">Pemegang Kontrak<br>Utama</span>`;
-    }
-    // Persetujuan
-    $("a-approve").hidden = !adaUtama;
-    $("a-hub-wrap").hidden = !adaUtama;
-    if (adaUtama) {
-      $("a-conf-time").textContent = `Terkonfirmasi hari ini (${nowStr()})`;
-      $("a-wa-tt").textContent = `Kirim Notifikasi WA ke ${c.utama.nama.split(" ")[0]}`;
-      $("a-agree-tx").innerHTML = `<b>Penghuni utama (${esc(c.utama.nama)}) telah menyetujui</b> penambahan teman sekamar ini ke dalam Kamar ${esc(fmtNo(k.no_kamar))}.
-        <small>Kebijakan Tagihan: Tagihan kamar tetap dibebankan kepada Penyewa Utama, atau pilih opsi pisah tagihan.</small>`;
-    }
-    // Peran & biaya
-    if (adaUtama) {
-      $("a-peran").innerHTML = `<div class="pm-role"><span class="ck">${ic("tick")}</span>
-        <div><div class="tt">Penyewa Tambahan<span class="tag">Teman Sekamar</span></div>
-        <div class="ds">Biaya tambahan orang ke-${c.count + 1}: +${rp(BIAYA_TAMBAHAN)}/bln (dapat dibagi rata / ditanggung utama).</div></div>
-        <span class="rt">Tertaut ke ${esc(c.utama.nama)}</span></div>`;
+    m.root().classList.toggle("is-terisi", terisi);
+    m.label = terisi ? "Konfirmasi & Tambah Penghuni" : "Simpan Penghuni";
+
+    // Bagian 1: kartu penyewa utama kamar (hanya bila kamar sudah dihuni)
+    $("a-owner").innerHTML = terisi ? ownerHtml(c.utama) : "";
+
+    // Bagian 2: teks bantuan mengikuti kondisi kamar
+    $("a-hhp").textContent = terisi ? "Nomor HP dapat dihubungi melalui WhatsApp." : "Nomor HP dapat dilengkapi nanti.";
+    $("a-htgl").textContent = terisi ? "Tanggal masuk disesuaikan dengan periode tinggal." : "Tanggal masuk dapat ditambahkan setelah data tersimpan.";
+
+    // Bagian 3: peran penghuni
+    if (!k) {
+      $("a-peran").innerHTML = `<div class="pm-info">${ic("info")}<span>Pilih kamar terlebih dahulu. Peran penghuni ditentukan otomatis dari kamar yang dipilih.</span></div>`;
+    } else if (!terisi) {
+      $("a-peran").innerHTML = `<div class="pm-info">${ic("info")}<span>Karena kamar <b>${noK}</b> belum memiliki penyewa aktif, penghuni ini akan otomatis menjadi <b>Penyewa Utama.</b></span></div>`;
     } else {
-      $("a-peran").innerHTML = `<div class="pm-info">${ic("info")}<span>Karena kamar ${esc(k ? fmtNo(k.no_kamar) : "")} belum memiliki penyewa aktif, penghuni ini akan otomatis menjadi <b>Penyewa Utama</b>.</span></div>
-        <div class="pm-peran"><span>Peran</span><div class="pm-peran-box"><span class="tagp">${ic("crown")}Penyewa Utama</span></div></div>`;
+      $("a-peran").innerHTML = `<div class="pm-role">
+        <span class="ck">${ic("tick")}</span>
+        <div>
+          <div class="tt">Penyewa Tambahan</div>
+          <div class="ds">Kamar ${noK} telah memiliki Penyewa Utama (${esc(c.utama.nama)}). Penghuni baru ini otomatis ditetapkan sebagai <em>Penyewa Tambahan (Teman Sekamar)</em>.</div>
+        </div>
+      </div>`;
     }
-    formError("a", c.penuh ? `Kamar ${k ? fmtNo(k.no_kamar) : ""} sudah penuh (${c.count}/${KAPASITAS} penghuni).` : "");
-    $("a-simpan").disabled = !k || c.penuh;
+
+    // Tombol simpan: ikon + label
+    $("a-simpan-ic").hidden = !terisi;
+    if (!m.saving) $("a-simpan").querySelector(".lbl").textContent = m.label;
+
+    kamarError(false);
+    formError("a", c.penuh ? `Kamar ${noK} sudah penuh (${c.count}/${KAPASITAS} penghuni).` : "");
+    $("a-simpan").disabled = c.penuh;
+  }
+  function kamarError(on) {
+    $("a-pick").classList.toggle("has-err", on);
+    $("a-hkamar").classList.toggle("err", on);
   }
 
   /* ---- Render isi modal EDIT (skenario 2) ---- */
   function renderEdit() {
     const m = modals.edit, k = selKamar(m), row = m.row;
-    const c = k ? kamarCtx(k.id, row.id) : { count: 0, list: [], utama: null };
-    const sama = k && k.id === row.id_kamar;                 // kamar tidak diganti -> peran tetap
+    const c = k ? kamarCtx(k.id, row.id, row.id_kamar) : { count: 0, list: [], utama: null };
+    const sama = k && k.id === row.id_kamar;                  // kamar tidak diganti -> peran tetap
     // Satu-satunya penghuni aktif di kamar ini -> otomatis penyewa utama (walau flag di data masih 0)
     const sendiri = !!(sama && c.count === 0);
     // Boleh dipilih jadi penyewa utama: penghuni tambahan aktif, kamar tidak diganti, dan ada penyewa utama lain
@@ -323,7 +381,7 @@
     const utama = sama ? !!(row.utama || sendiri || m.jadikanUtama) : c.count === 0;
     // Perlu memanggil endpoint penyewa-utama saat simpan?
     m.kirimUtama = !!(sama && row.status === "aktif" && !row.utama && (sendiri || m.jadikanUtama));
-    const rekan = c.utama;                                   // penyewa utama kamar (selain yang diedit)
+    const rekan = c.utama;                                    // penyewa utama kamar (selain yang diedit)
     const noK = k ? fmtNo(k.no_kamar) : "";
     const namaRekan = rekan ? esc(rekan.nama) : "-";
 
@@ -374,19 +432,25 @@
     try { state.rooms = (await loadRooms()).sort((a, b) => String(a.no_kamar).localeCompare(String(b.no_kamar), undefined, { numeric: true })); }
     catch (e) { state.rooms = []; }
   }
-  function show(m) { m.root().hidden = false; document.body.style.overflow = "hidden"; }
+  // Buka modal selalu dari posisi paling atas (overlay, isi modal, dan daftar kamar di-reset)
+  function show(m) {
+    const root = m.root();
+    root.hidden = false;
+    root.scrollTop = 0;
+    const body = root.querySelector(".pm-body"); if (body) body.scrollTop = 0;
+    $(m.p + "-list").scrollTop = 0;
+    document.body.style.overflow = "hidden";
+  }
   function close(m) { m.root().hidden = true; toggleList(m, false); document.body.style.overflow = ""; }
 
   async function openAdd() {
-    const m = modals.add; m.saving = false; m.row = null;
-    ["a-nama", "a-hp"].forEach((id) => ($(id).value = "")); $("a-hub").selectedIndex = 0; $("a-setuju").checked = true;
-    setDate("a", ""); m.idPenghuni = null;
-    nameError("a", false); formError("a"); toggleList(m, false); show(m);
+    const m = modals.add; m.saving = false; m.row = null; m.kamarId = null; m.idPenghuni = null;
+    $("a-nama").value = ""; $("a-hp").value = ""; setDate("a", "");
+    nameError("a", false); kamarError(false); formError("a"); toggleList(m, false); show(m);
+    renderModal(m);
     await ensureRooms();
-    // Pilihan awal: kamar yang sudah berpenghuni tapi masih muat (skenario 3); bila tidak ada, kamar kosong pertama.
-    const muat = state.rooms.find((k) => { const c = kamarCtx(k.id); return c.count > 0 && !c.penuh; });
-    m.kamarId = (muat || state.rooms.find((k) => !kamarCtx(k.id).count) || state.rooms[0])?.id ?? null;
-    renderModal(m); $("a-nama").focus();
+    renderModal(m);
+    $("a-pick").focus({ preventScroll: true });
   }
 
   async function openEdit(id) {
@@ -397,7 +461,8 @@
     await ensureRooms();
     // kamar milik penghunian ini harus tetap ada di daftar
     if (!state.rooms.some((k) => k.id === row.id_kamar)) state.rooms.unshift({ id: row.id_kamar, no_kamar: row.no_kamar, lantai: row.lantai, status: "terisi" });
-    renderModal(m); $("e-nama").focus();
+    renderModal(m);
+    // Sengaja TIDAK memfokuskan kolom nama: kursor "|" tidak langsung muncul, user klik sendiri kolom yang mau diubah.
   }
 
   function apiError(json, status) {
@@ -422,16 +487,17 @@
   }
   function setSaving(m, on, label) {
     m.saving = on; const b = $(m.p + "-simpan"); b.disabled = on;
-    b.querySelector("span").textContent = on ? "Menyimpan…" : label;
+    const teks = b.querySelector(".lbl") || b.querySelector("span");
+    teks.textContent = on ? "Menyimpan…" : (label || m.label || "Simpan Penghuni");
   }
 
   async function simpanAdd() {
     const m = modals.add; if (m.saving) return;
     const nama = $("a-nama").value.trim(); formError("a");
-    if (!nama) { nameError("a", true, "Nama penghuni wajib diisi."); $("a-nama").focus(); return; }
-    if (!m.kamarId) return formError("a", "Pilih kamar terlebih dahulu.");
-    if (!$("a-approve").hidden && !$("a-setuju").checked) return formError("a", "Persetujuan penghuni utama wajib dikonfirmasi.");
-    nameError("a", false); setSaving(m, true);
+    const salahKamar = !m.kamarId, salahNama = !nama;
+    kamarError(salahKamar); nameError("a", salahNama, "Nama penghuni wajib diisi.");
+    if (salahKamar || salahNama) { (salahKamar ? $("a-pick") : $("a-nama")).focus(); return; }
+    setSaving(m, true);
     try {
       // "Hubungan dengan penghuni utama" & konfirmasi hanya UI untuk saat ini (belum ada field di API).
       const dataOrang = { nama_penghuni: nama, no_telepon: $("a-hp").value.trim() || null };
@@ -449,7 +515,7 @@
       close(m); state.tab = "aktif"; syncTabs(); refresh();
       tampilKonfirmasi(j2.data);
     } catch (e) { formError("a", e.userMessage || "Gagal menyimpan data. Coba lagi."); }
-    finally { setSaving(m, false, "Konfirmasi & Tambah Penghuni"); }
+    finally { setSaving(m, false); }
   }
 
   async function simpanEdit() {
@@ -499,15 +565,6 @@
   }
   const tutupKonfirmasi = () => { $("pk").hidden = true; };
 
-  // Kirim template persetujuan lewat WhatsApp (wa.me) ke penyewa utama kamar terpilih
-  function kirimWA() {
-    const m = modals.add, k = selKamar(m), u = k && kamarCtx(k.id).utama;
-    if (!u || !u.hp) return toast("Nomor WhatsApp penyewa utama belum diisi.", true);
-    const no = u.hp.replace(/\D/g, "").replace(/^0/, "62");
-    const teks = `Halo ${u.nama}, kami ingin menambahkan penghuni baru (${$("a-nama").value.trim() || "teman sekamar"}) ke Kamar ${fmtNo(k.no_kamar)}. Mohon konfirmasi persetujuan Anda. Terima kasih.`;
-    window.open(`https://wa.me/${no}?text=${encodeURIComponent(teks)}`, "_blank", "noopener");
-  }
-
   /* ---------------------------------------------------------
      Event
   --------------------------------------------------------- */
@@ -515,73 +572,98 @@
     document.querySelectorAll(".pg-tab").forEach((b) => b.setAttribute("aria-selected", b.dataset.tab === state.tab));
   }
 
-  document.querySelectorAll(".pg-tab").forEach((b) => b.addEventListener("click", () => { state.tab = b.dataset.tab; state.page = 1; syncTabs(); renderTable(); }));
-  ["f-lantai", "f-peran", "f-status"].forEach((id) => $(id).addEventListener("change", () => { state.page = 1; renderTable(); }));
-  $("f-q").addEventListener("input", () => { state.page = 1; renderTable(); });
+  document.querySelectorAll(".pg-tab").forEach((b) => b.addEventListener("click", () => { state.tab = b.dataset.tab; state.page = 1; state.showAll = false; syncTabs(); renderTable(); }));
+  // Pencarian: tunggu user berhenti mengetik sebentar, lalu minta data ke BE
+  let qTimer;
+  $("f-q").addEventListener("input", () => { clearTimeout(qTimer); qTimer = setTimeout(() => { state.page = 1; state.showAll = false; refresh(); }, 350); });
+  initFilterPanel();
 
   $("pg-pager").addEventListener("click", (e) => {
+    if (e.target.closest("button[data-all]")) { state.showAll = true; state.page = 1; renderTable(); return; }
     const b = e.target.closest("button[data-p]");
-    if (b && !b.disabled) { state.page = Number(b.dataset.p); renderTable(); }
+    if (b && !b.disabled) { state.page = Number(b.dataset.p); state.showAll = false; renderTable(); }
   });
-  $("pg-state").addEventListener("click", (e) => {
-    if (e.target.id === "btn-retry") refresh();
-    if (e.target.id === "btn-kosong-tambah") openAdd();
-  });
-
-  $("pg-rows").addEventListener("click", (e) => {
-    const b = e.target.closest("button[data-act]");
-    if (!b) return;
-    const tr = b.closest("tr"), id = Number(tr.dataset.id), act = b.dataset.act;
-    closeMenus();
-    if (act === "menu") {
-      e.stopPropagation();
-      const m = document.createElement("div");
-      m.className = "menu"; m.setAttribute("role", "menu");
-      m.innerHTML = '<button type="button" role="menuitem" data-end>Akhiri penghunian</button>';
-      m.querySelector("[data-end]").addEventListener("click", () => { closeMenus(); akhiri(id); });
-      b.parentElement.appendChild(m);
-    } else {
-      if (act === "ubah") openEdit(id); else toast("Halaman detail penyewa belum tersedia.");
-    }
-  });
-  document.addEventListener("click", closeMenus);
 
   $("btn-tambah").addEventListener("click", openAdd);
-
-  Object.values(modals).forEach((m) => {
-    const p = m.p;
-    $(p + "-x").addEventListener("click", () => close(m));
-    $(p + "-batal").addEventListener("click", () => close(m));
-    $(m.root().id).addEventListener("mousedown", (e) => { if (e.target === m.root()) close(m); });
-    $(p + "-nama").addEventListener("input", () => nameError(p, false));
-    $(p + "-pick").addEventListener("click", () => toggleList(m, $(p + "-list").hidden));
-    $(p + "-list").addEventListener("click", (e) => {
-      const b = e.target.closest("button[data-k]");
-      if (!b || b.disabled) return;
-      m.kamarId = Number(b.dataset.k); toggleList(m, false); renderModal(m);
-    });
-    document.addEventListener("click", (e) => { if (!e.target.closest("#" + p + "-sel")) toggleList(m, false); });
-  });
-  $("e-roles").addEventListener("click", (e) => {
-    const b = e.target.closest("button[data-role]");
-    if (!b) return;
-    modals.edit.jadikanUtama = b.dataset.role === "utama";
-    renderEdit();
-  });
+  $("a-x").addEventListener("click", () => close(modals.add));
+  $("a-batal").addEventListener("click", () => close(modals.add));
   $("a-simpan").addEventListener("click", simpanAdd);
+
+  $("e-x").addEventListener("click", () => close(modals.edit));
+  $("e-batal").addEventListener("click", () => close(modals.edit));
   $("e-simpan").addEventListener("click", simpanEdit);
-  $("a-wa").addEventListener("click", kirimWA);
+
   $("k-x").addEventListener("click", tutupKonfirmasi);
   $("k-selesai").addEventListener("click", tutupKonfirmasi);
-  $("pk").addEventListener("mousedown", (e) => { if (e.target === $("pk")) tutupKonfirmasi(); });
-  document.addEventListener("keydown", (e) => {
-    if (e.key !== "Escape") return;
-    if (!$("pk").hidden) tutupKonfirmasi();
-    Object.values(modals).forEach((m) => {
-      if (m.root().hidden) return;
-      if (!$(m.p + "-list").hidden) toggleList(m, false); else close(m);
+
+  // Klik di luar modal box menutup modal (kecuali klik di dalam)
+  document.querySelectorAll(".pm").forEach((el) => {
+    el.addEventListener("click", (e) => { if (e.target === el) close(el.id === "pm" ? modals.add : modals.edit); });
+  });
+  $("pk").addEventListener("click", (e) => { if (e.target === $("pk")) tutupKonfirmasi(); });
+
+  // Dropdown pilih kamar (modal tambah & edit)
+  ["a", "e"].forEach((p) => {
+    const pick = $(p + "-pick"), list = $(p + "-list");
+    const m = p === "a" ? modals.add : modals.edit;
+    pick.addEventListener("click", (e) => { e.stopPropagation(); toggleList(m, list.hidden); });
+    list.addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-k]");
+      if (!btn || btn.disabled) return;
+      m.kamarId = Number(btn.dataset.k);
+      toggleList(m, false);
+      renderModal(m);
+    });
+  });
+  document.addEventListener("click", (e) => {
+    ["a", "e"].forEach((p) => {
+      const m = p === "a" ? modals.add : modals.edit;
+      const wrap = $(p + "-sel");
+      if (wrap && !wrap.contains(e.target)) toggleList(m, false);
     });
   });
 
+  // Pilih peran di modal edit (kartu interaktif)
+  $("e-roles").addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-role]");
+    if (!btn) return;
+    modals.edit.jadikanUtama = btn.dataset.role === "utama";
+    renderEdit();
+  });
+
+  // Delegasi aksi tabel (ubah, menu lainnya, coba lagi)
+  $("pg-rows").addEventListener("click", (e) => {
+    const tr = e.target.closest("tr[data-id]");
+    if (!tr) return;
+    const id = Number(tr.dataset.id);
+    const actBtn = e.target.closest("button[data-act]");
+    if (!actBtn) return;
+    const act = actBtn.dataset.act;
+    if (act === "ubah") {
+      openEdit(id);
+    } else if (act === "menu") {
+      e.stopPropagation();
+      closeMenus();
+      const rect = actBtn.getBoundingClientRect();
+      const menu = document.createElement("div");
+      menu.className = "menu";
+      menu.innerHTML = `<button type="button" data-menu="akhiri">Akhiri Penghunian</button>`;
+      menu.style.top = (rect.bottom + 4) + "px";
+      menu.style.right = (window.innerWidth - rect.right) + "px";
+      menu.addEventListener("click", (ev) => {
+        closeMenus();
+        if (ev.target.dataset.menu === "akhiri") akhiri(id);
+      });
+      document.body.appendChild(menu);
+    }
+  });
+  document.addEventListener("click", (e) => { if (!e.target.closest(".aksi")) closeMenus(); });
+  document.addEventListener("click", (e) => {
+    if (e.target.id === "btn-retry" || e.target.id === "btn-kosong-tambah") {
+      if (e.target.id === "btn-kosong-tambah") openAdd(); else refresh();
+    }
+  });
+
+  // Muat data awal saat halaman dibuka
   refresh();
 })();

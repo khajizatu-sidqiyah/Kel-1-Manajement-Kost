@@ -97,53 +97,108 @@ body.app { background: var(--pg-bg); }
 .pg-tab[aria-selected="true"] { height: 32px; border-color: var(--pg-green-900); background: var(--pg-green-900); color: #fff; font-weight: 600; box-shadow: 0 1px 2px rgba(6, 95, 70, .35); }
 
 /* Pencarian + filter */
-.pg-filters { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 21px !important; }
+.pg-filters { display: flex; flex-wrap: nowrap; align-items: flex-start; gap: 10px; margin-top: 21px !important; }
 .pg-search { position: relative; flex: 1 1 280px; min-width: 0; }
 .pg-search .i { position: absolute; left: 14px; top: 9px; width: 16px; height: 16px; color: var(--pg-slate-400); pointer-events: none; }
 .pg-search input { width: 100%; height: 34px; padding: 0 14px 0 40px; border: 1px solid rgba(226, 232, 240, .8); border-radius: 12px; background: #fff; font: inherit; font-size: 12px; color: var(--pg-ink); }
 .pg-search input::placeholder { color: var(--pg-slate-400); }
-.pg-select { position: relative; flex: 1 1 130px; }
-.pg-select select { appearance: none; width: 100%; height: 34px; padding: 0 30px 0 14px; border: 1px solid rgba(226, 232, 240, .8); border-radius: 12px; background: #fff; font: inherit; font-size: 12px; font-weight: 500; color: var(--pg-ink-2); cursor: pointer; }
-.pg-select .i { position: absolute; right: 13px; top: 10px; width: 14px; height: 14px; color: var(--pg-slate-500); pointer-events: none; }
-.pg-search input:focus, .pg-select select:focus { outline: 2px solid rgba(5, 150, 105, .35); outline-offset: 0; }
+.pg-search input:focus { outline: 2px solid rgba(5, 150, 105, .35); outline-offset: 0; }
+
+
+/* Tombol Filter + panel (default tertutup) */
+.pg-filter-wrap { position: relative; flex: 0 0 auto; }
+.pg-filter-btn { display: inline-flex; align-items: center; gap: 8px; width: 170px; height: 34px; padding: 0 14px; border: 1px solid rgba(226, 232, 240, .8); border-radius: 12px; background: #fff; font: inherit; font-size: 12px; font-weight: 600; color: var(--pg-ink-2); cursor: pointer; }
+.pg-filter-btn .i { width: 15px; height: 15px; }
+.pg-filter-btn .fp-chev { margin-left: auto; transition: transform .15s; }
+.pg-filter-btn:hover { background: #f8fafc; }
+.pg-filter-btn[aria-expanded="true"], .pg-filter-btn.has-filter { border-color: var(--pg-green-900); color: var(--pg-green-900); }
+.pg-filter-btn[aria-expanded="true"] .fp-chev { transform: rotate(180deg); }
+.fp-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--pg-green-900); color: #fff; font-size: 10px; font-weight: 700; }
+.fp-badge[hidden] { display: none; }
+.fp-panel { position: absolute; right: 0; top: 42px; z-index: 30; width: 340px; max-width: calc(100vw - 32px); padding: 4px 18px 18px; border: 1px solid rgba(226, 232, 240, .8); border-radius: 16px; background: #fff; box-shadow: 0 12px 32px rgba(15, 23, 42, .14); }
+.fp-panel[hidden] { display: none; }
+.fp-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 0 12px; border-bottom: 1px solid var(--pg-line-soft); }
+.fp-head h3 { margin: 0; font-size: 14px; font-weight: 700; color: var(--pg-ink); }
+.fp-close { display: grid; place-items: center; width: 28px; height: 28px; border: 0; border-radius: 8px; background: transparent; color: var(--pg-slate-500); cursor: pointer; }
+.fp-close:hover { background: #f1f5f9; color: var(--pg-ink); }
+.fp-close .i { width: 16px; height: 16px; }
+.fp-group { padding: 14px 0; border-bottom: 1px solid var(--pg-line-soft); }
+.fp-group h4 { margin: 0 0 10px; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--pg-slate-500); }
+.fp-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; }
+.fp-check { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--pg-ink-2); cursor: pointer; }
+.fp-check input { position: absolute; opacity: 0; pointer-events: none; }
+.fp-check .box { display: grid; place-items: center; flex: 0 0 18px; width: 18px; height: 18px; border: 1.5px solid #cbd5e1; border-radius: 5px; background: #fff; }
+.fp-check .box .i { width: 12px; height: 12px; color: #fff; opacity: 0; fill: none; stroke: currentColor; stroke-width: 3; }
+.fp-check input:checked + .box { border-color: var(--pg-green-900); background: var(--pg-green-900); }
+.fp-check input:checked + .box .i { opacity: 1; }
+.fp-check input:focus-visible + .box { outline: 2px solid rgba(5, 150, 105, .45); outline-offset: 2px; }
+.fp-foot { display: flex; gap: 10px; padding-top: 16px; }
+.fp-btn { flex: 1; height: 36px; border-radius: 10px; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+.fp-btn--ghost { border: 1px solid rgba(226, 232, 240, .9); background: #fff; color: var(--pg-ink-2); }
+.fp-btn--ghost:hover { background: #f8fafc; }
+.fp-btn--primary { border: 1px solid var(--pg-green-900); background: var(--pg-green-900); color: #fff; }
+.fp-btn--primary:hover { filter: brightness(1.08); }
 
 /* Tabel: kartu penuh, semua kolom selalu terlihat (tanpa geser) */
 .pg-table-card { margin-top: 18px !important; border: 1px solid rgba(226, 232, 240, .8); border-radius: 16px; background: #fff; box-shadow: 0 1px 2px rgba(15, 23, 42, .04); overflow: visible; }
-.pg-table-scroll { overflow: visible; padding-bottom: 26px; }
-.pg-table { width: 100%; min-width: 0; border-collapse: collapse; table-layout: fixed; font-size: 12px; color: var(--pg-ink); }
+.pg-table-scroll { overflow: visible; padding-bottom: 0; }
+.pg-table { width: 100%; min-width: 0; border-collapse: collapse; table-layout: fixed; font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 12px; color: var(--pg-ink); }
 
-/* lebar kolom = px desain (total 1043px) dijadikan persen, jadi tepat sama di 1043px dan menyusut proporsional di layar lebih sempit */
-.pg-table col.c-no     { width: 9.97%; }
-.pg-table col.c-nama   { width: 11.12%; }
-.pg-table col.c-kamar  { width: 8.15%; }
-.pg-table col.c-hp     { width: 11.51%; }
-.pg-table col.c-tgl    { width: 9.59%; }
-.pg-table col.c-peran  { width: 18.02%; }
-.pg-table col.c-status { width: 15.53%; }
-.pg-table col.c-aksi   { width: 16.11%; }
+/* Lebar kolom (total 100%). Kolom Nama dilebarkan karena sekarang punya padding kiri. */
+.pg-table col.c-no     { width: 5%; }
+.pg-table col.c-nama   { width: 17%; }
+.pg-table col.c-kamar  { width: 9%; }
+.pg-table col.c-hp     { width: 15%; }
+.pg-table col.c-tgl    { width: 14.5%; }
+.pg-table col.c-peran  { width: 17.5%; }
+.pg-table col.c-status { width: 15%; }
+.pg-table col.c-aksi   { width: 7%; }
 
-.pg-table thead th { height: 62px; padding: 0 0 0 7px; background: #FBFCFD; font-size: 11px; font-weight: 600; line-height: 1.45; letter-spacing: .06em; text-align: left; text-transform: uppercase; color: var(--pg-slate-600); }
+/* Judul kolom: bold + rata kiri (default), kolom tertentu diatur di bawah */
+.pg-table thead th { height: 33.5px; padding: 0 12px 0 0; background: #FBFCFD; font-size: 11px; font-weight: 700; line-height: 1.45; letter-spacing: .06em; text-align: left; text-transform: uppercase; white-space: nowrap; color: var(--pg-slate-600); }
 .pg-table thead th:first-child { border-top-left-radius: 16px; }
 .pg-table thead th:last-child  { border-top-right-radius: 16px; }
-.pg-table tbody td { height: 81px; padding: 0 0 0 7px; border-top: 1px solid var(--pg-line-soft); vertical-align: middle; overflow-wrap: anywhere; }
-.pg-table .ta-c { text-align: center; padding-left: 0; }
-.pg-table td.no { font-family: "Plus Jakarta Sans", "Inter", system-ui, sans-serif; font-weight: 600; color: var(--pg-ink-2); padding-left: 32px; padding-right: 0; text-align: center; }
-.pg-table thead th.no { font-family: "Plus Jakarta Sans", "Inter", system-ui, sans-serif; padding-left: 32px; padding-right: 0; text-align: center; }
-.pg-table td.aksi-td, .pg-table thead th.aksi-td { padding-right: 40px; text-align: center; }
-.pg-table td.nama { font-weight: 700; }
-.pg-table td.kamar b { display: block; width: auto; font-weight: 600; line-height: 1.25; }
-.pg-table td.kamar small { margin-top: 1px; font-size: 10px; color: var(--pg-slate-400); }
+.pg-table tbody td { height: 45px; padding: 0 12px 0 0; border-top: 1px solid var(--pg-line-soft); vertical-align: middle; text-align: left; white-space: nowrap; }
+.pg-table td.no, .pg-table thead th.no { text-align: center; padding: 0; }
+.pg-table td.no { font-weight: 400; color: var(--pg-slate-400); }
+.pg-table td.nama { font-weight: 400; color: var(--pg-ink); }
+.pg-table td.kamar { font-weight: 500; color: var(--pg-slate-600); }
+.pg-table td.hp { color: var(--pg-slate-500); }
+.pg-table td.tgl { color: var(--pg-slate-600); }
 .pg-table .empty { font-style: italic; color: var(--pg-slate-400); }
-.pg-table td.hp, .pg-table td.tgl { color: var(--pg-slate-600); }
+.pg-table td.aksi-td, .pg-table thead th.aksi-td { text-align: center; padding: 0; }
+.pg-table td.nama { white-space: normal; overflow-wrap: anywhere; line-height: 1.3; }
 
-/* Pil peran & status */
-.pill { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 999px; font-size: 11px; font-weight: 500; line-height: 1.25; }
-.pill .i { width: 14px; height: 14px; flex-shrink: 0; }
-.pill--ok { height: 24px; padding: 0 12px; background: var(--pg-chip); color: var(--pg-green-700); }
-.pill--utama { min-width: 0; }
-.pill--lengkap { min-width: 0; }
-.pill--add { height: 40px; padding: 0 18px; background: var(--pg-line-soft); color: var(--pg-slate-700); text-align: center; }
-.pill--warn { height: 40px; width: auto; max-width: 100%; padding: 0 14px; background: var(--pg-amber-bg); color: var(--pg-amber); text-align: center; }
+/* ===== Perbaikan posisi kolom tabel penyewa =====
+   Selektor nth-child lebih spesifik daripada aturan di atas, jadi otomatis menang. */
+
+/* Kolom 2 - NAMA PENYEWA: beri jarak dari kolom NO. */
+.pg-table thead th:nth-child(2),
+.pg-table tbody td:nth-child(2) {
+    padding-left: 20px;
+}
+
+/* Kolom 4 - NO. HP: geser sedikit ke kanan */
+.pg-table thead th:nth-child(4),
+.pg-table tbody td:nth-child(4) {
+    padding: 0;
+    text-align: center;
+}
+
+/* Kolom 5 - TANGGAL MASUK dan kolom 6 - PERAN: judul + isi tepat di tengah kolom */
+.pg-table thead th:nth-child(5),
+.pg-table tbody td:nth-child(5),
+.pg-table thead th:nth-child(6),
+.pg-table tbody td:nth-child(6) {
+    padding: 0;            /* padding kanan lama bikin posisi tengah meleset */
+    text-align: center;
+}
+
+/* Pil peran & status data (gaya awal, satu baris, tanpa ikon) */
+.pill { display: inline-flex; align-items: center; justify-content: center; height: 24px; padding: 0 12px; border-radius: 999px; font-size: 11px; font-weight: 500; line-height: 1; white-space: nowrap; }
+.pill--ok   { background: var(--pg-chip); color: var(--pg-green-700); }
+.pill--add  { background: var(--pg-line-soft); color: var(--pg-slate-700); }
+.pill--warn { background: var(--pg-amber-bg); color: var(--pg-amber); }
 
 /* Aksi */
 .aksi { display: flex; align-items: center; justify-content: center; gap: 14px; position: relative; }
@@ -167,6 +222,7 @@ body.app { background: var(--pg-bg); }
 .pager button.is-on { border-color: var(--pg-green-900); background: var(--pg-green-900); color: #fff; font-weight: 600; }
 .pager button:disabled { opacity: .45; cursor: default; }
 .pager .i { width: 16px; height: 16px; }
+.pager button.pager-all { width: auto; padding: 0 14px; white-space: nowrap; font-weight: 500; }
 
 /* ---------- 3. Modal (skenario_3 = Tambah Penyewa, skenario_2 = Edit / pena) ---------- */
 .pm { position: fixed; z-index: 60; inset: 0; display: grid; place-items: start center; padding: 43px 16px 24px; overflow-y: auto; background: rgba(217, 217, 217, .42); }
@@ -322,10 +378,7 @@ body.app { background: var(--pg-bg); }
 }
 @media (min-width: 1280px) {
     .pg-stats { grid-template-columns: repeat(4, 1fr); }
-    .pg-filters { flex-wrap: nowrap; }
     .pg-search { flex: 1 1 auto; }
-    .pg-select { flex: 0 0 auto; }
-    .pg-select.w1 { width: 130px; } .pg-select.w2 { width: 166px; } .pg-select.w3 { width: 162px; }
 }
 @media (max-width: 1023px) {
     .topbar { padding: 0 16px; gap: 10px; }
@@ -375,3 +428,61 @@ button.pm-rc:focus-visible { outline: 2px solid rgba(5, 150, 105, .4); outline-o
 /* Tombol "Tambah penghuni" pada daftar kosong */
 .pg-state #btn-kosong-tambah { border-color: var(--pg-green-900); background: var(--pg-green-900); color: #fff; }
 .pg-state #btn-kosong-tambah:hover { background: var(--pg-green-btn); }
+
+/* =========================================================
+   MODAL TAMBAH PENYEWA  (desain: Modal_Dialog_Window.svg)
+   Semua aturan dibatasi ke .pm-add, jadi modal Ubah Data (.pe) tidak ikut berubah.
+   Tempel di PALING BAWAH public/css/penghuni.css.
+========================================================= */
+
+/* Kotak modal: lebar 620px, tinggi isian 38px */
+.pm-add .pm-box { max-width: 620px; }
+
+/* Header: kotak ikon persegi 40x40 (radius 12), tinggi header 83px */
+.pm-add .pm-head { gap: 14px; padding: 26px 25px 17px; }
+.pm-add .pm-ico { width: 40px; height: 40px; border: 0; border-radius: 12px; background: var(--pg-green-50); color: var(--pg-green-600); }
+.pm-add .pm-ico .i { width: 20px; height: 20px; stroke-width: 1.67; }
+.pm-add .pm-x .i { width: 20px; height: 20px; }
+
+/* Isi + jarak antar bagian (garis pemisah) */
+.pm-add .pm-body { padding: 24px 25px 0; }
+.pm-add .pm-sec + .pm-sec { margin-top: 24px; padding-top: 24px; }
+.pm-add .pm-sec h3 { margin-bottom: 10px; }
+.pm-add .pm-num { background: var(--pg-green-btn); }          /* bulatan nomor hijau tua */
+.pm-add .pm-help { font-size: 11px; }
+@media (min-width: 600px) {
+    /* Teks bantuan Tanggal Masuk satu baris, seperti desain (kolom kanannya kosong) */
+    .pm-add .pm-row--one .pm-help { white-space: nowrap; }
+}
+
+/* Semua isian setinggi 38px */
+.pm-add .pm-in input,
+.pm-add .pm-in .dv { height: 38px; }
+.pm-add .pm-in > .i { top: 11px; }
+.pm-add .pm-pick { height: 38px; }
+.pm-add .pm-pick .ph { font-weight: 400; color: var(--pg-slate-400); }   /* teks "Pilih kamar..." abu-abu, tidak tebal */
+.pm-add .pm-list { top: 42px; }
+
+/* Pilih kamar kosong -> border merah (sebelumnya belum ada gayanya) */
+.pm-add .pm-pick.has-err { border-color: var(--pg-red); }
+
+/* Kotak info peran: hijau muda, ikon bulat penuh, teks gelap */
+.pm-add .pm-info { align-items: center; min-height: 62px; padding: 14px 16px; border-color: #BBF7D0; background: #F0FDF4; color: var(--pg-slate-700); }
+.pm-add .pm-info b { font-weight: 700; color: var(--pg-ink); }
+.pm-add .pm-info .i { width: 16px; height: 16px; margin-top: 0; fill: var(--pg-green-600); stroke: #fff; }
+
+/* Footer: tanpa garis atas, tombol sesuai desain */
+.pm-add .pm-foot { align-items: center; padding: 33px 25px 42px; border-top: 0; }
+.pm-add .pm-btn--ghost { height: 38px; border-color: #CBD5E1; color: var(--pg-slate-700); }
+.pm-add .pm-btn--main { height: 36px; min-width: 141px; background: var(--pg-green-btn); }
+.pm-add .pm-btn--main:hover { background: #0B4431; }
+
+/* ---------------------------------------------------------
+   Tambah Penyewa pada kamar yang SUDAH DIHUNI (Group_141)
+   JS menambahkan class .is-terisi di #pm saat kamar terpilih sudah punya penghuni.
+--------------------------------------------------------- */
+.pm-add .pm-badge--busy { color: var(--pg-amber); }                 /* badge "Terisi (1/2 Penghuni)" oranye */
+.pm-add .pm-owner .sub .dot { margin: 0 8px; }                      /* titik pemisah "WA: ... • Kontrak Aktif" */
+.pm-add .pm-role .ds em { font-style: normal; color: var(--pg-amber); }  /* "Penyewa Tambahan (Teman Sekamar)" oranye */
+.pm-add .pm-btn--main { gap: 8px; }
+.pm-add.is-terisi .pm-foot { padding: 16px 25px 17px; border-top: 1px solid var(--pg-line-soft); }  /* footer rapat + garis atas, isi modal lebih panjang */

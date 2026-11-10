@@ -17,7 +17,7 @@
 
   const AUTH = { Authorization: `Bearer ${localStorage.getItem("token") || ""}` };
 
-  const PER_PAGE = 5; // desain: "Menampilkan 1–5 dari 12 tagihan"
+  const PER_PAGE = 5; 
   const state = { rows: [], tab: "tagihan", page: 1, loading: true, error: "", view: [], dpTahunan: 300000 };
   const F = { saving: false, mode: "", tenggatManual: false, pickable: false };
   const CICILAN_N = 3; // skema tahunan: cicilan 1, cicilan 2, pelunasan = 3 periode
@@ -227,11 +227,14 @@
   }[st]);
 
   function aksiHtml(it) {
-    const btn = it.status === "belum" && it.tipe === "tagihan" ? '<button type="button" class="pb-act pb-act--main" data-act="bayar">Bayar</button>'
-      : it.status === "menunggu" ? '<button type="button" class="pb-act" data-act="konfirmasi">Konfirmasi</button>'
+  const btn = it.status === "belum" && it.tipe === "tagihan"
+    ? '<button type="button" class="pb-act pb-act--main" data-act="bayar">Bayar</button>'
+    : it.status === "menunggu"
+      ? '<button type="button" class="pb-act" data-act="konfirmasi">Konfirmasi</button>'
       : '<button type="button" class="pb-act" data-act="detail">Detail</button>';
-    return `<div class="pb-aksi">${btn}<button type="button" class="pb-dots" data-act="menu" aria-label="Menu lainnya" aria-haspopup="menu">${ic("dots")}</button></div>`;
-  }
+
+  return `<div class="pb-aksi">${btn}<button type="button" class="pb-dots" data-act="menu" aria-label="Menu lainnya" aria-haspopup="menu">${ic("dots")}</button></div>`;
+}
 
   function rowHtml(it, no) {
     const k = it.kamar;
@@ -532,17 +535,29 @@
     bukaForm();
   });
 
-  $("pb-rows").addEventListener("click", (e) => {
-    const b = e.target.closest("button[data-act]"); if (!b) return;
-    const it = state.view.find((x) => x.key === b.closest("tr").dataset.key); if (!it) return;
-    const act = b.dataset.act; tutupMenu();
+ $("pb-rows").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-act]");
+    if (!b) return;
+
+    const it = state.view.find((x) => x.key === b.closest("tr").dataset.key);
+    if (!it) return;
+
+    const act = b.dataset.act;
+
     if (act === "menu") {
       e.stopPropagation();
-      const m = document.createElement("div"); m.className = "pb-menu"; m.setAttribute("role", "menu");
-      m.innerHTML = '<button type="button" role="menuitem" data-m="detail">Lihat detail</button>' +
-        (it.tipe === "tagihan" && it.status !== "sudah" ? '<button type="button" role="menuitem" data-m="bayar">Catat pembayaran</button>' : "");
+      return;
+    } else if (act === "bayar") {
+      bayar(it);
+    } else if (act === "konfirmasi") {
+      konfirmasi(it);
+    } else if (act === "detail") {
+      // Tombol Detail tetap tampil, tetapi tidak membuka form/modal.
+      return;
+        
+      
       m.addEventListener("click", (ev) => { const x = ev.target.closest("[data-m]"); if (!x) return; tutupMenu(); x.dataset.m === "bayar" ? bayar(it) : bukaDetail(it); });
-      b.parentElement.appendChild(m);
+      b.parentElement.appendChild(m); 
     } else if (act === "bayar") bayar(it);
     else if (act === "konfirmasi") konfirmasi(it);
     else bukaDetail(it);

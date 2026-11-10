@@ -12,6 +12,11 @@
 </head>
 <body class="app">
 
+    <!-- Banner Peringatan Koneksi Terputus (Global) -->
+    <div id="offline-banner" class="offline-banner" style="display: none; background: #fee2e2; color: #991b1b; padding: 10px 16px; text-align: center; font-weight: 600; position: sticky; top: 0; z-index: 9999;">
+        ⚠️ Koneksi terputus. Menunggu jaringan kembali...
+    </div>
+
     <!-- Sprite ikon -->
     <svg width="0" height="0" style="position:absolute" aria-hidden="true">
         <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
@@ -36,6 +41,8 @@
         <symbol id="i-shower" viewBox="0 0 24 24"><path d="M5 13a7 7 0 0 1 14 0zM8 17v2M12 17v2M16 17v2"/></symbol>
         <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
         <symbol id="i-logout" viewBox="0 0 24 24"><path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10"/></symbol>
+        <symbol id="i-filter" viewBox="0 0 24 24"><path d="M3 4h18l-7 8v8l-4-2v-6L3 4z"/></symbol>
+        <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
     </svg>
 
     <div class="shell" id="shell">
@@ -60,7 +67,6 @@
                 <a href="{{ route('pembayaran') }}" class="nav-item {{ request()->routeIs('pembayaran') ? 'is-active' : '' }}"><svg class="i"><use href="#i-receipt"/></svg>Pembayaran &amp; Tagihan</a>
                 <a href="#" class="nav-item"><svg class="i"><use href="#i-tools"/></svg>Komplain &amp; Kerusakan</a>
                 <a href="{{ route('penghuni') }}" class="nav-item {{ request()->routeIs('penghuni') ? 'is-active' : '' }}"><svg class="i"><use href="#i-idcard"/></svg>Data Penyewa &amp; Arsip</a>
-
             </nav>
 
             <div class="sidebar-foot">
@@ -68,10 +74,6 @@
                     @csrf
                     <button type="submit" class="nav-item nav-logout"><svg class="i"><use href="#i-logout"/></svg>Keluar</button>
                 </form>
-                <div class="license">
-                    <svg class="i"><use href="#i-check"/></svg>
-                    <span><b>Lisensi Pro Aktif</b><small>23 Kamar Aktif</small></span>
-                </div>
             </div>
         </aside>
         <div class="overlay" id="overlay"></div>
@@ -97,6 +99,7 @@
         </div>
     </div>
 
+    <script src="{{ asset('js/network-status.js') }}"></script>
     <script src="{{ asset('js/dashboard.js') }}"></script>
     @stack('scripts')
 </body>

@@ -33,7 +33,7 @@ function renderFloors() {
   set("floors", floors.map((f) => {
     const list = rooms.filter((r) => r.lantai === f).sort((a, b) => Number(a.no_kamar) - Number(b.no_kamar)), busy = list.filter((r) => r.status === "terisi").length;
     return `<section class="floor"><div class="floor-head"><h2>Lantai ${f} <span>— ${list.length} Kamar${FLOOR_INFO[f] ? " (" + FLOOR_INFO[f] + ")" : ""}</span></h2>
-      <span class="floor-count">${list.length - busy} Kosong • ${busy} Terisi</span></div>
+    <span class="floor-count">${list.length - busy} Kosong • ${busy} Terisi</span></div>
       <div class="rooms">${list.map(roomCard).join("")}</div></section>`;
   }).join(""));
 }
@@ -86,27 +86,24 @@ function fillForm(r) {
   extraFas = [];
   $("f-no").value = r ? r.no_kamar : "";
   $("f-lantai").value = r ? r.lantai : 1;
-  // Daftar tipe dibuat ulang tiap kali form diisi (jangan ditambah terus). Tipe dari database yang
-  // tidak ada di daftar bawaan (mis. "Standard") dimasukkan satu kali saja.
   const tipeList = r && r.tipe_kamar && !TIPE.includes(r.tipe_kamar) ? [r.tipe_kamar, ...TIPE] : TIPE;
   set("f-tipe", tipeList.map((t) => `<option>${esc(t)}</option>`).join(""));
   $("f-tipe").value = r && r.tipe_kamar ? r.tipe_kamar : TIPE[0];
   const have = r ? String(r.fasilitas || "").split(",").map((x) => x.trim()).filter(Boolean) : [];
-  extraFas = have.filter((x) => !FASILITAS.includes(x)); // fasilitas lama yang tidak ada di daftar tetap dipertahankan
+  extraFas = have.filter((x) => !FASILITAS.includes(x));
   document.querySelectorAll("#f-fas input").forEach((c) => (c.checked = have.includes(c.value)));
   $("f-harga").value = r ? fmtRp(r.harga) : "";
   $("f-status").value = r ? (String(r.status).toLowerCase() === "terisi" ? "terisi" : "kosong") : "kosong";
   updateWarn();
 }
 
-// Peringatan saat kamar terisi diubah jadi Kosong: penghuni diarsipkan (riwayat disimpan, data penghuni tidak dihapus)
 let confirmEmpty = false;
 const willEmpty = () => mode === "edit" && editing && editing.status === "terisi" && $("f-status").value === "kosong";
 function updateWarn() {
   confirmEmpty = false;
   $("btn-save").textContent = "Simpan";
   let w = $("form-warn");
-  if (!w) { // jaga-jaga jika denah.blade.php belum diperbarui: buat elemennya sendiri
+  if (!w) {
     w = document.createElement("p");
     w.id = "form-warn"; w.className = "form-warn"; w.setAttribute("role", "status"); w.hidden = true;
     $("form-error").before(w);
@@ -157,7 +154,7 @@ async function saveForm() {
   const payload = { no_kamar: no, lantai: Number($("f-lantai").value), tipe_kamar: $("f-tipe").value, fasilitas: fas.join(", "), harga, status: $("f-status").value };
 
   const btn = $("btn-save");
-  if (willEmpty() && !confirmEmpty) { // klik pertama = minta konfirmasi
+  if (willEmpty() && !confirmEmpty) {
     confirmEmpty = true; showErr("");
     btn.textContent = "Ya, kosongkan kamar";
     return;
@@ -173,7 +170,7 @@ async function saveForm() {
     btn.disabled = false; updateWarn();
   }
   closeModal();
-  renderStats(rooms); renderTabs(); renderFloors(); // perbarui denah tanpa reload halaman
+  renderStats(rooms); renderTabs(); renderFloors();
 }
 
 fillOptions();
@@ -191,7 +188,6 @@ $("f-status").addEventListener("change", updateWarn);
 $("f-harga").addEventListener("input", (e) => { const n = readRp(); e.target.value = n ? fmtRp(n) : ""; });
 $("room-form").addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target.tagName === "INPUT" && e.target.type === "text") saveForm(); });
 
-// Klik kartu kamar -> modal ubah (terisi otomatis)
 function cardOpen(e) {
   const card = e.target.closest(".room");
   if (card) openModal("edit", rooms[card.dataset.idx]);
