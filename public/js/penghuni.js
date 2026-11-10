@@ -2,11 +2,11 @@
 // Bergantung pada rooms-api.js skrng menjadi kamar-api(dimuat lebih dulu): loadRooms(), fmtNo(), fmtTanggal(), lantaiDariNomor().
 //
 // Endpoint (kontrak API Kelompok 1):
-//   GET   /api/penghunian                  -> daftar penghunian (+ relasi kamar & penghuni)
-//   GET   /api/kamar                       -> lewat loadRooms() di rooms-api.js skrng menjadi kamar-api
-//   POST  /api/penghuni                    -> buat penghuni baru
-//   POST  /api/penghunian                  -> catat penghuni menempati kamar
-//   PUT   /api/penghunian/{id}/selesai     -> akhiri penghunian
+//   GET   /api/penghunian               -> daftar penghunian (+ relasi kamar & penghuni)
+//   GET   /api/kamar                    -> lewat loadRooms() di rooms-api.js skrng menjadi kamar-api
+//   POST  /api/penghuni                 -> buat penghuni baru
+//   POST  /api/penghunian               -> catat penghuni menempati kamar
+//   PUT   /api/penghunian/{id}/selesai  -> akhiri penghunian
 // Semua request API membawa token Bearer dari localStorage (disimpan login.js), karena route API memakai auth:sanctum.
 (function () {
   "use strict";
@@ -67,7 +67,7 @@
   }
 
   async function loadPenghunian() {
-    const res = await fetch("/api/penghunian" + buildQuery(), { headers: { Accept: "application/json", ...AUTH } });
+    const res = await fetch("/api/penghunian?per_page=all", { headers: { Accept: "application/json", ...AUTH } });
     if (res.status === 401) { localStorage.removeItem("token"); location.href = "/login"; return []; }
     if (!res.ok) throw new Error("HTTP " + res.status);
     const rows = (await res.json()).data;
@@ -104,11 +104,22 @@
     String(a.no_kamar).localeCompare(String(b.no_kamar), undefined, { numeric: true }) ||
     Number(b.utama) - Number(a.utama) || a.id - b.id;
 
+  // Pencarian & filter dikerjakan di browser (semua data penghunian sudah dimuat sekali),
+  // jadi tidak bergantung pada parameter query di API.
+  function cocok(r) {
+    const q = $("f-q").value.trim().toLowerCase();
+    if (q) {
+      const hay = [r.nama, r.no_kamar, fmtNo(r.no_kamar), r.hp].join(" ").toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    if (applied.status_data.length && !applied.status_data.includes(r.lengkap ? "lengkap" : "belum")) return false;
+    if (applied.peran.length && !applied.peran.includes(r.utama ? "utama" : "tambahan")) return false;
+    if (applied.lantai.length && !applied.lantai.includes(String(r.lantai))) return false;
+    return true;
+  }
+
   function filtered() {
-    return state.rows.filter((r) => {
-      // Pencarian & filter sudah diproses BE; FE hanya memisahkan tab aktif/arsip.
-      return (state.tab === "aktif") === (r.status === "aktif");
-    }).sort(urutKamar);
+    return state.rows.filter((r) => (state.tab === "aktif") === (r.status === "aktif") && cocok(r)).sort(urutKamar);
   }
 
   const peranPill = (r) => r.utama
@@ -135,6 +146,9 @@
     </tr>`;
   }
 
+  // Apakah ada pencarian / filter yang sedang aktif?
+  const adaFilter = () => FILTER_KEYS.some((k) => applied[k].length > 0) || $("f-q").value.trim() !== "";
+
   function renderTable() {
     const list = filtered();
     const perPage = state.showAll ? Math.max(list.length, 1) : PER_PAGE; // "Lihat semua data" = semua baris dalam 1 halaman
@@ -150,12 +164,21 @@
       $("pg-rows").innerHTML = ""; box.hidden = false;
       box.innerHTML = '<b>Data penyewa gagal dimuat</b>Periksa koneksi atau coba lagi.<br><button type="button" id="btn-retry">Coba lagi</button>';
     } else if (!state.rows.length) {
-      // belum ada penghuni sama sekali (bukan sekadar filter tidak cocok)
       $("pg-rows").innerHTML = ""; box.hidden = false;
-      box.innerHTML = '<b>Belum ada data penghuni</b><br><button type="button" id="btn-kosong-tambah">Tambah penghuni</button>';
+      if (adaFilter()) {
+        // kosong karena pencarian/filter yang sedang aktif, BUKAN karena belum ada data
+        box.innerHTML = '<b>Tidak ada data yang cocok</b>Coba ubah kata kunci atau filter yang dipakai.<br><button type="button" id="btn-reset-filter">Reset pencarian &amp; filter</button>';
+      } else {
+        // belum ada penghuni sama sekali
+        box.innerHTML = '<b>Belum ada data penghuni</b><br><button type="button" id="btn-kosong-tambah">Tambah penghuni</button>';
+      }
     } else if (!slice.length) {
       $("pg-rows").innerHTML = ""; box.hidden = false;
-      box.innerHTML = state.tab === "aktif" ? "<b>Belum ada penyewa</b>Tidak ada data yang cocok." : "<b>Arsip kosong</b>Belum ada penyewa yang keluar dari kos.";
+      if (adaFilter()) {
+        box.innerHTML = '<b>Tidak ada data yang cocok</b>Coba ubah kata kunci atau filter yang dipakai.<br><button type="button" id="btn-reset-filter">Reset pencarian &amp; filter</button>';
+      } else {
+        box.innerHTML = state.tab === "aktif" ? "<b>Belum ada penyewa</b>Belum ada penyewa aktif." : "<b>Arsip kosong</b>Belum ada penyewa yang keluar dari kos.";
+      }
     } else {
       box.hidden = true;
       $("pg-rows").innerHTML = slice.map((r, i) => rowHtml(r, start + i + 1)).join("");
@@ -188,12 +211,12 @@
     const syncBoxes = () => boxes().forEach((c) => { c.checked = applied[c.name].includes(c.value); }); // kembalikan ke filter yang berlaku
     const apply = () => {
       FILTER_KEYS.forEach((k) => { applied[k] = [...panel.querySelectorAll(`input[name="${k}"]:checked`)].map((c) => c.value); });
-      syncBadge(); setOpen(false); state.page = 1; state.showAll = false; refresh();
+      syncBadge(); setOpen(false); state.page = 1; state.showAll = false; renderTable();
     };
     const reset = () => {
       boxes().forEach((c) => { c.checked = false; });
       FILTER_KEYS.forEach((k) => { applied[k] = []; });
-      syncBadge(); setOpen(false); state.page = 1; state.showAll = false; refresh();
+      syncBadge(); setOpen(false); state.page = 1; state.showAll = false; renderTable();
     };
     btn.addEventListener("click", (e) => { e.stopPropagation(); if (panel.hidden) { syncBoxes(); setOpen(true); } else setOpen(false); });
     $("fp-close").addEventListener("click", () => { syncBoxes(); setOpen(false); });
@@ -257,13 +280,13 @@
   const nowStr = () => { const d = new Date(), z = (n) => String(n).padStart(2, "0"); return `${tgl(d.toISOString().slice(0, 10))}, ${z(d.getHours())}:${z(d.getMinutes())}`; };
   const fmtHp = (hp) => String(hp || "").replace(/\D/g, "").replace(/^(\d{4})(\d{4})(\d+)$/, "$1-$2-$3") || "-";
 
-  // Penghuni aktif pada sebuah kamar (hanya kecualikan ID jika memeriksa kamar asal DAN kamarnya sedang dipindah)
-  function kamarCtx(idKamar, excludeId, originalKamarId) {
-    const list = state.rows.filter((r) => r.status === "aktif" && r.id_kamar === idKamar && (r.id !== excludeId || idKamar !== originalKamarId));
+  // Penghuni aktif pada sebuah kamar (opsional: abaikan 1 penghunian yang sedang diedit)
+  function kamarCtx(idKamar, excludeId) {
+    const list = state.rows.filter((r) => r.status === "aktif" && r.id_kamar === idKamar && r.id !== excludeId);
     return { list, count: list.length, utama: list.find((r) => r.utama) || list[0] || null, penuh: list.length >= KAPASITAS };
   }
-  function badge(k, excludeId, originalKamarId, long) {
-    const c = kamarCtx(k.id, excludeId, originalKamarId);
+  function badge(k, excludeId, long) {
+    const c = kamarCtx(k.id, excludeId);
     if (!c.count) return '<span class="pm-badge">Kosong</span>';
     const txt = `Terisi (${c.count}/${KAPASITAS} Penghuni)` + (long ? ` - Kapasitas ${KAPASITAS} Orang` : "");
     return `<span class="pm-badge ${c.penuh ? "pm-badge--full" : "pm-badge--busy"}">${c.penuh ? "Penuh" : txt}</span>`;
@@ -272,17 +295,32 @@
   const selKamar = (m) => state.rooms.find((k) => k.id === m.kamarId);
   const exId = (m) => (m.row ? m.row.id : undefined);
 
+  // Pelengkap markup modal Tambah. Kalau di blade belum ada (a-owner, a-hhp, a-htgl, ikon & label tombol),
+  // dibuat otomatis di sini, jadi blade lama tetap jalan dan "Peran Penghuni" tidak kosong.
+  (function siapkanModalAdd() {
+    if (!$("a-owner")) { const d = document.createElement("div"); d.id = "a-owner"; $("a-hkamar").after(d); }
+    const bantuan = (inputId) => $(inputId).closest(".pm-f").querySelector(".pm-help");
+    if (!$("a-hhp")) bantuan("a-hp").id = "a-hhp";
+    if (!$("a-htgl")) bantuan("a-tgl").id = "a-htgl";
+    const btn = $("a-simpan");
+    if (!btn.querySelector(".lbl")) {
+      btn.innerHTML = `<span id="a-simpan-ic" hidden>${ic("user-plus2")}</span><span class="lbl">Simpan Penghuni</span>`;
+    } else if (!$("a-simpan-ic")) {
+      btn.insertAdjacentHTML("afterbegin", `<span id="a-simpan-ic" hidden>${ic("user-plus2")}</span>`);
+    }
+  })();
+
   function renderPick(m) {
     const k = selKamar(m);
     $(m.p + "-pick").innerHTML = k
-      ? `${ic("home")}<span>${kamarName(k)}</span>${badge(k, exId(m), m.row?.id_kamar)}<span class="grow"></span>${ic("chev", "i ch")}`
+      ? `${ic("home")}<span>${kamarName(k)}</span>${badge(k, exId(m))}<span class="grow"></span>${ic("chev", "i ch")}`
       : `${ic("home")}<span class="ph">${m.p === "a" ? "Pilih kamar yang akan ditempati oleh penyewa." : "Pilih kamar"}</span><span class="grow"></span>${ic("chev", "i ch")}`;
   }
   function renderList(m) {
     $(m.p + "-list").innerHTML = state.rooms.length
       ? state.rooms.map((k) => {
-          const penuh = kamarCtx(k.id, exId(m), m.row?.id_kamar).penuh && k.id !== m.kamarId;
-          return `<button type="button" role="option" data-k="${k.id}" aria-selected="${k.id === m.kamarId}" ${penuh ? "disabled" : ""}>${ic("home")}<span>${kamarName(k)}</span>${badge(k, exId(m), m.row?.id_kamar)}</button>`;
+          const penuh = kamarCtx(k.id, exId(m)).penuh && k.id !== m.kamarId;
+          return `<button type="button" role="option" data-k="${k.id}" aria-selected="${k.id === m.kamarId}" ${penuh ? "disabled" : ""}>${ic("home")}<span>${kamarName(k)}</span>${badge(k, exId(m))}</button>`;
         }).join("")
       : '<p class="pm-help" style="padding:10px">Belum ada kamar.</p>';
   }
@@ -319,7 +357,7 @@
       <span class="pm-av">${esc(inisial(u.nama))}</span>
       <div>
         <div class="nm">${esc(u.nama)}<span class="tg">Penyewa Utama${u.mulai ? " Sejak " + esc(blnTahun(u.mulai)) : ""}</span></div>
-        <div class="sub">WA: ${u.hp ? esc(fmtHp(u.hp)) : "belum diisi"}<span style="margin: 0 6px;">&bull;</span><b>Kontrak Aktif</b></div>
+        <div class="sub">WA: ${u.hp ? esc(fmtHp(u.hp)) : "belum diisi"}<span class="dot">•</span><b>Kontrak Aktif</b></div>
       </div>
       <span class="rt">Pemegang Kontrak Utama</span>
     </div>`;
@@ -371,8 +409,8 @@
   /* ---- Render isi modal EDIT (skenario 2) ---- */
   function renderEdit() {
     const m = modals.edit, k = selKamar(m), row = m.row;
-    const c = k ? kamarCtx(k.id, row.id, row.id_kamar) : { count: 0, list: [], utama: null };
-    const sama = k && k.id === row.id_kamar;                  // kamar tidak diganti -> peran tetap
+    const c = k ? kamarCtx(k.id, row.id) : { count: 0, list: [], utama: null };
+    const sama = k && k.id === row.id_kamar;                 // kamar tidak diganti -> peran tetap
     // Satu-satunya penghuni aktif di kamar ini -> otomatis penyewa utama (walau flag di data masih 0)
     const sendiri = !!(sama && c.count === 0);
     // Boleh dipilih jadi penyewa utama: penghuni tambahan aktif, kamar tidak diganti, dan ada penyewa utama lain
@@ -381,7 +419,7 @@
     const utama = sama ? !!(row.utama || sendiri || m.jadikanUtama) : c.count === 0;
     // Perlu memanggil endpoint penyewa-utama saat simpan?
     m.kirimUtama = !!(sama && row.status === "aktif" && !row.utama && (sendiri || m.jadikanUtama));
-    const rekan = c.utama;                                    // penyewa utama kamar (selain yang diedit)
+    const rekan = c.utama;                                   // penyewa utama kamar (selain yang diedit)
     const noK = k ? fmtNo(k.no_kamar) : "";
     const namaRekan = rekan ? esc(rekan.nama) : "-";
 
@@ -573,97 +611,75 @@
   }
 
   document.querySelectorAll(".pg-tab").forEach((b) => b.addEventListener("click", () => { state.tab = b.dataset.tab; state.page = 1; state.showAll = false; syncTabs(); renderTable(); }));
-  // Pencarian: tunggu user berhenti mengetik sebentar, lalu minta data ke BE
+  // Pencarian: tunggu user berhenti mengetik sebentar, lalu saring di browser
   let qTimer;
-  $("f-q").addEventListener("input", () => { clearTimeout(qTimer); qTimer = setTimeout(() => { state.page = 1; state.showAll = false; refresh(); }, 350); });
+  $("f-q").addEventListener("input", () => { clearTimeout(qTimer); qTimer = setTimeout(() => { state.page = 1; state.showAll = false; renderTable(); }, 150); });
   initFilterPanel();
 
   $("pg-pager").addEventListener("click", (e) => {
     if (e.target.closest("button[data-all]")) { state.showAll = true; state.page = 1; renderTable(); return; }
     const b = e.target.closest("button[data-p]");
-    if (b && !b.disabled) { state.page = Number(b.dataset.p); state.showAll = false; renderTable(); }
+    if (b && !b.disabled) { state.showAll = false; state.page = Number(b.dataset.p); renderTable(); }
   });
+  $("pg-state").addEventListener("click", (e) => {
+    if (e.target.id === "btn-retry") refresh();
+    if (e.target.id === "btn-kosong-tambah") openAdd();
+    if (e.target.id === "btn-reset-filter") { $("f-q").value = ""; $("fp-reset").click(); }  // kosongkan pencarian + semua filter
+  });
+
+  $("pg-rows").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-act]");
+    if (!b) return;
+    const tr = b.closest("tr"), id = Number(tr.dataset.id), act = b.dataset.act;
+    closeMenus();
+    if (act === "menu") {
+      e.stopPropagation();
+      const m = document.createElement("div");
+      m.className = "menu"; m.setAttribute("role", "menu");
+      m.innerHTML = '<button type="button" role="menuitem" data-end>Akhiri penghunian</button>';
+      m.querySelector("[data-end]").addEventListener("click", () => { closeMenus(); akhiri(id); });
+      b.parentElement.appendChild(m);
+    } else {
+      if (act === "ubah") openEdit(id);
+    }
+  });
+  document.addEventListener("click", closeMenus);
 
   $("btn-tambah").addEventListener("click", openAdd);
-  $("a-x").addEventListener("click", () => close(modals.add));
-  $("a-batal").addEventListener("click", () => close(modals.add));
-  $("a-simpan").addEventListener("click", simpanAdd);
 
-  $("e-x").addEventListener("click", () => close(modals.edit));
-  $("e-batal").addEventListener("click", () => close(modals.edit));
-  $("e-simpan").addEventListener("click", simpanEdit);
-
-  $("k-x").addEventListener("click", tutupKonfirmasi);
-  $("k-selesai").addEventListener("click", tutupKonfirmasi);
-
-  // Klik di luar modal box menutup modal (kecuali klik di dalam)
-  document.querySelectorAll(".pm").forEach((el) => {
-    el.addEventListener("click", (e) => { if (e.target === el) close(el.id === "pm" ? modals.add : modals.edit); });
-  });
-  $("pk").addEventListener("click", (e) => { if (e.target === $("pk")) tutupKonfirmasi(); });
-
-  // Dropdown pilih kamar (modal tambah & edit)
-  ["a", "e"].forEach((p) => {
-    const pick = $(p + "-pick"), list = $(p + "-list");
-    const m = p === "a" ? modals.add : modals.edit;
-    pick.addEventListener("click", (e) => { e.stopPropagation(); toggleList(m, list.hidden); });
-    list.addEventListener("click", (e) => {
-      const btn = e.target.closest("button[data-k]");
-      if (!btn || btn.disabled) return;
-      m.kamarId = Number(btn.dataset.k);
-      toggleList(m, false);
-      renderModal(m);
+  Object.values(modals).forEach((m) => {
+    const p = m.p;
+    $(p + "-x").addEventListener("click", () => close(m));
+    $(p + "-batal").addEventListener("click", () => close(m));
+    $(m.root().id).addEventListener("mousedown", (e) => { if (e.target === m.root()) close(m); });
+    $(p + "-nama").addEventListener("input", () => nameError(p, false));
+    $(p + "-pick").addEventListener("click", () => toggleList(m, $(p + "-list").hidden));
+    $(p + "-list").addEventListener("click", (e) => {
+      const b = e.target.closest("button[data-k]");
+      if (!b || b.disabled) return;
+      m.kamarId = Number(b.dataset.k); toggleList(m, false); renderModal(m);
     });
+    document.addEventListener("click", (e) => { if (!e.target.closest("#" + p + "-sel")) toggleList(m, false); });
   });
-  document.addEventListener("click", (e) => {
-    ["a", "e"].forEach((p) => {
-      const m = p === "a" ? modals.add : modals.edit;
-      const wrap = $(p + "-sel");
-      if (wrap && !wrap.contains(e.target)) toggleList(m, false);
-    });
-  });
-
-  // Pilih peran di modal edit (kartu interaktif)
   $("e-roles").addEventListener("click", (e) => {
-    const btn = e.target.closest("button[data-role]");
-    if (!btn) return;
-    modals.edit.jadikanUtama = btn.dataset.role === "utama";
+    const b = e.target.closest("button[data-role]");
+    if (!b) return;
+    modals.edit.jadikanUtama = b.dataset.role === "utama";
     renderEdit();
   });
-
-  // Delegasi aksi tabel (ubah, menu lainnya, coba lagi)
-  $("pg-rows").addEventListener("click", (e) => {
-    const tr = e.target.closest("tr[data-id]");
-    if (!tr) return;
-    const id = Number(tr.dataset.id);
-    const actBtn = e.target.closest("button[data-act]");
-    if (!actBtn) return;
-    const act = actBtn.dataset.act;
-    if (act === "ubah") {
-      openEdit(id);
-    } else if (act === "menu") {
-      e.stopPropagation();
-      closeMenus();
-      const rect = actBtn.getBoundingClientRect();
-      const menu = document.createElement("div");
-      menu.className = "menu";
-      menu.innerHTML = `<button type="button" data-menu="akhiri">Akhiri Penghunian</button>`;
-      menu.style.top = (rect.bottom + 4) + "px";
-      menu.style.right = (window.innerWidth - rect.right) + "px";
-      menu.addEventListener("click", (ev) => {
-        closeMenus();
-        if (ev.target.dataset.menu === "akhiri") akhiri(id);
-      });
-      document.body.appendChild(menu);
-    }
-  });
-  document.addEventListener("click", (e) => { if (!e.target.closest(".aksi")) closeMenus(); });
-  document.addEventListener("click", (e) => {
-    if (e.target.id === "btn-retry" || e.target.id === "btn-kosong-tambah") {
-      if (e.target.id === "btn-kosong-tambah") openAdd(); else refresh();
-    }
+  $("a-simpan").addEventListener("click", simpanAdd);
+  $("e-simpan").addEventListener("click", simpanEdit);
+  $("k-x").addEventListener("click", tutupKonfirmasi);
+  $("k-selesai").addEventListener("click", tutupKonfirmasi);
+  $("pk").addEventListener("mousedown", (e) => { if (e.target === $("pk")) tutupKonfirmasi(); });
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    if (!$("pk").hidden) tutupKonfirmasi();
+    Object.values(modals).forEach((m) => {
+      if (m.root().hidden) return;
+      if (!$(m.p + "-list").hidden) toggleList(m, false); else close(m);
+    });
   });
 
-  // Muat data awal saat halaman dibuka
   refresh();
 })();
