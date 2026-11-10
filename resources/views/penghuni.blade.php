@@ -69,13 +69,7 @@
                         <h3>Filter Data</h3>
                         <button type="button" class="fp-close" id="fp-close" aria-label="Tutup filter"><svg class="i"><use href="#i-x"/></svg></button>
                     </div>
-                    <div class="fp-group">
-                        <h4>Skema</h4>
-                        <div class="fp-opts">
-                            <label class="fp-check"><input type="checkbox" name="skema" value="bulanan"><span class="box"><svg class="i"><use href="#i-tick"/></svg></span>Bulanan</label>
-                            <label class="fp-check"><input type="checkbox" name="skema" value="tahunan"><span class="box"><svg class="i"><use href="#i-tick"/></svg></span>Tahunan</label>
-                        </div>
-                    </div>
+                    
                     <div class="fp-group">
                         <h4>Status Data</h4>
                         <div class="fp-opts">
