@@ -37,6 +37,7 @@ class DatabaseSeeder extends Seeder
         ]);
         // 4. Data kos
         $this->call([
+            PemilikSeeder::class,
             KostSeeder::class,
             KamarSeeder::class,
             PenghuniSeeder::class,

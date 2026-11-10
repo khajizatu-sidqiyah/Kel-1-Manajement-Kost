@@ -1,0 +1,30 @@
+$kind: http-request
+name: "[PRA] Prasyarat data awal: pengaturan_sewa (DP minimum tahunan) sudah terisi"
+url: "{{base_url}}/api/penghunian/{{s_rina}}/hitung-dp"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: json
+  content: |-
+    {
+      "skema_sewa": "tahunan"
+    }
+scripts:
+  - type: beforeRequest
+    code: |-
+      const { api, uniq, setv, getv, seq, mkKamar, mkOcc, hitung, bayar, payId } = eval(pm.collectionVariables.get('lib'));
+      seq([
+        n => mkKamar({}, id => { setv('s_kamar', id); n(); }),
+        n => mkOcc(getv('s_kamar'), 'Rina', {tanggal_mulai:'2026-11-05'}, r => { r = r || {}; setv('s_rina', r.penghunian); n(); })
+      ]);
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));
+      pm.test('Status 200 - skema tahunan dapat dihitung', () => pm.expect(pm.response.code, 'Jika 422: jalankan INSERT INTO pengaturan_sewa (dp_minimum_tahunan, created_at, updated_at) VALUES (300000, NOW(), NOW());').to.eql(200));
+      pm.test('DP minimum tahunan = 300.000', () => pm.expect(Number(res.data && res.data.dp_minimum)).to.eql(300000));
+    language: text/javascript
+order: 3000

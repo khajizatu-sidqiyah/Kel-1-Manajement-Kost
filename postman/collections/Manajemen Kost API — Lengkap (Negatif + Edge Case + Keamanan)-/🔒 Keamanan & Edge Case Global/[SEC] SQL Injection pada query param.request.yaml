@@ -1,0 +1,22 @@
+$kind: http-request
+url: "{{base_url}}/api/kamar/1 OR 1=1"
+method: GET
+headers:
+  Accept: application/json
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      let res = {};
+      try { res = pm.response.json(); } catch (e) { /* body bukan JSON */ }
+
+      pm.test('Tidak 500 — SQL injection harus ditangani Eloquent ORM', () => {
+        pm.expect(pm.response.code).to.not.eql(500);
+      });
+
+      pm.test('SQL injection pada ID ditolak (404/422) dan tidak mengembalikan daftar data', () => {
+        pm.expect([404, 422]).to.include(pm.response.code);
+        pm.expect(Array.isArray(res.data)).to.be.false;
+      });
+    language: text/javascript
+order: 6000

@@ -1,0 +1,34 @@
+$kind: http-request
+name: "[4.1a-14][POSITIF][SMOKE] Daftar penghuni - kedua nama tampil dengan kamar & penanda penyewa utama"
+url: "{{base_url}}/api/penghunian"
+method: GET
+headers:
+  Accept: application/json
+  Authorization: Bearer {{token}}
+scripts:
+  - type: beforeRequest
+    code: |-
+      const { api, uniq, setv, getv, seq, mkKamar, mkOcc, hitung, bayar, payId } = eval(pm.collectionVariables.get('lib'));
+      seq([
+        n => mkKamar({}, id => { setv('s_kamar', id); n(); }),
+        n => mkOcc(getv('s_kamar'), 'Rina', {}, r => { r = r || {}; setv('s_rina', r.penghunian); setv('s_rina_penghuni', r.penghuni); n(); }),
+        n => mkOcc(getv('s_kamar'), 'Sari', {}, r => { r = r || {}; setv('s_sari', r.penghunian); setv('s_sari_penghuni', r.penghuni); n(); })
+      ]);
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));
+      swaggerCheck('GET /penghunian');
+      pm.test('Status 200 - daftar penghunian', () => pm.response.to.have.status(200));
+      pm.test('Rina & Sari tampil di kamar yang sama, Rina bertanda penyewa utama', () => {
+        const rows = res.data.filter(x => String(x.id_kamar) === String(getv('s_kamar')));
+        pm.expect(rows).to.have.lengthOf(2);
+        const rina = rows.find(x => String(x.id_penghunian) === String(getv('s_rina')));
+        const sari = rows.find(x => String(x.id_penghunian) === String(getv('s_sari')));
+        pm.expect(rina.penghuni.nama_penghuni).to.eql('Rina');
+        pm.expect(sari.penghuni.nama_penghuni).to.eql('Sari');
+        pm.expect(rina.penyewa_utama).to.be.oneOf([true, 1]);
+        pm.expect(sari.penyewa_utama).to.be.oneOf([false, 0]);
+      });
+    language: text/javascript
+order: 14000

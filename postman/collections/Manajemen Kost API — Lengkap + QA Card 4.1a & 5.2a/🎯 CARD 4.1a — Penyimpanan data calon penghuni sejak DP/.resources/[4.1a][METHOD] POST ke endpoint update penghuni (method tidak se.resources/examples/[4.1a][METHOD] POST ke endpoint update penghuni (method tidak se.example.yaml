@@ -1,0 +1,39 @@
+$kind: http-example
+name: "[4.1a][METHOD] POST ke endpoint update penghuni (method tidak sesuai)"
+request:
+  url: "{{base_url}}/api/penghuni/{{qa41a_penghuni_utama_id}}"
+  method: POST
+  headers:
+    Accept: application/json
+    Content-Type: application/json
+    Authorization: Bearer {{token}}
+  body:
+    type: text
+    content: |-
+      {
+        "no_telepon": "081234567890"
+      }
+response:
+  statusCode: 405
+  statusText: Method Not Allowed
+  headers:
+    Host: localhost:8000
+    Connection: close
+    X-Powered-By: PHP/8.2.12
+    Cache-Control: no-cache, private
+    Date: Wed, 04 Nov 2026 15:56:48 GMT
+    Content-Type: application/json
+    Access-Control-Allow-Origin: "*"
+  body:
+    type: json
+    content: |-
+      {
+        "message": "The POST method is not supported for route api/penghuni/15. Supported methods: GET, HEAD, PUT, DELETE.",
+        "error": {
+          "code": 405,
+          "message": "The POST method is not supported for route api/penghuni/15. Supported methods: GET, HEAD, PUT, DELETE.",
+          "status": "ERROR",
+          "details": {}
+        }
+      }
+order: 1000

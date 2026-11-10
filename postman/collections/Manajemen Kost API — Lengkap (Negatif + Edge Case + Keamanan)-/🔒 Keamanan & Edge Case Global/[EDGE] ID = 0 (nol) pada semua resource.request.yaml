@@ -1,0 +1,19 @@
+$kind: http-request
+url: "{{base_url}}/api/kamar/0"
+method: GET
+headers:
+  Accept: application/json
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      let res = {};
+      try { res = pm.response.json(); } catch (e) { /* body bukan JSON */ }
+
+      pm.test('Status 404 — ID 0 tidak valid', () => {
+        pm.expect([404, 422]).to.include(pm.response.code);
+      });
+
+      pm.test('ID 0 tidak mengembalikan data', () => pm.expect(res.data === undefined || res.data === null).to.be.true);
+    language: text/javascript
+order: 12000

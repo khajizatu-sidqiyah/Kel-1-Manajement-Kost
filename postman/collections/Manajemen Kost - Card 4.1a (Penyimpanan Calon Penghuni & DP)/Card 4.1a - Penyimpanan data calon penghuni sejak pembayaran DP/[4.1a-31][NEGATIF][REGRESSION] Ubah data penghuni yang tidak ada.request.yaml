@@ -1,0 +1,23 @@
+$kind: http-request
+name: "[4.1a-31][NEGATIF][REGRESSION] Ubah data penghuni yang tidak ada -> 404"
+url: "{{base_url}}/api/penghuni/999999"
+method: PUT
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: json
+  content: |-
+    {
+      "nama_penghuni": "Rina",
+      "no_telepon": "081234567890"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));
+      swaggerCheck('PUT /penghuni/{id}');
+      pm.test('Status 404 - penghuni tidak ditemukan', () => pm.response.to.have.status(404));
+    language: text/javascript
+order: 31000

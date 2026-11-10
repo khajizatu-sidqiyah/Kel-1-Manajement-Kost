@@ -1,0 +1,17 @@
+$kind: http-request
+name: "[5.2a][METHOD] PATCH ke endpoint pencatatan pembayaran (method tidak sesuai)"
+url: "{{base_url}}/api/pembayaran"
+method: PATCH
+headers:
+  Accept: application/json
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: >-
+      pm.test('Status 405 Method Not Allowed', () =>
+      pm.response.to.have.status(405));
+
+      pm.test('Server tidak 5xx', () =>
+      pm.expect(pm.response.code).to.be.below(500));
+    language: text/javascript
+order: 18000

@@ -1,0 +1,32 @@
+$kind: http-example
+name: "[EDGE] GET /api/kamar/:id — ID string (bukan angka)"
+request:
+  url: "{{base_url}}/api/kamar/abc"
+  method: GET
+  headers:
+    Accept: application/json
+    Authorization: Bearer {{token}}
+response:
+  statusCode: 404
+  statusText: Not Found
+  headers:
+    Host: localhost:8000
+    Connection: close
+    X-Powered-By: PHP/8.2.12
+    Cache-Control: no-cache, private
+    Date: Wed, 04 Nov 2026 10:20:47 GMT
+    Content-Type: application/json
+    Access-Control-Allow-Origin: "*"
+  body:
+    type: json
+    content: |-
+      {
+        "message": "Endpoint atau data tidak ditemukan.",
+        "error": {
+          "code": 404,
+          "message": "Endpoint atau data tidak ditemukan.",
+          "status": "NOT_FOUND",
+          "details": {}
+        }
+      }
+order: 1000

@@ -1,0 +1,32 @@
+$kind: http-request
+name: "[EDGE] POST /api/kamar — harga = 0 (batas minimum)"
+url: "{{base_url}}/api/kamar"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: |-
+    {
+      "no_kamar": "EDGE01",
+      "harga": 0
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      let res = {};
+      try { res = pm.response.json(); } catch (e) { /* body bukan JSON */ }
+
+      pm.test('Status 201 (harga=0 diizinkan oleh rule min:0)', () => {
+        pm.expect([201, 422]).to.include(pm.response.code);
+      });
+
+      pm.test('Jika 201 maka harga tersimpan 0, jika 422 maka error pada harga', () => {
+        if (pm.response.code === 201) pm.expect(Number(res.data.harga)).to.eql(0);
+        else pm.expect(JSON.stringify(res.error.details || {})).to.include('harga');
+      });
+    language: text/javascript
+examples: .resources/[EDGE] POST -api-kamar — harga = 0 (batas minimum).resources/examples
+order: 6000

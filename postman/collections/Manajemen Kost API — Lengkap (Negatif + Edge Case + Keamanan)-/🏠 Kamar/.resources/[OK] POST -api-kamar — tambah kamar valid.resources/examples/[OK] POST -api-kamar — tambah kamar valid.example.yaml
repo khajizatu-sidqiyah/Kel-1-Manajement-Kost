@@ -1,0 +1,58 @@
+$kind: http-example
+name: "[OK] POST /api/kamar — tambah kamar valid"
+request:
+  url: "{{base_url}}/api/kamar"
+  method: POST
+  headers:
+    Accept: application/json
+    Content-Type: application/json
+    Authorization: Bearer {{token}}
+  body:
+    type: text
+    content: |-
+      {
+        "no_kamar": "A01",
+        "tipe_kamar": "Standard",
+        "harga": 1000000,
+        "harga_tahunan": 10000000,
+        "status": "kosong"
+      }
+response:
+  statusCode: 201
+  statusText: Created
+  headers:
+    Host: localhost:8000
+    Connection: close
+    X-Powered-By: PHP/8.2.12
+    Cache-Control: no-cache, private
+    Date: Wed, 04 Nov 2026 10:11:28 GMT
+    Content-Type: application/json; charset=utf-8
+    Access-Control-Allow-Origin: "*"
+  body:
+    type: json
+    content: |-
+      {
+        "message": "Data kamar berhasil ditambahkan.",
+        "data": {
+          "no_kamar": "A787087537",
+          "tipe_kamar": "Standard",
+          "harga": 1000000,
+          "harga_tahunan": 10000000,
+          "status": "kosong",
+          "id_kost": 1,
+          "updated_at": "2026-11-04T10:11:28.000000Z",
+          "created_at": "2026-11-04T10:11:28.000000Z",
+          "id_kamar": 89,
+          "kos": {
+            "id_kost": 1,
+            "nama_kost": "Kost Putri Cirebon",
+            "alamat": "Cirebon",
+            "deskripsi": "Kost putri dengan fasilitas yang nyaman dan aman.",
+            "fasilitas": "WiFi, Kamar Mandi Luar, Kamar Mandi Dalam, Listrik, Parkir Luas, Dapur Bersama, Halaman Jemur",
+            "id_pemilik": 1,
+            "created_at": "2026-10-21T13:11:17.000000Z",
+            "updated_at": "2026-10-21T13:11:17.000000Z"
+          }
+        }
+      }
+order: 1000

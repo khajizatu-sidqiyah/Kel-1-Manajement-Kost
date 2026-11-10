@@ -1,0 +1,39 @@
+$kind: http-example
+name: "[SEC] POST /api/penghuni — XSS payload pada nama"
+request:
+  url: "{{base_url}}/api/penghuni"
+  method: POST
+  headers:
+    Accept: application/json
+    Content-Type: application/json
+    Authorization: Bearer {{token}}
+  body:
+    type: text
+    content: |-
+      {
+        "nama_penghuni": "<script>alert('xss')</script>"
+      }
+response:
+  statusCode: 201
+  statusText: Created
+  headers:
+    Host: localhost:8000
+    Connection: close
+    X-Powered-By: PHP/8.2.12
+    Cache-Control: no-cache, private
+    Date: Wed, 04 Nov 2026 10:33:34 GMT
+    Content-Type: application/json; charset=utf-8
+    Access-Control-Allow-Origin: "*"
+  body:
+    type: json
+    content: |-
+      {
+        "message": "Penghuni berhasil ditambahkan.",
+        "data": {
+          "nama_penghuni": "<script>alert('xss')</script>",
+          "updated_at": "2026-11-04T10:33:34.000000Z",
+          "created_at": "2026-11-04T10:33:34.000000Z",
+          "id_penghuni": 97
+        }
+      }
+order: 1000

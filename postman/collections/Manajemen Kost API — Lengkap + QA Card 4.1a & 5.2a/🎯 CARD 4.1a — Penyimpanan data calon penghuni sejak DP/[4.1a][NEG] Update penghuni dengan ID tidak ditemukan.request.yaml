@@ -1,0 +1,29 @@
+$kind: http-request
+url: "{{base_url}}/api/penghuni/99999999"
+method: PUT
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: |-
+    {
+      "no_telepon": "081234567890"
+    }
+scripts:
+  - type: afterResponse
+    code: >-
+      let res = {}; try { res = pm.response.json(); } catch (e) {}
+
+      pm.test('Status 404', () => pm.response.to.have.status(404));
+
+      pm.test('Respons menyatakan resource tidak ditemukan', () =>
+      pm.expect(res.error || res.message).to.exist);
+
+      pm.test('Tidak ada data resource', () => pm.expect(res.data === undefined
+      || res.data === null).to.be.true);
+    language: text/javascript
+examples: .resources/[4.1a][NEG] Update penghuni dengan ID tidak
+  ditemukan.resources/examples
+order: 14000

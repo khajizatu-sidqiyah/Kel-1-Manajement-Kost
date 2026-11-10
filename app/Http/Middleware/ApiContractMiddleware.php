@@ -42,8 +42,8 @@ class ApiContractMiddleware
                 ?? $body['error']['details']
                 ?? (object) [];
 
-            // Ambil kode error dari respons sebelumnya jika tersedia.
-            $code = $body['error']['code'] ?? $status;
+            // Ambil kode error dari respons sebelumnya jika integer; jika string fallback ke status HTTP
+            $code = is_int($body['error']['code'] ?? null) ? $body['error']['code'] : $status;
 
             // Pertahankan pesan khusus dari error jika tersedia.
             $errorMessage = $body['error']['message'] ?? $message;
@@ -108,13 +108,13 @@ class ApiContractMiddleware
     {
         return match ($status) {
             400 => 'BAD_REQUEST',
-            401 => 'UNAUTHENTICATED',
-            403 => 'PERMISSION_DENIED',
+            401 => 'UNAUTHORIZED',
+            403 => 'FORBIDDEN',
             404 => 'NOT_FOUND',
             409 => 'CONFLICT',
-            422 => 'INVALID_ARGUMENT',
-            429 => 'RESOURCE_EXHAUSTED',
-            default => $status >= 500 ? 'INTERNAL' : 'ERROR',
+            422 => 'VALIDATION_ERROR',
+            429 => 'TOO_MANY_REQUESTS',
+            default => $status >= 500 ? 'INTERNAL_SERVER_ERROR' : 'ERROR',
         };
     }
 }

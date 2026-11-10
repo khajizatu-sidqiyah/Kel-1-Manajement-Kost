@@ -1,0 +1,31 @@
+$kind: http-request
+name: "[4.1a-22][NEGATIF][REGRESSION] Nama 256 karakter -> ditolak (melebihi batas)"
+url: "{{base_url}}/api/penghunian/dengan-penghuni"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: json
+  content: |-
+    {
+      "id_kamar": {{s_kamar}},
+      "nama_penghuni": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    }
+scripts:
+  - type: beforeRequest
+    code: |-
+      const { api, uniq, setv, getv, seq, mkKamar, mkOcc, hitung, bayar, payId } = eval(pm.collectionVariables.get('lib'));
+      seq([
+        n => mkKamar({}, id => { setv('s_kamar', id); n(); })
+      ]);
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));
+      swaggerCheck('POST /penghunian/dengan-penghuni');
+      pm.test('Status 422 - 256 karakter ditolak', () => pm.response.to.have.status(422));
+      pm.test('error.details menyebut nama_penghuni', () => pm.expect(JSON.stringify(res.error.details || {})).to.include('nama_penghuni'));
+    language: text/javascript
+order: 22000

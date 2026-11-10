@@ -1,0 +1,34 @@
+$kind: http-request
+name: "[SEC] PUT /api/kamar/:id — tanpa token"
+url: "{{base_url}}/api/kamar/{{kamar_id}}"
+method: PUT
+headers:
+  Accept: application/json
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "harga": 1200000
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      let res = {};
+      try { res = pm.response.json(); } catch (e) { /* body bukan JSON */ }
+
+      pm.test('Status 401', () => pm.response.to.have.status(401));
+
+      pm.test('401 - tidak ada data sensitif di respons', () => {
+        pm.expect(res.data || {}).to.not.have.property('token');
+        pm.expect(res.data || {}).to.not.have.property('password');
+      });
+      pm.test('401 - ada pesan / objek error', () => {
+        pm.expect(res.message || res.error, 'respons harus memuat message atau error').to.exist;
+      });
+      pm.test('401 - jika ada error.status maka UNAUTHENTICATED', () => {
+        if (res.error && res.error.status) pm.expect(res.error.status).to.eql('UNAUTHENTICATED');
+      });
+    language: text/javascript
+examples: .resources/[SEC] PUT -api-kamar-id — tanpa token.resources/examples
+order: 18000

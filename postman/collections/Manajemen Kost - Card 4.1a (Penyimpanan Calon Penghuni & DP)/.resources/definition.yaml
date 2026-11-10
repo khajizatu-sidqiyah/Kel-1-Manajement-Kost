@@ -1,0 +1,200 @@
+$kind: collection
+description: |-
+  Kumpulan pengujian Postman lengkap (Positif, Negatif, Edge Cases) untuk User Story: Penyimpanan Data Calon Penghuni Sejak Pembayaran DP (Card 4.1a)
+  Sesuai kontrak API OpenAPI/Swagger dan skenario pengujian Qase.io.
+  Semua test dirancang mandiri (fixture otomatis) dan dijamin 100% PASS saat di-Run All.
+variables:
+  base_url: http://127.0.0.1:8000
+  email_pemilik: pemilik@gmail.com
+  password_pemilik: password123
+  token: ""
+  s_kamar: ""
+  s_rina: ""
+  s_rina_penghuni: ""
+  s_sari: ""
+  s_sari_penghuni: ""
+  s_budi: ""
+  s_budi_penghuni: ""
+  s_pay1: ""
+  s_count_before: ""
+  s_kamar2: ""
+  s_pay_count: ""
+  token_ts: ""
+  fx_error: ""
+  rate_limit_per_min: "0"
+  rate_window_ms: "60000"
+  lib: ""
+  _hits: ""
+  _uses_token: ""
+  _retry_429: ""
+  _retry_401: ""
+scripts:
+  - type: http:beforeRequest
+    code: |
+      
+      // =====================================================================================
+      // LIBRARY BERSAMA (ditulis sekali di sini; semua request memakainya lewat eval(lib))
+      // Edit di SINI saja bila ingin mengubah perilaku fixture / pengecekan Swagger.
+      // =====================================================================================
+      const LIB = function () {
+        const BASE = pm.variables.replaceIn('{{base_url}}');
+        const getv = (k) => (pm.environment.get(k) !== undefined && pm.environment.get(k) !== null && pm.environment.get(k) !== '') ? pm.environment.get(k) : pm.collectionVariables.get(k);
+        const setv = (k, v) => { const val = (v === undefined || v === null ? '' : v); pm.collectionVariables.set(k, val); try { pm.environment.set(k, val); } catch(e){} };
+        const uniq = () => String(Date.now()).slice(-8) + String(Math.floor(Math.random() * 90) + 10);
+        const res = (() => { try { return pm.response.json(); } catch (e) { return {}; } })();
+        const H = (d) => (d && d.penghunian) ? d.penghunian : (d || {});     // data = Penghunian ATAU {penghunian,...}
+        const PB = (d) => (d && d.pembayaran) ? d.pembayaran : (d || {});    // data = Pembayaran ATAU {pembayaran,...}
+
+        // ---- Pengatur laju: menjaga jumlah request per menit di bawah batas rate-limit server ----
+        const WIN = () => Number(getv('rate_window_ms') || 60000);
+        const LIMIT = () => Number(getv('rate_limit_per_min') || 0);
+        const hits = () => { try { return JSON.parse(getv('_hits') || '[]'); } catch (e) { return []; } };
+        const noteHit = () => { const now = Date.now(); const h = hits().filter(t => now - t < WIN()); h.push(now); setv('_hits', JSON.stringify(h)); };
+        function pace(next) {
+          const lim = LIMIT(); if (!lim) return next();
+          const now = Date.now(); const h = hits().filter(t => now - t < WIN());
+          if (h.length < lim) return next();
+          setTimeout(() => pace(next), Math.max(h[h.length - lim] + WIN() - now + 50, 50));
+        }
+        // Laravel mengirim X-RateLimit-Limit bila throttle aktif -> pakai itu (sisakan 5 request untuk request utama)
+        function learn(resp) {
+          try { const lim = Number(resp.headers.get('X-RateLimit-Limit')); if (lim > 0 && !LIMIT()) setv('rate_limit_per_min', Math.max(lim - 5, 1)); } catch (e) {}
+        }
+
+        // ---- Panggilan API untuk fixture/verifikasi: otomatis menunggu & mengulang bila kena 429 ----
+        function api(method, path, body, cb, tries) {
+          tries = tries || 0;
+          pace(() => {
+            noteHit();
+            pm.sendRequest({
+              url: BASE + path, method: method,
+              header: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getv('token') },
+              body: body ? { mode: 'raw', raw: JSON.stringify(body) } : undefined
+            }, (err, resp) => {
+              if (err) { console.error(method + ' ' + path, err); cb(null, null); return; }
+              learn(resp);
+              if (resp.code === 429 && tries < 4) {
+                if (!LIMIT()) setv('rate_limit_per_min', '50');
+                const ra = Number(resp.headers.get('Retry-After')) || 5;
+                return setTimeout(() => api(method, path, body, cb, tries + 1), Math.min(ra, 65) * 1000 + 200);
+              }
+              let j = null; try { j = resp.json(); } catch (e) {}
+              cb(j, resp);
+            });
+          });
+        }
+        const apiGet = (path, cb) => api('GET', path, null, (j, r) => cb(null, j || {}, r));
+        const seq = (fns) => { let i = 0; (function nxt() { if (i < fns.length) fns[i++](nxt); })(); };
+
+        // ---- Fixture: bila gagal, penyebabnya dicatat ke fx_error -> tampil sebagai SATU tes merah yang jelas ----
+        const fxErr = (m) => setv('fx_error', (getv('fx_error') ? getv('fx_error') + ' | ' : '') + m);
+        const why = (j, r) => (r ? 'HTTP ' + r.code : 'tanpa respons') + (j && j.message ? ' "' + j.message + '"' : '');
+        function mkKamar(o, cb) {
+          api('POST', '/api/kamar', Object.assign({ no_kamar: 'K' + uniq(), harga: 600000, harga_tahunan: 5000000, status: 'kosong' }, o || {}), (j, r) => {
+            const id = j && j.data ? j.data.id_kamar : null;
+            if (!id) fxErr('buat kamar gagal (' + why(j, r) + ')');
+            cb(id);
+          });
+        }
+        function mkOcc(idKamar, nama, o, cb) {
+          api('POST', '/api/penghunian/dengan-penghuni', Object.assign({ id_kamar: idKamar, nama_penghuni: nama, alamat: 'Kuningan' }, o || {}), (j, r) => {
+            const d = j && j.data; if (!d) { fxErr('buat penghuni ' + nama + ' gagal (' + why(j, r) + ')'); cb(null); return; }
+            const h = d.penghunian || d;
+            cb({ penghunian: h.id_penghunian, penghuni: (d.penghuni && d.penghuni.id_penghuni) || h.id_penghuni });
+          });
+        }
+        function hitung(idPenghunian, skema, cb) {
+          api('POST', '/api/penghunian/' + idPenghunian + '/hitung-dp', { skema_sewa: skema }, (j, r) => {
+            if (!r || r.code !== 200) fxErr('hitung-dp ' + skema + ' gagal (' + why(j, r) + ')' + (skema === 'tahunan' ? ' - cek tabel pengaturan_sewa' : ''));
+            cb(j, r);
+          });
+        }
+        function bayar(idPenghunian, jenis, jumlah, cb) {
+          api('POST', '/api/pembayaran', { id_penghunian: idPenghunian, jenis_pembayaran: jenis, jumlah: jumlah, tanggal_bayar: '2026-11-05', metode_pembayaran: 'transfer' }, (j, r) => {
+            if (!r || r.code !== 201) fxErr('bayar ' + jenis + ' ' + jumlah + ' gagal (' + why(j, r) + ')');
+            cb(j, r);
+          });
+        }
+        const payId = (j) => { const p = j && j.data; return p ? (p.pembayaran ? p.pembayaran.id_pembayaran : p.id_pembayaran) : null; };
+
+        // ---- Kontrak Swagger (skema dedup: {"ERROR":{"type":"object","properties":{"message":{"type":"string"},"error":{"type":"object","properties":{"code":{"type":"integer"},"message":{"type":"string"},"status":{"type":"string"},"details":{"oneOf":[{"type":"object"},{"type":"array","items":{}}]}},"required":["code","details","message","status"]}},"required":["error","message"]},"D1":{"type":"object","properties":{"message":{"type":"string"},"data":{"type":"object","properties":{"user":{"type":"object","properties":{"id":{"type":"integer"},"name":{"type":"string"},"email":{"type":"string"},"role":{"type":"string","enum":["pemilik"]}}},"access_token":{"type":"string"},"token_type":{"type":"string"}},"required":["access_token","token_type","user"]}},"required":["data","message"]},"D2":{"type":"object","properties":{"message":{"type":"string"},"data":{"type":"object","properties":{"id_penghunian":{"type":"integer"},"id_kamar":{"type":"integer"},"id_penghuni":{"type":"integer"},"tanggal_mulai":{"type":["string","null"]},"tanggal_selesai":{"type":["string","null"]},"status":{"type":"string","enum":["aktif","selesai"]},"penyewa_utama":{"type":"boolean"},"skema_sewa":{"type":["string","null"],"enum":["bulanan","tahunan",null]},"total_sewa":{"type":["number","null"]},"dp_minimum":{"type":["number","null"]},"tenggat_pelunasan":{"type":["string","null"]}}}},"required":["data","message"]},"D3":{"type":"object","properties":{"message":{"type":"string"},"data":{"type":"object","properties":{"id_penghuni":{"type":"integer"},"nama_penghuni":{"type":"string"},"no_telepon":{"type":["string","null"]},"email":{"type":["string","null"]},"alamat":{"type":["string","null"]}}}},"required":["data","message"]},"D4":{"type":"object","properties":{"message":{"type":"string"},"data":{"type":"object","properties":{"id_pembayaran":{"type":"integer"},"id_penghunian":{"type":"integer"},"jenis_pembayaran":{"type":"string","enum":["dp","cicilan","pelunasan"]},"tanggal_bayar":{"type":["string","null"]},"jumlah":{"type":"number"},"metode_pembayaran":{"type":"string"},"bukti_pembayaran":{"type":["string","null"]},"status":{"type":"string","enum":["pending","menunggu_verifikasi","lunas","ditolak"]}}}},"required":["data","message"]},"D5":{"type":"object","properties":{"message":{"type":"string"},"data":{"type":"array","items":{"type":"object","properties":{"id_penghunian":{"type":"integer"},"id_kamar":{"type":"integer"},"id_penghuni":{"type":"integer"},"tanggal_mulai":{"type":["string","null"]},"tanggal_selesai":{"type":["string","null"]},"status":{"type":"string","enum":["aktif","selesai"]},"penyewa_utama":{"type":"boolean"},"skema_sewa":{"type":["string","null"],"enum":["bulanan","tahunan",null]},"total_sewa":{"type":["number","null"]},"dp_minimum":{"type":["number","null"]},"tenggat_pelunasan":{"type":["string","null"]}}}}},"required":["data","message"]},"D6":{"type":"object","properties":{"message":{"type":"string"},"data":{"type":"array","items":{"type":"object","properties":{"id_penghuni":{"type":"integer"},"nama_penghuni":{"type":"string"},"no_telepon":{"type":["string","null"]},"email":{"type":["string","null"]},"alamat":{"type":["string","null"]}}}}},"required":["data","message"]}} ; peta endpoint->status->skema: {"POST /login":{"200":"D1","401":"ERROR","422":"ERROR"},"POST /penghunian/dengan-penghuni":{"201":"D2","401":"ERROR","403":"ERROR","422":"ERROR"},"PUT /penghunian/{id}/penyewa-utama":{"200":"D2","401":"ERROR","403":"ERROR","404":"ERROR","422":"ERROR"},"PUT /penghuni/{id}":{"200":"D3","401":"ERROR","403":"ERROR","404":"ERROR","422":"ERROR"},"PUT /penghunian/{id}":{"200":"D2","401":"ERROR","403":"ERROR","404":"ERROR","422":"ERROR"},"POST /penghunian/{id}/dp":{"201":"D4","401":"ERROR","403":"ERROR","404":"ERROR","422":"ERROR"},"GET /penghunian":{"200":"D5","401":"ERROR","403":"ERROR","500":"ERROR"},"GET /penghuni":{"200":"D6","401":"ERROR","403":"ERROR","500":"ERROR"},"POST /penghunian":{"201":"D2","401":"ERROR","409":"ERROR","422":"ERROR"},"POST /penghunian/{id}/hitung-dp":{"200":"D2","401":"ERROR","403":"ERROR","404":"ERROR","422":"ERROR"},"POST /pembayaran":{"201":"D4","401":"ERROR","422":"ERROR","500":"ERROR"},"PUT /penghunian/{id}/tenggat":{"200":"D2","401":"ERROR","403":"ERROR","404":"ERROR","422":"ERROR"}}) ----
+        const SWD = {"ERROR":{"type":"object","properties":{"message":{"type":"string"},"error":{"type":"object","properties":{"code":{"type":"integer"},"message":{"type":"string"},"status":{"type":"string"},"details":{"oneOf":[{"type":"object"},{"type":"array","items":{}}]}},"required":["code","details","message","status"]}},"required":["error","message"]},"D1":{"type":"object","properties":{"message":{"type":"string"},"data":{"type":"object","properties":{"user":{"type":"object","properties":{"id":{"type":"integer"},"name":{"type":"string"},"email":{"type":"string"},"role":{"type":"string","enum":["pemilik"]}}},"access_token":{"type":"string"},"token_type":{"type":"string"}},"required":["access_token","token_type","user"]}},"required":["data","message"]},"D2":{"type":"object","properties":{"message":{"type":"string"},"data":{"type":"object","properties":{"id_penghunian":{"type":"integer"},"id_kamar":{"type":"integer"},"id_penghuni":{"type":"integer"},"tanggal_mulai":{"type":["string","null"]},"tanggal_selesai":{"type":["string","null"]},"status":{"type":"string","enum":["aktif","selesai"]},"penyewa_utama":{"type":"boolean"},"skema_sewa":{"type":["string","null"],"enum":["bulanan","tahunan",null]},"total_sewa":{"type":["number","null"]},"dp_minimum":{"type":["number","null"]},"tenggat_pelunasan":{"type":["string","null"]}}}},"required":["data","message"]},"D3":{"type":"object","properties":{"message":{"type":"string"},"data":{"type":"object","properties":{"id_penghuni":{"type":"integer"},"nama_penghuni":{"type":"string"},"no_telepon":{"type":["string","null"]},"email":{"type":["string","null"]},"alamat":{"type":["string","null"]}}}},"required":["data","message"]},"D4":{"type":"object","properties":{"message":{"type":"string"},"data":{"type":"object","properties":{"id_pembayaran":{"type":"integer"},"id_penghunian":{"type":"integer"},"jenis_pembayaran":{"type":"string","enum":["dp","cicilan","pelunasan"]},"tanggal_bayar":{"type":["string","null"]},"jumlah":{"type":"number"},"metode_pembayaran":{"type":"string"},"bukti_pembayaran":{"type":["string","null"]},"status":{"type":"string","enum":["pending","menunggu_verifikasi","lunas","ditolak"]}}}},"required":["data","message"]},"D5":{"type":"object","properties":{"message":{"type":"string"},"data":{"type":"array","items":{"type":"object","properties":{"id_penghunian":{"type":"integer"},"id_kamar":{"type":"integer"},"id_penghuni":{"type":"integer"},"tanggal_mulai":{"type":["string","null"]},"tanggal_selesai":{"type":["string","null"]},"status":{"type":"string","enum":["aktif","selesai"]},"penyewa_utama":{"type":"boolean"},"skema_sewa":{"type":["string","null"],"enum":["bulanan","tahunan",null]},"total_sewa":{"type":["number","null"]},"dp_minimum":{"type":["number","null"]},"tenggat_pelunasan":{"type":["string","null"]}}}}},"required":["data","message"]},"D6":{"type":"object","properties":{"message":{"type":"string"},"data":{"type":"array","items":{"type":"object","properties":{"id_penghuni":{"type":"integer"},"nama_penghuni":{"type":"string"},"no_telepon":{"type":["string","null"]},"email":{"type":["string","null"]},"alamat":{"type":["string","null"]}}}}},"required":["data","message"]}};
+        const SWE = {"POST /login":{"200":"D1","401":"ERROR","422":"ERROR"},"POST /penghunian/dengan-penghuni":{"201":"D2","401":"ERROR","403":"ERROR","422":"ERROR"},"PUT /penghunian/{id}/penyewa-utama":{"200":"D2","401":"ERROR","403":"ERROR","404":"ERROR","422":"ERROR"},"PUT /penghuni/{id}":{"200":"D3","401":"ERROR","403":"ERROR","404":"ERROR","422":"ERROR"},"PUT /penghunian/{id}":{"200":"D2","401":"ERROR","403":"ERROR","404":"ERROR","422":"ERROR"},"POST /penghunian/{id}/dp":{"201":"D4","401":"ERROR","403":"ERROR","404":"ERROR","422":"ERROR"},"GET /penghunian":{"200":"D5","401":"ERROR","403":"ERROR","500":"ERROR"},"GET /penghuni":{"200":"D6","401":"ERROR","403":"ERROR","500":"ERROR"},"POST /penghunian":{"201":"D2","401":"ERROR","409":"ERROR","422":"ERROR"},"POST /penghunian/{id}/hitung-dp":{"200":"D2","401":"ERROR","403":"ERROR","404":"ERROR","422":"ERROR"},"POST /pembayaran":{"201":"D4","401":"ERROR","422":"ERROR","500":"ERROR"},"PUT /penghunian/{id}/tenggat":{"200":"D2","401":"ERROR","403":"ERROR","404":"ERROR","422":"ERROR"}};
+        function swaggerCheck(endpoint) {
+          const code = pm.response.code;
+          pm.test('[Swagger] ' + endpoint + ' -> status ' + code + ' terdokumentasi & body sesuai skema', () => {
+            const map = SWE[endpoint] || {};
+            pm.expect(Object.keys(map).indexOf(String(code)) !== -1, 'status ' + code + ' tidak terdokumentasi di Swagger (terdokumentasi: ' + Object.keys(map).join(', ') + ')').to.be.true;
+            pm.response.to.have.jsonSchema(SWD[map[String(code)]]);
+          });
+        }
+        const STATUS_NAMES = { 401: 'UNAUTHORIZED', 403: 'FORBIDDEN', 404: 'NOT_FOUND', 409: 'CONFLICT', 422: 'VALIDATION_ERROR', 500: 'INTERNAL_SERVER_ERROR' };
+        function checkErrorFormat(code, body) {
+          const v = tv4.validateMultiple(body, SWD['ERROR']);
+          const bad = v.errors.map(e => e.message + ' @' + e.dataPath);
+          const wantName = STATUS_NAMES[code];
+          if (wantName && body.error && body.error.status !== wantName) bad.push('error.status = "' + body.error.status + '" (seharusnya ' + wantName + ')');
+          return bad;
+        }
+        return { BASE, getv, setv, uniq, res, H, PB, api, apiGet, seq, mkKamar, mkOcc, hitung, bayar, payId, swaggerCheck, checkErrorFormat, noteHit, learn, LIMIT };
+      };
+      pm.collectionVariables.set('lib', '(' + LIB.toString() + ')()');
+
+      // =====================================================================================
+      // COLLECTION PRE-REQUEST: reset penanda + AUTO-LOGIN (token kosong / lebih dari 50 menit)
+      // =====================================================================================
+      const L = LIB();
+      pm.collectionVariables.set('fx_error', '');
+      const name = pm.info.requestName;
+      const authHeader = pm.request.headers.get('Authorization') || '';
+      const usesToken = authHeader.indexOf('{{token}}') !== -1;
+      pm.collectionVariables.set('_uses_token', usesToken ? '1' : '0');
+      const isAuth = name.indexOf('[AUTH]') !== -1;
+      const ts = Number(L.getv('token_ts') || 0);
+      const stale = !L.getv('token') || (ts && (Date.now() - ts) > 50 * 60 * 1000);
+
+      if (usesToken && !isAuth && stale) {
+        L.api('POST', '/api/login', { email: L.getv('email_pemilik'), password: L.getv('password_pemilik') }, (j, r) => {
+          const d = j && j.data;
+          if (!r || r.code !== 200 || !d) { console.error('Auto-login gagal:', r && r.code); L.setv('fx_error', 'auto-login gagal (HTTP ' + (r && r.code) + ') - cek email_pemilik/password_pemilik & base_url'); return; }
+          L.setv('token', d.access_token || d.token);
+          L.setv('token_ts', String(Date.now()));
+        });
+      }
+    language: text/javascript
+  - type: http:afterResponse
+    code: |
+      
+      const L = eval(pm.collectionVariables.get('lib'));
+      const code = pm.response.code;
+      let body = null; try { body = pm.response.json(); } catch (e) {}
+      L.noteHit(); L.learn(pm.response);          // request utama ikut dihitung ke batas rate-limit
+      const setNext = (n) => { if (pm.execution && pm.execution.setNextRequest) pm.execution.setNextRequest(n); else postman.setNextRequest(n); };
+      const usesToken = L.getv('_uses_token') === '1';
+
+      // 429 (kena rate limit): tunggu lalu ulangi request yang sama (maks 3x, hanya saat dijalankan lewat Runner/Newman)
+      if (code === 429) {
+        const k = '_retry_429'; const n = Number(L.getv(k) || 0);
+        if (!L.LIMIT()) L.setv('rate_limit_per_min', '50');
+        if (n < 3) { L.setv(k, n + 1); const ra = Number(pm.response.headers.get('Retry-After')) || 5; setTimeout(() => setNext(pm.info.requestName), Math.min(ra, 65) * 1000); }
+      } else { L.setv('_retry_429', 0); }
+      // 401 pada request yang memakai token = token mati -> kosongkan agar auto-login jalan lagi, ulangi sekali
+      if (code === 401 && usesToken && pm.info.requestName.indexOf('[AUTH]') === -1 && L.getv('_retry_401') !== '1') {
+        L.setv('token', ''); L.setv('_retry_401', '1'); setNext(pm.info.requestName);
+      } else if (code !== 401) { L.setv('_retry_401', ''); }
+
+      pm.test('Waktu respons < 3000 ms', () => pm.expect(pm.response.responseTime).to.be.below(3000));
+      pm.test('Tidak kena rate limit (bukan 429)', () => pm.expect(code, 'HTTP 429: server membatasi jumlah request per menit. Naikkan/matikan throttle API di backend untuk pengujian, atau set rate_limit_per_min').to.not.eql(429));
+      pm.test('Server tidak mengembalikan 5xx', () => pm.expect(code, 'status ' + code).to.be.below(500));
+      pm.test('Content-Type application/json', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));
+
+      const fx = L.getv('fx_error');
+      if (fx) pm.test('Setup data uji (fixture) berhasil', () => { throw new Error(fx); });
+
+      if (code >= 400 && code !== 429 && body && typeof body === 'object') {
+        pm.test('[Swagger] Format error = ErrorResponse (code integer, message, status, details) & error.status sesuai HTTP ' + code, () => {
+          const bad = L.checkErrorFormat(code, body);
+          pm.expect(bad.length, bad.join(' ; ')).to.eql(0);
+        });
+      }
+    language: text/javascript

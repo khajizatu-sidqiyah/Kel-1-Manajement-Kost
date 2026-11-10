@@ -1,0 +1,38 @@
+$kind: http-request
+name: "[4.1a-12][NEGATIF][REGRESSION] DP atas nama penghuni tambahan - tidak menempel pada penghuni tambahan"
+url: "{{base_url}}/api/penghunian/{{s_sari}}/dp"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: json
+  content: |-
+    {
+      "tanggal_bayar": "2026-11-05",
+      "jumlah": 300000,
+      "metode_pembayaran": "transfer"
+    }
+scripts:
+  - type: beforeRequest
+    code: |-
+      const { api, uniq, setv, getv, seq, mkKamar, mkOcc, hitung, bayar, payId } = eval(pm.collectionVariables.get('lib'));
+      seq([
+        n => mkKamar({}, id => { setv('s_kamar', id); n(); }),
+        n => mkOcc(getv('s_kamar'), 'Rina', {tanggal_mulai:'2026-11-05'}, r => { r = r || {}; setv('s_rina', r.penghunian); setv('s_rina_penghuni', r.penghuni); n(); }),
+        n => mkOcc(getv('s_kamar'), 'Sari', {tanggal_mulai:'2026-11-05'}, r => { r = r || {}; setv('s_sari', r.penghunian); setv('s_sari_penghuni', r.penghuni); n(); }),
+        n => hitung(getv('s_rina'), 'bulanan', () => n())
+      ]);
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));
+      swaggerCheck('POST /penghunian/{id}/dp');
+
+      pm.test('Ditolak (4xx) ATAU dicatat pada penyewa utama (Rina), tidak pada Sari', () => {
+        if (pm.response.code === 201) pm.expect(String(PB(res.data).id_penghunian)).to.eql(String(getv('s_rina')));
+        else pm.expect(pm.response.code).to.be.within(400, 499);
+      });
+    language: text/javascript
+order: 12000

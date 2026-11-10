@@ -1,0 +1,45 @@
+$kind: http-request
+name: "[EDGE] POST /api/kamar — no_kamar 20 karakter (batas max)"
+url: "{{base_url}}/api/kamar"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: |-
+    {
+      "no_kamar": "12345678901234567890",
+      "harga": 750000
+    }
+scripts:
+  - type: beforeRequest
+    code: >-
+      // tepat 20 karakter (13 digit timestamp + 7 digit acak) agar unik tapi
+      tetap di batas max
+
+      const body = JSON.parse(pm.request.body.raw);
+
+      body.no_kamar = String(Date.now()) + String(Math.floor(1000000 +
+      Math.random() * 8999999));
+
+      pm.request.body.update(JSON.stringify(body, null, 2));
+    language: text/javascript
+  - type: afterResponse
+    code: >-
+      let res = {};
+
+      try { res = pm.response.json(); } catch (e) { /* body bukan JSON */ }
+
+
+      pm.test('Status 201 — tepat 20 karakter diizinkan', () =>
+      pm.response.to.have.status(201));
+
+
+      pm.test('Panjang no_kamar tersimpan tepat 20 karakter', () => {
+        pm.expect(pm.request.body.raw).to.include('no_kamar');
+        pm.expect(String(res.data.no_kamar)).to.have.lengthOf(20);
+      });
+    language: text/javascript
+order: 9000

@@ -1,0 +1,32 @@
+$kind: http-request
+name: "[4.1a-34][NEGATIF][REGRESSION] Jadikan penyewa utama tanpa id_kamar -> ditolak"
+url: "{{base_url}}/api/penghunian/{{s_sari}}/penyewa-utama"
+method: PUT
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: json
+  content: |-
+    {
+      "id_penghunian": {{s_sari}}
+    }
+scripts:
+  - type: beforeRequest
+    code: |-
+      const { api, uniq, setv, getv, seq, mkKamar, mkOcc, hitung, bayar, payId } = eval(pm.collectionVariables.get('lib'));
+      seq([
+        n => mkKamar({}, id => { setv('s_kamar', id); n(); }),
+        n => mkOcc(getv('s_kamar'), 'Rina', {}, r => { r = r || {}; setv('s_rina', r.penghunian); setv('s_rina_penghuni', r.penghuni); n(); }),
+        n => mkOcc(getv('s_kamar'), 'Sari', {}, r => { r = r || {}; setv('s_sari', r.penghunian); setv('s_sari_penghuni', r.penghuni); n(); })
+      ]);
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));
+      swaggerCheck('PUT /penghunian/{id}/penyewa-utama');
+      pm.test('Status 422 - id_kamar wajib', () => pm.response.to.have.status(422));
+      pm.test('error.details menyebut id_kamar', () => pm.expect(JSON.stringify(res.error.details || {})).to.include('id_kamar'));
+    language: text/javascript
+order: 34000

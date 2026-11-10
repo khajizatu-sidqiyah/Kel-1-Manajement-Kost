@@ -1,0 +1,25 @@
+$kind: http-request
+url: "{{base_url}}/api/penghunian/{{penghunian_id}}/tenggat"
+method: PUT
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: |-
+    {
+      "tenggat_pelunasan": "2026-12-31"
+    }
+scripts:
+  - type: afterResponse
+    code: >-
+      let res = {}; try { res = pm.response.json(); } catch(e) {}
+
+      pm.test('Tanggal 31 Desember diterima', () =>
+      pm.expect([200,201]).to.include(pm.response.code));
+
+      pm.test('Tanggal tenggat tersimpan', () =>
+      pm.expect(JSON.stringify(res.data || res)).to.include('2026-12-31'));
+    language: text/javascript
+order: 15000

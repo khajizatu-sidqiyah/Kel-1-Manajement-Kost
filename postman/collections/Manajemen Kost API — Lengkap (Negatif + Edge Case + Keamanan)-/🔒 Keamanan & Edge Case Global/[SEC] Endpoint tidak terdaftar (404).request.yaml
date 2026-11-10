@@ -1,0 +1,19 @@
+$kind: http-request
+url: "{{base_url}}/api/endpoint-tidak-ada"
+method: GET
+headers:
+  Accept: application/json
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      let res = {};
+      try { res = pm.response.json(); } catch (e) { /* body bukan JSON */ }
+
+      pm.test('Status 404', () => pm.response.to.have.status(404));
+
+      pm.test('404 route: respons JSON dan berisi pesan', () => {
+        pm.expect(res.message || res.error, 'harus ada message atau error').to.exist;
+      });
+    language: text/javascript
+order: 5000

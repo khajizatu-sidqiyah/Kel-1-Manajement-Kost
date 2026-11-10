@@ -1,0 +1,37 @@
+$kind: http-request
+url: "{{base_url}}/api/kamar"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: |-
+    {
+      "no_kamar": {"$gt": ""},
+      "harga": 500000
+    }
+scripts:
+  - type: afterResponse
+    code: >-
+      let res = {};
+
+      try { res = pm.response.json(); } catch (e) { /* body bukan JSON */ }
+
+
+      pm.test('Tidak 500 — JSON injection harus ditangkap validasi', () => {
+        pm.expect(pm.response.code).to.not.eql(500);
+      });
+
+
+      pm.test('Payload objek pada field string ditolak validasi (400/422)', ()
+      => {
+        pm.expect([400, 422]).to.include(pm.response.code);
+      });
+
+      pm.test('error.details menyebut no_kamar', () => {
+        if (pm.response.code === 422) pm.expect(JSON.stringify(res.error.details || {})).to.include('no_kamar');
+      });
+    language: text/javascript
+order: 8000

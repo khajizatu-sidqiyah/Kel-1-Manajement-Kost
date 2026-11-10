@@ -1,0 +1,38 @@
+$kind: http-request
+url: "{{base_url}}/api/login"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "email": "pemilik@gmail.com",
+      "password": "password123"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      let res = {};
+      try { res = pm.response.json(); } catch (e) { /* body bukan JSON */ }
+
+      pm.test('Status 200', () => pm.response.to.have.status(200));
+      pm.test('Memiliki token', () => {
+        const json = pm.response.json();
+        pm.expect(json.data).to.have.property('token');
+        pm.collectionVariables.set('token', json.data.token);
+      });
+
+      pm.test('Token berupa string tidak kosong (> 20 karakter)', () => {
+        pm.expect(res.data.token).to.be.a('string').and.have.length.above(20);
+      });
+      pm.test('Token tersimpan ke collection variable {{token}}', () => {
+        pm.expect(pm.collectionVariables.get('token')).to.eql(res.data.token);
+      });
+      pm.test('Respons login tidak membocorkan password', () => {
+        pm.expect(JSON.stringify(res)).to.not.include('password123');
+      });
+    language: text/javascript
+examples: .resources/[OK] Login — kredensial valid.resources/examples
+order: 1000

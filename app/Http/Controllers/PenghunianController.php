@@ -16,24 +16,118 @@ use Illuminate\Validation\Rule;
 class PenghunianController extends Controller
 {
     /**
-     * Menampilkan seluruh data penghunian.
+     * Menampilkan seluruh data penghunian dengan dukungan
+     * Multiple Filter, Search, dan Pagination di Backend.
      */
-    public function index()
+        public function index(Request $request)
     {
-        $penghunian = Penghunian::with([
+        $query = Penghunian::with([
             'kamar',
             'penghuni',
-            'pembayaran',
-        ])->orderByDesc('id_penghunian')->get();
+            'pembayaran'
+        ]);
+
+        // FILTER SKEMA SEWA (MULTIPLE SELECT)
+        if ($request->filled('skema')) {
+            $skema = (array) $request->skema;
+
+            $query->whereIn('skema_sewa', $skema);
+        }
+
+        // FILTER STATUS PEMBAYARAN (MULTIPLE SELECT)
+        if ($request->filled('status_data')) {
+            $statusData = (array) $request->status_data;
+
+            $query->whereIn('status_pembayaran', $statusData);
+        }
+
+        // FILTER STATUS PENGHUNIAN (MULTIPLE SELECT)
+        if ($request->filled('status')) {
+            $status = (array) $request->status;
+
+            $query->whereIn('status', $status);
+        }
+
+        // FILTER PERAN PENYEWA (MULTIPLE SELECT)
+        if ($request->filled('peran')) {
+            $peran = collect((array) $request->peran)
+                ->map(function ($value) {
+                    if (in_array($value, ['utama', '1', 1], true)) {
+                        return 1;
+                    }
+
+                    if (in_array($value, ['tambahan', '0', 0], true)) {
+                        return 0;
+                    }
+
+                    return null;
+                })
+                ->filter(fn ($value) => $value !== null)
+                ->unique()
+                ->values()
+                ->all();
+
+            if (!empty($peran)) {
+                $query->whereIn('penyewa_utama', $peran);
+            }
+        }
+
+        // FILTER LANTAI (MULTIPLE SELECT)
+        if ($request->filled('lantai')) {
+            $lantai = (array) $request->lantai;
+
+            $query->whereHas('kamar', function ($q) use ($lantai) {
+                $q->whereIn('lantai', $lantai);
+            });
+        }
+
+        // SEARCH NAMA PENGHUNI
+        $search = $request->input('q', $request->input('search'));
+
+        if ($search) {
+            $query->whereHas('penghuni', function ($q) use ($search) {
+                $q->where('nama_penghuni', 'like', "%{$search}%");
+            });
+        }
+
+        // URUTKAN DATA
+        $query->orderByDesc('created_at');
+
+        // TAMPILKAN SEMUA DATA
+        $tampilkanSemua = $request->input('tampilkan_semua') == 1
+            || $request->input('per_page') === 'all';
+
+        if ($tampilkanSemua) {
+            $data = $query->get();
+
+            return response()->json([
+                'message' => 'Data penghunian berhasil ditampilkan',
+                'data' => $data,
+                'pagination' => null
+            ]);
+        }
+
+        // PAGINATION
+        $perPage = (int) $request->input('per_page', 10);
+        $perPage = max(1, min($perPage, 100));
+
+        $data = $query->paginate($perPage)->appends($request->query());
 
         return response()->json([
-            'message' => 'Data penghunian berhasil diambil.',
-            'data' => $penghunian,
+            'message' => 'Data penghunian berhasil ditampilkan',
+            'data' => $data->items(),
+            'pagination' => [
+                'current_page' => $data->currentPage(),
+                'per_page' => $data->perPage(),
+                'total' => $data->total(),
+                'last_page' => $data->lastPage()
+            ]
         ]);
     }
 
     /**
      * Menambahkan penghuni baru sekaligus membuat penghunian.
+     * Penghuni pertama pada kamar otomatis menjadi penyewa utama.
      */
     public function storeDenganPenghuni(Request $request)
     {
@@ -54,7 +148,7 @@ class PenghunianController extends Controller
                 'max:20',
             ],
             'alamat' => [
-                'required',
+                'nullable',
                 'string',
             ],
             'tanggal_mulai' => [
@@ -81,23 +175,35 @@ class PenghunianController extends Controller
         $data = $validator->validated();
 
         $hasil = DB::transaction(function () use ($data) {
-
             $kamar = Kamar::where(
                 'id_kamar',
                 $data['id_kamar']
-            )->lockForUpdate()->firstOrFail();
+            )
+                ->lockForUpdate()
+                ->firstOrFail();
 
-            $adaPenghuniAktif = Penghunian::where(
+            $jumlahAktif = Penghunian::where(
                 'id_kamar',
                 $kamar->id_kamar
             )
                 ->where('status', 'aktif')
-                ->exists();
+                ->count();
+
+            if ($jumlahAktif >= 2) {
+                return [
+                    'error' => true,
+                    'status' => 422,
+                    'message' => 'Kamar sudah penuh (kapasitas maksimal 2 penghuni).',
+                    'code' => 'ROOM_FULL',
+                ];
+            }
+
+            $adaPenghuniAktif = $jumlahAktif > 0;
 
             $penghuni = Penghuni::create([
                 'nama_penghuni' => $data['nama_penghuni'],
                 'no_telepon' => $data['no_telepon'] ?? null,
-                'alamat' => $data['alamat'],
+                'alamat' => $data['alamat'] ?? null,
             ]);
 
             $penghunian = Penghunian::create([
@@ -123,6 +229,15 @@ class PenghunianController extends Controller
                 ]),
             ];
         });
+
+        if (isset($hasil['error']) && $hasil['error']) {
+            return response()->json([
+                'message' => $hasil['message'],
+                'error' => [
+                    'code' => $hasil['code'] ?? 'INVALID_OPERATION',
+                ],
+            ], $hasil['status'] ?? 422);
+        }
 
         return response()->json([
             'message' => 'Penghuni dan penghunian berhasil ditambahkan.',
@@ -170,11 +285,12 @@ class PenghunianController extends Controller
         $data = $validator->validated();
 
         $hasil = DB::transaction(function () use ($data) {
-
             $kamar = Kamar::where(
                 'id_kamar',
                 $data['id_kamar']
-            )->lockForUpdate()->firstOrFail();
+            )
+                ->lockForUpdate()
+                ->firstOrFail();
 
             $sudahTerdaftar = Penghunian::where(
                 'id_kamar',
@@ -187,16 +303,29 @@ class PenghunianController extends Controller
             if ($sudahTerdaftar) {
                 return [
                     'error' => true,
+                    'status' => 409,
+                    'code' => 'TENANT_ALREADY_REGISTERED',
                     'message' => 'Penghuni sudah terdaftar pada kamar ini.',
                 ];
             }
 
-            $adaPenghuniAktif = Penghunian::where(
+            $jumlahAktif = Penghunian::where(
                 'id_kamar',
                 $data['id_kamar']
             )
                 ->where('status', 'aktif')
-                ->exists();
+                ->count();
+
+            if ($jumlahAktif >= 2) {
+                return [
+                    'error' => true,
+                    'status' => 422,
+                    'code' => 'ROOM_FULL',
+                    'message' => 'Kamar sudah penuh (kapasitas maksimal 2 penghuni).',
+                ];
+            }
+
+            $adaPenghuniAktif = $jumlahAktif > 0;
 
             $penghunian = Penghunian::create([
                 'id_kamar' => $data['id_kamar'],
@@ -226,9 +355,9 @@ class PenghunianController extends Controller
             return response()->json([
                 'message' => $hasil['message'],
                 'error' => [
-                    'code' => 'TENANT_ALREADY_REGISTERED',
+                    'code' => $hasil['code'] ?? 'TENANT_ALREADY_REGISTERED',
                 ],
-            ], 422);
+            ], $hasil['status'] ?? 409);
         }
 
         return response()->json([
@@ -312,17 +441,18 @@ class PenghunianController extends Controller
     {
         $validated = $request->validate([
             'id_kamar' => [
-            'required',
-            'integer',
-        ],
+                'required',
+                'integer',
+            ],
         ]);
 
         $hasil = DB::transaction(function () use ($id, $validated) {
-
             Kamar::where(
                 'id_kamar',
                 $validated['id_kamar']
-            )->lockForUpdate()->firstOrFail();
+            )
+                ->lockForUpdate()
+                ->firstOrFail();
 
             $target = Penghunian::where(
                 'id_penghunian',
@@ -371,188 +501,213 @@ class PenghunianController extends Controller
     }
 
     /**
-     * Endpoint lama pencatatan DP.
-     *
-     * Pencatatan diteruskan ke PembayaranController agar
-     * tidak ada dua mekanisme pencatatan DP yang berbeda.
+     * Endpoint pencatatan DP dialihkan ke PembayaranController.
      */
-    public function catatDp(Request $request,int $id)
+    public function catatDp(Request $request, int $id)
     {
-
         $request->merge([
             'id_penghunian' => $id,
             'jenis_pembayaran' => 'dp',
         ]);
 
-        $controller = app(PembayaranController::class);
-
-        return $controller->store($request);
+        return app(PembayaranController::class)->store($request);
     }
 
     /**
-     * Menghitung total sewa, DP minimum, dan tenggat.
+     * Menghitung total sewa, DP minimum, dan tenggat berdasarkan skema.
      */
     public function hitung(Request $request, int $id)
     {
-        $data = $request->validate([
+        $validated = $request->validate([
             'skema_sewa' => [
                 'required',
-                Rule::in(['bulanan', 'tahunan']),
+                Rule::in([
+                    'bulanan',
+                    'tahunan',
+                ]),
             ],
         ], [
-            'skema_sewa.required' =>
-                'Pilih skema sewa terlebih dahulu.',
-            'skema_sewa.in' =>
-                'Skema sewa harus bulanan atau tahunan.',
+            'skema_sewa.required' => 'Pilih skema sewa terlebih dahulu.',
+            'skema_sewa.in' => 'Skema sewa harus bulanan atau tahunan.',
         ]);
 
-        $penghunian = Penghunian::with('kamar')->find($id);
+        return DB::transaction(function () use ($validated, $id) {
+            $penghunian = Penghunian::with('kamar')
+                ->lockForUpdate()
+                ->find($id);
 
-        if (!$penghunian) {
-            return response()->json([
-                'message' => 'Data penghunian tidak ditemukan.',
-                'error' => [
-                    'code' => 'OCCUPANCY_NOT_FOUND',
-                ],
-            ], 404);
-        }
-
-        if ($penghunian->status !== 'aktif') {
-            return response()->json([
-                'message' => 'Skema sewa hanya dapat diatur untuk penghunian aktif.',
-                'error' => [
-                    'code' => 'OCCUPANCY_NOT_ACTIVE',
-                ],
-            ], 422);
-        }
-
-        if (!$penghunian->penyewa_utama) {
-            return response()->json([
-                'message' => 'Skema sewa harus diatur melalui penghunian penyewa utama.',
-                'error' => [
-                    'code' => 'NOT_PRIMARY_TENANT',
-                ],
-            ], 422);
-        }
-
-        $kamar = $penghunian->kamar;
-
-        if (!$kamar || !is_numeric($kamar->harga) || (float) $kamar->harga <= 0) {
-            return response()->json([
-                'message' => 'Harga sewa bulanan kamar belum diisi atau tidak valid.',
-                'error' => [
-                    'code' => 'INVALID_MONTHLY_RENT',
-                ],
-            ], 422);
-        }
-
-        /*
-         * Harga yang digunakan harus sesuai dengan skema yang dipilih.
-         * Bulanan menggunakan kamar.harga, tahunan menggunakan kamar.harga_tahunan.
-         */
-        if ($data['skema_sewa'] === 'bulanan') {
-
-            if (!is_numeric($kamar->harga) || (float) $kamar->harga <= 0) {
+            if (!$penghunian) {
                 return response()->json([
-                    'message' => 'Harga sewa bulanan kamar belum diisi atau tidak valid.',
+                    'message' => 'Data penghunian tidak ditemukan.',
                     'error' => [
-                        'code' => 'INVALID_MONTHLY_RENT',
+                        'code' => 'OCCUPANCY_NOT_FOUND',
+                    ],
+                ], 404);
+            }
+
+            if ($penghunian->status !== 'aktif') {
+                return response()->json([
+                    'message' => 'Skema sewa hanya dapat diatur untuk penghunian aktif.',
+                    'error' => [
+                        'code' => 'OCCUPANCY_NOT_ACTIVE',
                     ],
                 ], 422);
             }
 
-            $totalSewa = (float) $kamar->harga;
-            $dpMinimum = $totalSewa * 0.5;
+            $penghuniAktif = Penghunian::where(
+                'id_kamar',
+                $penghunian->id_kamar
+            )
+                ->where('status', 'aktif')
+                ->lockForUpdate()
+                ->get();
 
-        } else {
-
-            $hargaTahunan = $kamar->harga_tahunan;
-
-            if (
-                $hargaTahunan === null ||
-                !is_numeric($hargaTahunan) ||
-                (float) $hargaTahunan <= 0
-            ) {
-                return response()->json([
-                    'message' => 'Harga sewa tahunan kamar belum diisi.',
-                    'error' => [
-                        'code' => 'INVALID_ANNUAL_RENT',
-                    ],
-                ], 422);
-            }
-
-            $pengaturan = PengaturanSewa::first();
-
-            if (
-                !$pengaturan ||
-                $pengaturan->dp_minimum_tahunan === null ||
-                !is_numeric($pengaturan->dp_minimum_tahunan) ||
-                (float) $pengaturan->dp_minimum_tahunan <= 0
-            ) {
-                return response()->json([
-                    'message' => 'Pengaturan DP minimum tahunan belum tersedia atau tidak valid.',
-                    'error' => [
-                        'code' => 'INVALID_ANNUAL_DP_SETTING',
-                    ],
-                ], 422);
-            }
-
-            $totalSewa = (float) $hargaTahunan;
-            $dpMinimum = (float) $pengaturan->dp_minimum_tahunan;
-        }
-
-        /*
-         * Perhitungan tenggat.
-         *
-         * Bulanan: mengikuti tanggal masuk.
-         * Tahunan: dua bulan setelah tanggal masuk.
-         */
-        $tenggat = null;
-
-        if ($penghunian->tanggal_mulai) {
-
-            $tanggalMulai = Carbon::parse(
-                $penghunian->tanggal_mulai
+            $utama = $penghuniAktif->firstWhere(
+                'penyewa_utama',
+                true
             );
 
-            if ($data['skema_sewa'] === 'bulanan') {
+            if (
+                !$utama &&
+                $penghuniAktif->count() === 1
+            ) {
+                $utama = $penghuniAktif->first();
 
-                // Bulanan: jatuh tempo mengikuti tanggal masuk.
-                $tenggat = $tanggalMulai->toDateString();
-
-            } else {
-
-                // Tahunan: tiga bulan sejak tanggal masuk.
-                $tenggat = $tanggalMulai
-                    ->copy()
-                    ->addMonthsNoOverflow(3)
-                    ->toDateString();
+                $utama->update([
+                    'penyewa_utama' => true,
+                ]);
             }
-        }
 
-        /*
-         * Simpan hasil perhitungan.
-         */
-        $penghunian->update([
-            'skema_sewa' => $data['skema_sewa'],
-            'total_sewa' => $totalSewa,
-            'dp_minimum' => $dpMinimum,
-            'tenggat_pelunasan' => $tenggat,
-            'status_pembayaran' => 'belum_lunas',
-        ]);
+            if (
+                !$utama ||
+                (int) $utama->id_penghunian !==
+                (int) $penghunian->id_penghunian
+            ) {
+                return response()->json([
+                    'message' => 'Skema sewa harus diatur melalui penghunian penyewa utama.',
+                    'error' => [
+                        'code' => 'NOT_PRIMARY_TENANT',
+                    ],
+                ], 422);
+            }
 
-        $penghunian->refresh();
+            $sudahAdaPembayaran = Pembayaran::where(
+                'id_penghunian',
+                $penghunian->id_penghunian
+            )->exists();
 
-        return response()->json([
-            'message' => $tenggat
-                ? 'Perhitungan sewa dan tenggat berhasil disimpan.'
-                : 'Perhitungan sewa berhasil disimpan. Isi tanggal masuk untuk menentukan tenggat.',
-            'data' => $penghunian->load([
-                'kamar',
-                'penghuni',
-                'pembayaran',
-            ]),
-        ]);
+            if ($sudahAdaPembayaran) {
+                return response()->json([
+                    'message' => 'Skema sewa tidak dapat diubah setelah pembayaran dicatat.',
+                    'error' => [
+                        'code' => 'PAYMENT_ALREADY_EXISTS',
+                    ],
+                ], 422);
+            }
+
+            $kamar = $penghunian->kamar;
+
+            if (!$kamar) {
+                return response()->json([
+                    'message' => 'Data kamar tidak ditemukan.',
+                    'error' => [
+                        'code' => 'ROOM_NOT_FOUND',
+                    ],
+                ], 404);
+            }
+
+            if ($validated['skema_sewa'] === 'bulanan') {
+                if (
+                    !is_numeric($kamar->harga) ||
+                    (float) $kamar->harga <= 0
+                ) {
+                    return response()->json([
+                        'message' => 'Harga sewa bulanan kamar belum diisi atau tidak valid.',
+                        'error' => [
+                            'code' => 'INVALID_MONTHLY_RENT',
+                        ],
+                    ], 422);
+                }
+
+                $totalSewa = round(
+                    (float) $kamar->harga,
+                    2
+                );
+
+                $dpMinimum = round(
+                    $totalSewa * 0.5,
+                    2
+                );
+
+                $tenggat = $penghunian->tanggal_mulai
+                    ? Carbon::parse(
+                        $penghunian->tanggal_mulai
+                    )->toDateString()
+                    : null;
+            } else {
+                if (
+                    !is_numeric($kamar->harga_tahunan) ||
+                    (float) $kamar->harga_tahunan <= 0
+                ) {
+                    return response()->json([
+                        'message' => 'Harga sewa tahunan kamar belum diisi atau tidak valid.',
+                        'error' => [
+                            'code' => 'INVALID_ANNUAL_RENT',
+                        ],
+                    ], 422);
+                }
+
+                $pengaturan = PengaturanSewa::first();
+
+                if (
+                    !$pengaturan ||
+                    !is_numeric($pengaturan->dp_minimum_tahunan) ||
+                    (float) $pengaturan->dp_minimum_tahunan <= 0
+                ) {
+                    return response()->json([
+                        'message' => 'Pengaturan DP minimum tahunan belum tersedia atau tidak valid.',
+                        'error' => [
+                            'code' => 'INVALID_ANNUAL_DP_SETTING',
+                        ],
+                    ], 422);
+                }
+
+                $totalSewa = round(
+                    (float) $kamar->harga_tahunan,
+                    2
+                );
+
+                $dpMinimum = round(
+                    (float) $pengaturan->dp_minimum_tahunan,
+                    2
+                );
+
+                $tenggat = $penghunian->tanggal_mulai
+                    ? Carbon::parse(
+                        $penghunian->tanggal_mulai
+                    )
+                        ->addMonthsNoOverflow(2)
+                        ->toDateString()
+                    : null;
+            }
+
+            $penghunian->update([
+                'skema_sewa' => $validated['skema_sewa'],
+                'total_sewa' => $totalSewa,
+                'dp_minimum' => $dpMinimum,
+                'tenggat_pelunasan' => $tenggat,
+                'status_pembayaran' => 'belum_lunas',
+            ]);
+
+            return response()->json([
+                'message' => 'Perhitungan sewa, DP minimum, dan tenggat berhasil disimpan.',
+                'data' => $penghunian->fresh()->load([
+                    'kamar',
+                    'penghuni',
+                    'pembayaran',
+                ]),
+            ]);
+        });
     }
 
     /**
@@ -692,7 +847,6 @@ class PenghunianController extends Controller
     public function selesai(int $id)
     {
         $hasil = DB::transaction(function () use ($id) {
-
             $penghunian = Penghunian::find($id);
 
             if (!$penghunian) {
@@ -702,7 +856,9 @@ class PenghunianController extends Controller
             Kamar::where(
                 'id_kamar',
                 $penghunian->id_kamar
-            )->lockForUpdate()->first();
+            )
+                ->lockForUpdate()
+                ->first();
 
             $penghunian->update([
                 'status' => 'selesai',
@@ -718,21 +874,17 @@ class PenghunianController extends Controller
                 ->get();
 
             if ($penghuniAktif->isEmpty()) {
-
                 Kamar::where(
                     'id_kamar',
                     $penghunian->id_kamar
                 )->update([
                     'status' => 'kosong',
                 ]);
-
             } else {
-
                 $adaPenyewaUtama = $penghuniAktif
                     ->contains('penyewa_utama', true);
 
                 if (!$adaPenyewaUtama) {
-
                     $penghuniAktif->first()->update([
                         'penyewa_utama' => true,
                     ]);

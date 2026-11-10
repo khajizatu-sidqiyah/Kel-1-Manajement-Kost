@@ -1,0 +1,65 @@
+$kind: http-request
+name: "[ERR-422] PUT /api/penghunian/:id/tenggat — tenggat sebelum tanggal_mulai"
+url: "{{base_url}}/api/penghunian/{{penghunian_id}}/tenggat"
+method: PUT
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: |-
+    {
+      "tenggat_pelunasan": "2020-01-01"
+    }
+scripts:
+  - type: beforeRequest
+    code: |-
+      const BASE = pm.variables.replaceIn('{{base_url}}');
+      function api(method, path, body, cb) {
+        pm.sendRequest({
+          url: BASE + path, method: method,
+          header: { 'Accept': 'application/json', 'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + pm.collectionVariables.get('token') },
+          body: body ? { mode: 'raw', raw: JSON.stringify(body) } : undefined
+        }, (err, resp) => {
+          if (err) { console.error(method + ' ' + path, err); cb(null, null); return; }
+          let j = null; try { j = resp.json(); } catch (e) {}
+          cb(j, resp);
+        });
+      }
+      // Buat kamar + penghuni + penghunian baru (opsional langsung pilih skema). Hasil -> {{penghunian_baru_id}}
+      function newOccupancy(scheme, cb) {
+        const uniq = String(Date.now()).slice(-9);
+        api('POST', '/api/kamar', { no_kamar: 'T' + uniq, harga: 1000000, harga_tahunan: 10000000 }, (k) => {
+          if (!k || !k.data) { cb(null); return; }
+          api('POST', '/api/penghunian/dengan-penghuni', {
+            id_kamar: k.data.id_kamar, nama_penghuni: 'Penghuni Uji ' + uniq,
+            no_telepon: '0813' + uniq.slice(-7), alamat: 'Jl. Uji', tanggal_mulai: '2026-11-01'
+          }, (p) => {
+            if (!p || !p.data) { cb(null); return; }
+            const id = p.data.penghunian.id_penghunian;
+            pm.collectionVariables.set('penghunian_baru_id', id);
+            if (!scheme) { cb(id); return; }
+            api('POST', '/api/penghunian/' + id + '/hitung-dp', { skema_sewa: scheme }, () => cb(id));
+          });
+        });
+      }
+
+      api('POST', '/api/penghunian/' + pm.collectionVariables.get('penghunian_id') + '/hitung-dp', { skema_sewa: 'tahunan' }, (j, r) => {
+        pm.collectionVariables.set('tahunan_tersedia', String(!!r && r.code === 200));
+      });
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      let res = {};
+      try { res = pm.response.json(); } catch (e) { /* body bukan JSON */ }
+
+      pm.test('Status 422', () => pm.response.to.have.status(422));
+
+      pm.test('error.code sesuai kondisi skema sewa', () => {
+        const expected = pm.collectionVariables.get('tahunan_tersedia') === 'true' ? 'INVALID_DUE_DATE' : 'INVALID_RENT_SCHEME';
+        pm.expect(res.error.code).to.eql(expected);
+      });
+    language: text/javascript
+order: 23000

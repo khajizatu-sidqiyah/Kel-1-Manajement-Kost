@@ -1,0 +1,50 @@
+$kind: http-request
+url: "{{base_url}}/api/pembayaran"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: |-
+    {
+      "id_penghunian": "",
+      "jenis_pembayaran": "dp",
+      "tanggal_bayar": "2026-11-04",
+      "jumlah": 1,
+      "metode_pembayaran": "Cash"
+    }
+scripts:
+  - type: beforeRequest
+    code: |-
+      const BASE = pm.variables.replaceIn('{{base_url}}');
+      function api(method, path, body, cb) {
+        pm.sendRequest({url: BASE + path, method,
+          header: {'Accept':'application/json','Content-Type':'application/json','Authorization':'Bearer '+pm.collectionVariables.get('token')},
+          body: body ? {mode:'raw',raw:JSON.stringify(body)} : undefined
+        }, (err, resp) => { let j=null; try { j=resp.json(); } catch(e) {} cb(err ? null : j, resp); });
+      }
+      const uniq = String(Date.now()).slice(-8);
+      api('POST','/api/kamar',{no_kamar:'Q'+uniq,harga:1000000,harga_tahunan:10000000},(k,kr)=>{
+       if(!k || !k.data || !k.data.id_kamar){ console.error('Setup kamar gagal',kr && kr.code); return; }
+       api('POST','/api/penghunian/dengan-penghuni',{id_kamar:k.data.id_kamar,nama_penghuni:'QA 52A '+uniq,no_telepon:'0812'+uniq.slice(-8),alamat:'Jl. Uji',tanggal_mulai:'2026-11-04'},(h,hr)=>{
+        if(!h || !h.data || !h.data.penghunian){ console.error('Setup penghunian gagal',hr && hr.code); return; }
+        const id=h.data.penghunian.id_penghunian;
+        pm.collectionVariables.set('qa52_fixture_penghunian_id',id);
+        api('POST','/api/penghunian/'+id+'/hitung-dp',{skema_sewa:'bulanan'},(calc,cr)=>{
+         if(!calc || !calc.data || !calc.data.dp_minimum){ console.error('Hitung DP gagal',cr && cr.code); return; }
+         const min=Number(calc.data.dp_minimum);
+         const body=JSON.parse(pm.variables.replaceIn(pm.request.body.raw)); body.id_penghunian=id; body.jumlah=min; pm.request.body.update(JSON.stringify(body,null,2));
+        });
+       });
+      });
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      let res={}; try {res=pm.response.json();} catch(e) {}
+      pm.test('Status 201 — DP tunai tercatat',()=>pm.response.to.have.status(201));
+      pm.test('Jenis dan metode sesuai',()=>{pm.expect(res.data.pembayaran.jenis_pembayaran).to.eql('dp');pm.expect(res.data.pembayaran.metode_pembayaran).to.eql('Cash');});
+      pm.test('Status pembayaran belum lunas setelah DP',()=>pm.expect(res.data.status_pembayaran).to.eql('belum_lunas'));
+    language: text/javascript
+order: 21000

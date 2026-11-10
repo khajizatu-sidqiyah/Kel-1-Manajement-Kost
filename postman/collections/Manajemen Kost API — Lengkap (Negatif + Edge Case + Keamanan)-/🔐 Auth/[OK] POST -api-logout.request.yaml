@@ -1,0 +1,27 @@
+$kind: http-request
+name: "[OK] POST /api/logout"
+url: "{{base_url}}/api/logout"
+method: POST
+headers:
+  Accept: application/json
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      let res = {};
+      try { res = pm.response.json(); } catch (e) { /* body bukan JSON */ }
+
+      pm.test('Status 200', () => pm.response.to.have.status(200));
+      pm.test('Pesan logout berhasil', () => {
+        pm.expect(pm.response.json().message).to.include('berhasil');
+      });
+
+      pm.test('Token disimpan sebagai revoked lalu variable token dikosongkan', () => {
+        const old = pm.collectionVariables.get('token');
+        pm.collectionVariables.set('token_revoked', old);
+        pm.collectionVariables.set('token', '');   // request berikutnya akan auto-login (lihat pre-request collection)
+        pm.expect(pm.collectionVariables.get('token')).to.eql('');
+      });
+      pm.test('Respons logout tidak menyertakan token baru', () => pm.expect(res.data || {}).to.not.have.property('token'));
+    language: text/javascript
+order: 11000

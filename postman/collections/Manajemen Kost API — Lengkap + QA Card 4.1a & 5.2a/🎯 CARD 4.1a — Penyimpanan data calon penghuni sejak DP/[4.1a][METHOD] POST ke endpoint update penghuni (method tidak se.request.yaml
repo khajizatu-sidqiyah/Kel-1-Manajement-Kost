@@ -1,0 +1,26 @@
+$kind: http-request
+name: "[4.1a][METHOD] POST ke endpoint update penghuni (method tidak sesuai)"
+url: "{{base_url}}/api/penghuni/{{qa41a_penghuni_utama_id}}"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: |-
+    {
+      "no_telepon": "081234567890"
+    }
+scripts:
+  - type: afterResponse
+    code: >-
+      pm.test('Status 405 Method Not Allowed', () =>
+      pm.response.to.have.status(405));
+
+      pm.test('Respons tidak berupa 5xx', () =>
+      pm.expect(pm.response.code).to.be.below(500));
+    language: text/javascript
+examples: .resources/[4.1a][METHOD] POST ke endpoint update penghuni (method
+  tidak se.resources/examples
+order: 13000

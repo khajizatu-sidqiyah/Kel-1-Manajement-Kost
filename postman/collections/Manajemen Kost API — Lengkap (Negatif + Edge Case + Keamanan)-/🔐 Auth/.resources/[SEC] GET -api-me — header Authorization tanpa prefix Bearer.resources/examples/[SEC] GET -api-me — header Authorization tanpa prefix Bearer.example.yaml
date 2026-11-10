@@ -1,0 +1,32 @@
+$kind: http-example
+name: "[SEC] GET /api/me — header Authorization tanpa prefix Bearer"
+request:
+  url: "{{base_url}}/api/me"
+  method: GET
+  headers:
+    Accept: application/json
+    Authorization: "{{token}}"
+response:
+  statusCode: 401
+  statusText: Unauthorized
+  headers:
+    Host: localhost:8000
+    Connection: close
+    X-Powered-By: PHP/8.2.12
+    Cache-Control: no-cache, private
+    Date: Wed, 04 Nov 2026 10:09:24 GMT
+    Content-Type: application/json
+    Access-Control-Allow-Origin: "*"
+  body:
+    type: json
+    content: |-
+      {
+        "message": "Autentikasi diperlukan.",
+        "error": {
+          "code": 401,
+          "message": "Token tidak ada atau tidak valid.",
+          "status": "UNAUTHENTICATED",
+          "details": {}
+        }
+      }
+order: 1000

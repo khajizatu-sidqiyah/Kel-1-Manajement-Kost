@@ -1,0 +1,24 @@
+$kind: http-request
+name: "[OK] GET /api/penghunian/:id — detail penghunian"
+url: "{{base_url}}/api/penghunian/{{penghunian_id}}"
+method: GET
+headers:
+  Accept: application/json
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: >-
+      let res = {};
+
+      try { res = pm.response.json(); } catch (e) { /* body bukan JSON */ }
+
+
+      pm.test('Status 200', () => pm.response.to.have.status(200));
+
+
+      pm.test('Detail sesuai ID yang diminta (penghunian_id)', () => {
+        const d = (res.data && res.data.penghunian) || res.data;
+        pm.expect(String(d.id_penghunian)).to.eql(String(pm.collectionVariables.get('penghunian_id')));
+      });
+    language: text/javascript
+order: 9000

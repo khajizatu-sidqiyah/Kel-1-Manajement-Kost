@@ -1,0 +1,38 @@
+$kind: http-request
+name: '[4.1a-11][POSITIF][SMOKE] Penyewa utama baru tersimpan -> "Catat DP sekarang" dapat mencatat DP'
+url: "{{base_url}}/api/penghunian/{{s_rina}}/dp"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: json
+  content: |-
+    {
+      "tanggal_bayar": "2026-11-05",
+      "jumlah": 300000,
+      "metode_pembayaran": "transfer"
+    }
+scripts:
+  - type: beforeRequest
+    code: |-
+      const { api, uniq, setv, getv, seq, mkKamar, mkOcc, hitung, bayar, payId } = eval(pm.collectionVariables.get('lib'));
+      seq([
+        n => mkKamar({}, id => { setv('s_kamar', id); n(); }),
+        n => mkOcc(getv('s_kamar'), 'Rina', {tanggal_mulai:'2026-11-05'}, r => { r = r || {}; setv('s_rina', r.penghunian); setv('s_rina_penghuni', r.penghuni); n(); }),
+        n => hitung(getv('s_rina'), 'bulanan', () => n())
+      ]);
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));
+      swaggerCheck('POST /penghunian/{id}/dp');
+      pm.test('Status 201 - DP penyewa utama tercatat', () => pm.response.to.have.status(201));
+      pm.test('Pembayaran berjenis dp atas penghunian Rina', () => {
+        const p = PB(res.data);
+        pm.expect(p.jenis_pembayaran).to.eql('dp');
+        pm.expect(String(p.id_penghunian)).to.eql(String(getv('s_rina')));
+      });
+    language: text/javascript
+order: 11000

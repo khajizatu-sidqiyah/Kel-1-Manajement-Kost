@@ -1,0 +1,24 @@
+$kind: http-request
+name: "[ERR-404] DELETE /api/penghuni/:id — ID tidak ada"
+url: "{{base_url}}/api/penghuni/999999"
+method: DELETE
+headers:
+  Accept: application/json
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      let res = {};
+      try { res = pm.response.json(); } catch (e) { /* body bukan JSON */ }
+
+      pm.test('Status 404', () => pm.response.to.have.status(404));
+
+      pm.test('404 - error.status = NOT_FOUND', () => {
+        pm.expect(res).to.have.property('error');
+        pm.expect(res.error.status).to.eql('NOT_FOUND');
+      });
+      pm.test('404 - tidak ada data yang dikembalikan', () => {
+        pm.expect(res.data === undefined || res.data === null).to.be.true;
+      });
+    language: text/javascript
+order: 15000

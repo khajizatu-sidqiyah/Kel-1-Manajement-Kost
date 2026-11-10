@@ -1,0 +1,46 @@
+$kind: http-request
+name: "[OK] POST /api/penghunian/dengan-penghuni — buat penghuni + penghunian sekaligus"
+url: "{{base_url}}/api/penghunian/dengan-penghuni"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: |-
+    {
+      "id_kamar": {{kamar_id}},
+      "nama_penghuni": "Ahmad Fauzi",
+      "no_telepon": "08567890123",
+      "alamat": "Jl. Sudirman No. 5",
+      "tanggal_mulai": "2026-11-01"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      let res = {};
+      try { res = pm.response.json(); } catch (e) { /* body bukan JSON */ }
+
+      pm.test('Status 201', () => pm.response.to.have.status(201));
+      pm.test('Memiliki penghuni dan penghunian', () => {
+        const data = pm.response.json().data;
+        pm.expect(data).to.have.property('penghuni');
+        pm.expect(data).to.have.property('penghunian');
+        pm.collectionVariables.set('penghunian_id', data.penghunian.id_penghunian);
+      });
+
+      pm.test('Envelope sukses: message (string) & data ada', () => {
+        pm.expect(res).to.have.property('message');
+        pm.expect(res.message).to.be.a('string');
+        pm.expect(res).to.have.property('data');
+      });
+      pm.test('Penghuni & penghunian terbentuk sekaligus dan saling terhubung', () => {
+        const p = res.data.penghuni, h = res.data.penghunian;
+        pm.expect(p.nama_penghuni).to.eql('Ahmad Fauzi');
+        pm.expect(p.no_telepon).to.eql('08567890123');
+        pm.expect(String(h.id_penghuni)).to.eql(String(p.id_penghuni));
+        pm.expect(String(h.id_kamar)).to.eql(String(pm.collectionVariables.get('kamar_id')));
+      });
+    language: text/javascript
+order: 7000

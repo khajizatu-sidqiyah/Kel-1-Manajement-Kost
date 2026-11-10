@@ -1,0 +1,36 @@
+$kind: http-request
+name: "[4.1a-33][NEGATIF][REGRESSION] Jadikan penyewa utama dengan kamar yang tidak cocok -> 404"
+url: "{{base_url}}/api/penghunian/{{s_sari}}/penyewa-utama"
+method: PUT
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: json
+  content: |-
+    {
+      "id_kamar": {{s_kamar2}},
+      "id_penghunian": {{s_sari}}
+    }
+scripts:
+  - type: beforeRequest
+    code: |-
+      const { api, uniq, setv, getv, seq, mkKamar, mkOcc, hitung, bayar, payId } = eval(pm.collectionVariables.get('lib'));
+      seq([
+        n => mkKamar({}, id => { setv('s_kamar', id); n(); }),
+        n => mkKamar({}, id => { setv('s_kamar2', id); n(); }),
+        n => mkOcc(getv('s_kamar'), 'Rina', {}, r => { r = r || {}; setv('s_rina', r.penghunian); setv('s_rina_penghuni', r.penghuni); n(); }),
+        n => mkOcc(getv('s_kamar'), 'Sari', {}, r => { r = r || {}; setv('s_sari', r.penghunian); setv('s_sari_penghuni', r.penghuni); n(); })
+      ]);
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));
+      swaggerCheck('PUT /penghunian/{id}/penyewa-utama');
+      pm.test('Status 404 - penghunian bukan milik kamar tsb', () => pm.response.to.have.status(404));
+      apiGet('/api/penghunian/' + getv('s_rina'), (err, j) => {
+        pm.test('Penyewa utama kamar semula tidak berubah (Rina tetap utama)', () => pm.expect(H(j.data).penyewa_utama).to.be.oneOf([true, 1]));
+      });
+    language: text/javascript
+order: 33000

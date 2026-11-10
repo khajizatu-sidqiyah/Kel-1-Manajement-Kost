@@ -22,19 +22,19 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (\Illuminate\Validation\ValidationException $e, \Illuminate\Http\Request $request) {
             if (!$request->is('api/*')) return null;
             return response()->json(['message' => 'Parameter permintaan tidak valid.', 'error' => [
-                'code' => 422, 'message' => 'Validasi gagal.', 'status' => 'INVALID_ARGUMENT', 'details' => $e->errors(),
+                'code' => 422, 'message' => 'Validasi gagal.', 'status' => 'VALIDATION_ERROR', 'details' => $e->errors(),
             ]], 422);
         });
         $exceptions->render(function (\Illuminate\Auth\AuthenticationException $e, \Illuminate\Http\Request $request) {
             if (!$request->is('api/*')) return null;
             return response()->json(['message' => 'Autentikasi diperlukan.', 'error' => [
-                'code' => 401, 'message' => 'Token tidak ada atau tidak valid.', 'status' => 'UNAUTHENTICATED', 'details' => (object) [],
+                'code' => 401, 'message' => 'Token tidak ada atau tidak valid.', 'status' => 'UNAUTHORIZED', 'details' => (object) [],
             ]], 401);
         });
         $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e, \Illuminate\Http\Request $request) {
             if (!$request->is('api/*')) return null;
             $status = $e->getStatusCode();
-            $name = match ($status) { 403 => 'PERMISSION_DENIED', 404 => 'NOT_FOUND', default => $status >= 500 ? 'INTERNAL' : 'ERROR' };
+            $name = match ($status) { 403 => 'FORBIDDEN', 404 => 'NOT_FOUND', 409 => 'CONFLICT', default => $status >= 500 ? 'INTERNAL_SERVER_ERROR' : 'ERROR' };
             $message = $status === 403 ? 'Akses ditolak.' : ($status === 404 ? 'Endpoint atau data tidak ditemukan.' : ($e->getMessage() ?: 'Permintaan gagal.'));
             return response()->json(['message' => $message, 'error' => [
                 'code' => $status, 'message' => $message, 'status' => $name, 'details' => (object) [],

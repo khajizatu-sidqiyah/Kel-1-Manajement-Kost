@@ -1,0 +1,17 @@
+$kind: collection
+description: |-
+  PRECONDITION: Jalankan setelah login sebagai pemilik. Beberapa request menggunakan penghunian_id / penghunian_baru_id yang dibuat oleh folder pembayaran umum pada collection sumber. Tiga request positif tambahan membuat kamar dan penghunian uji sendiri secara otomatis. Jalankan request yang mengubah status pembayaran pada data uji, bukan data produksi.
+
+  Checklist UI/manual untuk acceptance criteria yang tidak seluruhnya dapat diverifikasi melalui API:
+  1. Memilih skema bulanan/tahunan pada form DP menampilkan DP minimum, tenggat, dan pilihan jenis pembayaran yang sesuai.
+  2. Skema belum dipilih: tombol Simpan meminta pemilik memilih skema dan tidak menyimpan DP.
+  3. DP di bawah minimum menampilkan peringatan “DP di bawah minimum”; pemilik dapat memilih melanjutkan atau mengubah nominal. (Collection API sumber saat ini memiliki skenario 422 DP_BELOW_MINIMUM; verifikasi apakah UI memiliki konfirmasi lanjut yang sesuai AC.)
+  4. DP yang sudah ada membuat opsi DP tidak tersedia pada form berikutnya.
+  5. Untuk sewa tahunan, cicilan tersedia; untuk bulanan, cicilan tidak tersedia.
+  6. Pembayaran tercatat atas nama penyewa utama. Jika kamar hanya dihuni satu orang, tidak ada langkah memilih penyewa utama.
+  7. Kamar tanpa penyewa utama: form pembayaran tidak terbuka dan pesan yang jelas tampil.
+  8. Tenggat awal tampil pada form DP, dapat diedit, dan nilai hasil edit tersimpan.
+  9. Pembayaran terakhir yang membuat total terbayar sama dengan total sewa mengubah status menjadi lunas.
+  10. Uji koneksi terputus, progress/loading, klik Simpan berulang, dan pesan error.
+  11. Uji tampilan lebar 360px dan 1024px (DoD).
+order: 8000

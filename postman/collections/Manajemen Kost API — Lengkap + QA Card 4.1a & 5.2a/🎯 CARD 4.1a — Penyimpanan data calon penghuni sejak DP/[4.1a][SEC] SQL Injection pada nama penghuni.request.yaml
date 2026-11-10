@@ -1,0 +1,31 @@
+$kind: http-request
+url: "{{base_url}}/api/penghunian/dengan-penghuni"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: |-
+    {
+      "id_kamar": "{{kamar_id}}",
+      "nama_penghuni": "Rina' OR '1'='1'; DROP TABLE penghuni; --",
+      "no_telepon": "081234567890"
+    }
+scripts:
+  - type: afterResponse
+    code: >-
+      pm.test('Server tidak mengalami 5xx', () =>
+      pm.expect(pm.response.code).to.be.below(500));
+
+      pm.test('Payload ditolak atau disimpan sebagai teks biasa', () =>
+      pm.expect([201,422]).to.include(pm.response.code));
+
+      pm.test('Tidak ada kebocoran SQL/stack trace', () => { const
+      b=pm.response.text().toLowerCase();
+      pm.expect(b).to.not.include('sqlstate');
+      pm.expect(b).to.not.include('stack trace'); });
+    language: text/javascript
+examples: .resources/[4.1a][SEC] SQL Injection pada nama penghuni.resources/examples
+order: 11000
