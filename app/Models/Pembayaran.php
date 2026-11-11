@@ -2,15 +2,11 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
-use App\Models\Penghunian;
 
 class Pembayaran extends Model
 {
-    use HasFactory;
-
     protected $table = 'pembayaran';
 
     protected $primaryKey = 'id_pembayaran';
@@ -25,15 +21,14 @@ class Pembayaran extends Model
         'status',
     ];
 
-    protected $casts = [
-        'tanggal_bayar' => 'date',
-        'jumlah' => 'decimal:2',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'tanggal_bayar' => 'date',
+            'jumlah' => 'decimal:2',
+        ];
+    }
 
-    /**
-     * Relasi ke data penghunian.
-     * Satu pembayaran dimiliki oleh satu data penghunian.
-     */
     public function penghunian()
     {
         return $this->belongsTo(
@@ -43,19 +38,21 @@ class Pembayaran extends Model
         );
     }
 
-    /**
-     * Scope untuk mengambil pembayaran yang sudah terverifikasi.
-     */
-    public function scopeTerverifikasi(Builder $query): Builder
-    {
-        return $query->where('status', 'terverifikasi');
+    public function scopeTerverifikasi(
+        Builder $query
+    ): Builder {
+        return $query->where(
+            'status',
+            'terverifikasi'
+        );
     }
 
-    /**
-     * Scope untuk mengambil pembayaran yang masih menunggu verifikasi.
-     */
-    public function scopeMenungguVerifikasi(Builder $query): Builder
-    {
-        return $query->where('status', 'menunggu_verifikasi');
+    public function scopeMenungguVerifikasi(
+        Builder $query
+    ): Builder {
+        return $query->where(
+            'status',
+            'menunggu_verifikasi'
+        );
     }
 }

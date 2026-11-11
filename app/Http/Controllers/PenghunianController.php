@@ -591,9 +591,16 @@ class PenghunianController extends Controller
                 ], 422);
             }
 
-            $sudahAdaPembayaran = Pembayaran::where(
+            $idPenghunianAktif = Penghunian::where(
+                'id_kamar',
+                $penghunian->id_kamar
+            )
+                ->where('status', 'aktif')
+                ->pluck('id_penghunian');
+
+            $sudahAdaPembayaran = Pembayaran::whereIn(
                 'id_penghunian',
-                $penghunian->id_penghunian
+                $idPenghunianAktif
             )->exists();
 
             if ($sudahAdaPembayaran) {

@@ -5,6 +5,10 @@ method: GET
 headers:
   Accept: application/json
   Authorization: Bearer {{token}}
+auth:
+  type: bearer
+  credentials:
+    token: 12|gRhfGJcUBVH3xYuPqAcSbUlmfu04RtCpf4QKAVSNbf216181
 scripts:
   - type: afterResponse
     code: |-
