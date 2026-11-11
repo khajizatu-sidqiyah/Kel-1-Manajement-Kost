@@ -2,13 +2,11 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Pembayaran;
 
 class Penghunian extends Model
 {
-    use HasFactory;
-
     protected $table = 'penghunian';
 
     protected $primaryKey = 'id_penghunian';
@@ -31,33 +29,39 @@ class Penghunian extends Model
         'kamar_sudah_ada_dp',
     ];
 
-    public function getKamarSudahAdaDpAttribute(): bool
-    {
-        return \App\Models\Pembayaran::whereIn('id_penghunian', function($q) {
-            $q->select('id_penghunian')->from('penghunian')->where('id_kamar', $this->id_kamar);
-        })->where('jenis_pembayaran', 'dp')->exists();
-    }
-
-    /**
-     * Konversi tipe data otomatis.
-     */
     protected function casts(): array
     {
         return [
             'tanggal_mulai' => 'date',
             'tanggal_selesai' => 'date',
             'tenggat_pelunasan' => 'date',
-
             'penyewa_utama' => 'boolean',
-
             'total_sewa' => 'float',
             'dp_minimum' => 'float',
         ];
     }
 
     /**
-     * Relasi ke tabel kamar.
+     * Mengecek apakah masa sewa aktif pada kamar
+     * sudah memiliki pembayaran DP.
      */
+    public function getKamarSudahAdaDpAttribute(): bool
+    {
+        $idPenghunianAktif = self::where(
+            'id_kamar',
+            $this->id_kamar
+        )
+            ->where('status', 'aktif')
+            ->pluck('id_penghunian');
+
+        return Pembayaran::whereIn(
+            'id_penghunian',
+            $idPenghunianAktif
+        )
+            ->where('jenis_pembayaran', 'dp')
+            ->exists();
+    }
+
     public function kamar()
     {
         return $this->belongsTo(
@@ -67,9 +71,6 @@ class Penghunian extends Model
         );
     }
 
-    /**
-     * Relasi ke tabel penghuni.
-     */
     public function penghuni()
     {
         return $this->belongsTo(
@@ -79,9 +80,6 @@ class Penghunian extends Model
         );
     }
 
-    /**
-     * Relasi ke tabel pembayaran.
-     */
     public function pembayaran()
     {
         return $this->hasMany(
@@ -91,9 +89,6 @@ class Penghunian extends Model
         );
     }
 
-    /**
-     * Relasi untuk mengambil pembayaran yang sudah terverifikasi.
-     */
     public function pembayaranTerverifikasi()
     {
         return $this->hasMany(
@@ -103,18 +98,12 @@ class Penghunian extends Model
         )->where('status', 'terverifikasi');
     }
 
-    /**
-     * Menghitung total pembayaran yang sudah terverifikasi.
-     */
     public function getTotalTerbayarAttribute()
     {
         return (float) $this->pembayaranTerverifikasi()
             ->sum('jumlah');
     }
 
-    /**
-     * Menghitung sisa tagihan.
-     */
     public function getSisaTagihanAttribute()
     {
         $totalSewa = (float) ($this->total_sewa ?? 0);

@@ -8,12 +8,13 @@ use App\Models\Penghunian;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Carbon\Carbon;
 
 class PembayaranController extends Controller
 {
     /**
-     * Menampilkan data pembayaran dengan filter,
-     * pencarian, pagination, dan tampilkan semua.
+     * Menampilkan seluruh pembayaran dengan filter,
+     * search, dan pagination.
      */
     public function index(Request $request)
     {
@@ -22,79 +23,47 @@ class PembayaranController extends Controller
             'penghunian.penghuni',
         ]);
 
-        // FILTER JENIS PEMBAYARAN
-        $jenis = $request->input('jenis_pembayaran', []);
-
-        if (!is_array($jenis)) {
-            $jenis = [$jenis];
+        if ($request->filled('jenis_pembayaran')) {
+            $query->where(
+                'jenis_pembayaran',
+                $request->jenis_pembayaran
+            );
         }
 
-        $jenis = array_values(array_filter(
-            $jenis,
-            fn ($value) => $value !== null && $value !== ''
-        ));
-
-        if (!empty($jenis)) {
-            $query->whereIn('jenis_pembayaran', $jenis);
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
         }
 
-        // FILTER STATUS PEMBAYARAN
-        $status = $request->input('status', []);
-
-        if (!is_array($status)) {
-            $status = [$status];
+        if ($request->filled('metode_pembayaran')) {
+            $query->where(
+                'metode_pembayaran',
+                $request->metode_pembayaran
+            );
         }
 
-        $status = array_values(array_filter(
-            $status,
-            fn ($value) => $value !== null && $value !== ''
-        ));
-
-        if (!empty($status)) {
-            $query->whereIn('status', $status);
-        }
-
-        // FILTER METODE PEMBAYARAN
-        $metode = $request->input('metode_pembayaran', []);
-
-        if (!is_array($metode)) {
-            $metode = [$metode];
-        }
-
-        $metode = array_values(array_filter(
-            $metode,
-            fn ($value) => $value !== null && $value !== ''
-        ));
-
-        if (!empty($metode)) {
-            $query->whereIn('metode_pembayaran', $metode);
-        }
-
-        // PENCARIAN NAMA PENGHUNI
-        $keyword = trim((string) $request->input(
+        $search = $request->input(
             'q',
-            $request->input('search', '')
-        ));
+            $request->input('search')
+        );
 
-        if ($keyword !== '') {
+        if ($search) {
             $query->whereHas(
                 'penghunian.penghuni',
-                function ($q) use ($keyword) {
+                function ($q) use ($search) {
                     $q->where(
                         'nama_penghuni',
                         'like',
-                        '%' . addcslashes($keyword, '%_\\') . '%'
+                        "%{$search}%"
                     );
                 }
             );
         }
 
-        // FILTER RENTANG TANGGAL
         if ($request->filled('tanggal_mulai')) {
             $query->whereDate(
                 'tanggal_bayar',
                 '>=',
-                $request->input('tanggal_mulai')
+                $request->tanggal_mulai
             );
         }
 
@@ -102,62 +71,40 @@ class PembayaranController extends Controller
             $query->whereDate(
                 'tanggal_bayar',
                 '<=',
-                $request->input('tanggal_selesai')
+                $request->tanggal_selesai
             );
         }
 
-        // URUTKAN PEMBAYARAN TERBARU
-        $baseQuery = $query->orderByDesc('tanggal_bayar');
+        $query->orderByDesc('tanggal_bayar')
+            ->orderByDesc('created_at');
 
-        $total = (clone $baseQuery)->count();
+        $tampilkanSemua =
+            $request->input('tampilkan_semua') == 1 ||
+            $request->input('per_page') === 'all';
 
-        // TAMPILKAN SEMUA
-        $showAll = $request->boolean('tampilkan_semua')
-            || strtolower((string) $request->input('per_page')) === 'all';
-
-        if ($showAll) {
-            $rows = $baseQuery->get();
-
-            $pagination = [
-                'total' => $total,
-                'per_page' => 'all',
-                'current_page' => 1,
-                'last_page' => 1,
-                'from' => $total > 0 ? 1 : null,
-                'to' => $total > 0 ? $total : null,
-                'show_all' => true,
-            ];
-        } else {
-            // DEFAULT 10 DATA PER HALAMAN
-            $perPage = (int) $request->input('per_page', 10);
-            $perPage = max(1, min($perPage, 100));
-
-            $page = max(1, (int) $request->input('page', 1));
-
-            $paginator = $baseQuery->paginate(
-                $perPage,
-                ['*'],
-                'page',
-                $page
-            );
-
-            $rows = $paginator->items();
-
-            $pagination = [
-                'total' => $paginator->total(),
-                'per_page' => $paginator->perPage(),
-                'current_page' => $paginator->currentPage(),
-                'last_page' => $paginator->lastPage(),
-                'from' => $paginator->firstItem(),
-                'to' => $paginator->lastItem(),
-                'show_all' => false,
-            ];
+        if ($tampilkanSemua) {
+            return response()->json([
+                'message' => 'Data pembayaran berhasil ditampilkan.',
+                'data' => $query->get(),
+                'pagination' => null,
+            ]);
         }
+
+        $perPage = (int) $request->input('per_page', 10);
+        $perPage = max(1, min($perPage, 100));
+
+        $data = $query->paginate($perPage)
+            ->appends($request->query());
 
         return response()->json([
-            'message' => 'Data pembayaran berhasil diambil.',
-            'data' => $rows,
-            'pagination' => $pagination,
+            'message' => 'Data pembayaran berhasil ditampilkan.',
+            'data' => $data->items(),
+            'pagination' => [
+                'current_page' => $data->currentPage(),
+                'per_page' => $data->perPage(),
+                'total' => $data->total(),
+                'last_page' => $data->lastPage(),
+            ],
         ]);
     }
 
@@ -181,7 +128,7 @@ class PembayaranController extends Controller
         }
 
         return response()->json([
-            'message' => 'Detail pembayaran berhasil diambil.',
+            'message' => 'Detail pembayaran berhasil ditampilkan.',
             'data' => $pembayaran,
         ]);
     }
@@ -197,107 +144,169 @@ class PembayaranController extends Controller
                 'integer',
                 'exists:penghunian,id_penghunian',
             ],
+
             'jenis_pembayaran' => [
                 'required',
-                Rule::in(['dp', 'cicilan', 'pelunasan']),
+                Rule::in([
+                    'dp',
+                    'cicilan',
+                    'pelunasan',
+                ]),
             ],
+
             'tanggal_bayar' => [
                 'required',
                 'date',
             ],
+
             'jumlah' => [
                 'required',
                 'numeric',
                 'gt:0',
             ],
+
             'metode_pembayaran' => [
                 'required',
                 'string',
                 'max:30',
             ],
+
             'bukti_pembayaran' => [
                 'nullable',
                 'string',
                 'max:255',
             ],
-            'konfirmasi_dp' => [
-                'sometimes',
-                'boolean',
-            ],
+
             'tenggat_pelunasan' => [
                 'sometimes',
                 'nullable',
                 'date',
             ],
-        ], [
-            'jenis_pembayaran.in' =>
-                'Jenis pembayaran hanya dp, cicilan, atau pelunasan.',
-            'jumlah.gt' =>
-                'Jumlah pembayaran harus lebih besar dari nol.',
         ]);
 
-        return DB::transaction(function () use ($validated) {
+        $hasil = DB::transaction(function () use ($validated) {
 
+            /*
+             * Ambil penghunian yang dikirim.
+             */
             $penghunianInput = Penghunian::find(
                 $validated['id_penghunian']
             );
 
-            if (
-                !$penghunianInput ||
-                $penghunianInput->status !== 'aktif'
-            ) {
-                return response()->json([
-                    'message' =>
-                        'Pembayaran hanya dapat dicatat untuk penghunian aktif.',
-                    'error' => [
-                        'code' => 'OCCUPANCY_NOT_ACTIVE',
+            if (!$penghunianInput) {
+                return [
+                    'status' => 404,
+                    'body' => [
+                        'message' => 'Data penghunian tidak ditemukan.',
+                        'error' => [
+                            'code' => 'OCCUPANCY_NOT_FOUND',
+                        ],
                     ],
-                ], 422);
+                ];
             }
 
-            // Kunci kamar untuk mencegah transaksi bersamaan.
-            Kamar::where(
+            /*
+             * Kunci data kamar agar transaksi pembayaran
+             * tidak berjalan bersamaan tanpa kontrol.
+             */
+            $kamar = Kamar::where(
                 'id_kamar',
                 $penghunianInput->id_kamar
-            )->lockForUpdate()->first();
+            )
+                ->lockForUpdate()
+                ->first();
 
-            // Ambil penghuni aktif pada kamar tersebut.
-            $penghunianAktif = Penghunian::where(
+            if (!$kamar) {
+                return [
+                    'status' => 404,
+                    'body' => [
+                        'message' => 'Data kamar tidak ditemukan.',
+                        'error' => [
+                            'code' => 'ROOM_NOT_FOUND',
+                        ],
+                    ],
+                ];
+            }
+
+            /*
+             * Ambil semua penghuni aktif dalam kamar.
+             */
+            $penghuniAktif = Penghunian::where(
                 'id_kamar',
-                $penghunianInput->id_kamar
+                $kamar->id_kamar
             )
                 ->where('status', 'aktif')
                 ->lockForUpdate()
                 ->get();
 
-            // Tentukan penyewa utama.
-            $penghunian = $penghunianAktif->firstWhere(
+            $penghunianInputAktif = $penghuniAktif->firstWhere(
+                'id_penghunian',
+                $penghunianInput->id_penghunian
+            );
+
+            if (!$penghunianInputAktif) {
+                return [
+                    'status' => 422,
+                    'body' => [
+                        'message' => 'Pembayaran hanya dapat dicatat untuk penghunian aktif.',
+                        'error' => [
+                            'code' => 'OCCUPANCY_NOT_ACTIVE',
+                        ],
+                    ],
+                ];
+            }
+
+            /*
+             * Cari penyewa utama.
+             */
+            $daftarUtama = $penghuniAktif->where(
                 'penyewa_utama',
                 true
             );
 
-            // Jika hanya ada satu penghuni aktif,
-            // otomatis jadikan penyewa utama.
-            if (
-                !$penghunian &&
-                $penghunianAktif->count() === 1
-            ) {
-                $penghunian = $penghunianAktif->first();
+            if ($daftarUtama->count() > 1) {
+                return [
+                    'status' => 422,
+                    'body' => [
+                        'message' => 'Terdapat lebih dari satu penyewa utama pada kamar ini.',
+                        'error' => [
+                            'code' => 'MULTIPLE_PRIMARY_TENANTS',
+                        ],
+                    ],
+                ];
+            }
 
-                $penghunian->update([
+            $utama = $daftarUtama->first();
+
+            /*
+             * Jika hanya ada satu penghuni aktif,
+             * otomatis jadikan penyewa utama.
+             */
+            if (!$utama && $penghuniAktif->count() === 1) {
+                $utama = $penghuniAktif->first();
+
+                $utama->update([
                     'penyewa_utama' => true,
                 ]);
             }
 
-            if (!$penghunian) {
-                return response()->json([
-                    'message' =>
-                        'Penyewa utama kamar belum ditentukan.',
-                    'error' => [
-                        'code' => 'PRIMARY_TENANT_NOT_FOUND',
+            if (!$utama) {
+                return [
+                    'status' => 422,
+                    'body' => [
+                        'message' => 'Penyewa utama belum ditentukan.',
+                        'error' => [
+                            'code' => 'PRIMARY_TENANT_NOT_FOUND',
+                        ],
                     ],
-                ], 422);
+                ];
             }
+
+            /*
+             * Semua pembayaran kamar ini dicatat
+             * melalui penghunian penyewa utama.
+             */
+            $penghunian = $utama->fresh();
 
             $jenis = $validated['jenis_pembayaran'];
             $jumlah = round((float) $validated['jumlah'], 2);
@@ -313,191 +322,187 @@ class PembayaranController extends Controller
                 !in_array($skema, ['bulanan', 'tahunan'], true) ||
                 $totalSewa <= 0
             ) {
-                return response()->json([
-                    'message' =>
-                        'Pilih dan hitung skema sewa terlebih dahulu sebelum mencatat DP.',
-                    'error' => [
-                        'code' => 'RENT_SCHEME_NOT_SET',
+                return [
+                    'status' => 422,
+                    'body' => [
+                        'message' => 'Pilih dan simpan skema sewa terlebih dahulu.',
+                        'error' => [
+                            'code' => 'RENT_SCHEME_NOT_SET',
+                        ],
                     ],
-                ], 422);
+                ];
             }
 
-            // Cicilan hanya tersedia untuk sewa tahunan.
+            /*
+             * Validasi jenis pembayaran sesuai skema.
+             *
+             * Bulanan:
+             * - DP
+             * - Pelunasan
+             *
+             * Tahunan:
+             * - DP
+             * - Cicilan
+             * - Pelunasan
+             */
             if (
                 $skema === 'bulanan' &&
                 $jenis === 'cicilan'
             ) {
-                return response()->json([
-                    'message' =>
-                        'Jenis pembayaran cicilan hanya tersedia untuk skema tahunan.',
-                    'error' => [
-                        'code' => 'INSTALLMENT_NOT_ALLOWED',
+                return [
+                    'status' => 422,
+                    'body' => [
+                        'message' => 'Cicilan hanya diperbolehkan untuk skema sewa tahunan.',
+                        'error' => [
+                            'code' => 'INSTALLMENT_NOT_ALLOWED',
+                        ],
                     ],
-                ], 422);
+                ];
             }
 
-            // VALIDASI DP
-            if ($jenis === 'dp') {
+            /*
+             * Siapkan variabel tenggat.
+             * Tenggat baru tidak langsung disimpan sebelum
+             * seluruh validasi pembayaran berhasil.
+             */
+            $tenggatBaru = null;
 
-                $sudahAdaDp = Pembayaran::where(
+            /*
+             * Ambil ID seluruh penghunian aktif
+             * untuk pengecekan DP satu kali per masa sewa.
+             */
+            $idPenghunianAktif = $penghuniAktif
+                ->pluck('id_penghunian')
+                ->all();
+
+            /*
+             * DP hanya boleh dicatat satu kali.
+             */
+            if ($jenis === 'dp') {
+                $sudahAdaDp = Pembayaran::whereIn(
                     'id_penghunian',
-                    $penghunian->id_penghunian
+                    $idPenghunianAktif
                 )
                     ->where('jenis_pembayaran', 'dp')
                     ->exists();
 
                 if ($sudahAdaDp) {
-                    return response()->json([
-                        'message' =>
-                            'DP untuk kamar ini sudah pernah dicatat.',
-                        'error' => [
-                            'code' => 'DP_ALREADY_EXISTS',
+                    return [
+                        'status' => 422,
+                        'body' => [
+                            'message' => 'DP untuk masa sewa ini sudah pernah dicatat.',
+                            'error' => [
+                                'code' => 'DP_ALREADY_EXISTS',
+                            ],
                         ],
-                    ], 422);
+                    ];
                 }
 
+                /*
+                 * DP tidak boleh melebihi total sewa.
+                 */
+                if ($jumlah > $totalSewa) {
+                    return [
+                        'status' => 422,
+                        'body' => [
+                            'message' => 'Jumlah DP tidak boleh melebihi total sewa.',
+                            'error' => [
+                                'code' => 'DP_EXCEEDS_RENT',
+                            ],
+                        ],
+                    ];
+                }
+
+                /*
+                 * Ambil batas minimum DP.
+                 */
                 $dpMinimum = round(
                     (float) ($penghunian->dp_minimum ?? 0),
                     2
                 );
 
                 if ($dpMinimum <= 0) {
-                    return response()->json([
-                        'message' =>
-                            'DP minimum belum dihitung. Hitung skema sewa terlebih dahulu.',
-                        'error' => [
-                            'code' => 'DP_MINIMUM_NOT_SET',
+                    return [
+                        'status' => 422,
+                        'body' => [
+                            'message' => 'DP minimum belum tersedia. Atur skema sewa terlebih dahulu.',
+                            'error' => [
+                                'code' => 'DP_MINIMUM_NOT_SET',
+                            ],
                         ],
-                    ], 422);
+                    ];
                 }
 
-                if ($jumlah > $totalSewa) {
-                    return response()->json([
-                        'message' =>
-                            'Jumlah DP tidak boleh melebihi total sewa.',
-                        'error' => [
-                            'code' => 'DP_EXCEEDS_RENT',
-                            'sisa_tagihan' => $totalSewa,
-                        ],
-                    ], 422);
-                }
-
-                // DP di bawah minimum memerlukan konfirmasi.
-                if (
-                    $jumlah < $dpMinimum &&
-                    !($validated['konfirmasi_dp'] ?? false)
-                ) {
-                    $formatMinimum = 'Rp' .
-                        number_format($dpMinimum, 0, ',', '.');
-
-                    return response()->json([
-                        'message' =>
-                            'DP di bawah minimum ' . $formatMinimum . '.',
-                        'data' => [
-                            'peringatan' =>
-                                'DP di bawah minimum ' . $formatMinimum . '.',
-                            'konfirmasi_diperlukan' => true,
+                /*
+                 * DP di bawah minimum langsung ditolak.
+                 */
+                if ($jumlah < $dpMinimum) {
+                    return [
+                        'status' => 422,
+                        'body' => [
+                            'message' => 'Jumlah DP tidak boleh kurang dari DP minimum.',
+                            'error' => [
+                                'code' => 'DP_BELOW_MINIMUM',
+                            ],
                             'dp_minimum' => $dpMinimum,
                             'jumlah_dp' => $jumlah,
                         ],
-                    ], 200);
+                    ];
                 }
 
-                // Simpan tenggat jika pemilik mengirim perubahan.
+                /*
+                 * Pengubahan tenggat melalui pencatatan DP
+                 * hanya diperbolehkan untuk skema tahunan.
+                 */
                 if (
-                    array_key_exists('tenggat_pelunasan', $validated) &&
-                    $validated['tenggat_pelunasan'] !== null
+                    !empty($validated['tenggat_pelunasan']) &&
+                    $skema !== 'tahunan'
                 ) {
-                    $tanggalTenggat = $validated['tenggat_pelunasan'];
+                    return [
+                        'status' => 422,
+                        'body' => [
+                            'message' => 'Pengubahan tenggat melalui form DP hanya berlaku untuk sewa tahunan.',
+                            'error' => [
+                                'code' => 'INVALID_DUE_DATE_SCHEME',
+                            ],
+                        ],
+                    ];
+                }
 
+                /*
+                 * Validasi tanggal tenggat pelunasan.
+                 */
+                if (!empty($validated['tenggat_pelunasan'])) {
                     if (
                         $penghunian->tanggal_mulai &&
-                        $tanggalTenggat <
-                        $penghunian->tanggal_mulai->toDateString()
+                        Carbon::parse(
+                            $validated['tenggat_pelunasan']
+                        )->lt(
+                            Carbon::parse($penghunian->tanggal_mulai)
+                        )
                     ) {
-                        return response()->json([
-                            'message' =>
-                                'Tenggat tidak boleh sebelum tanggal mulai sewa.',
-                            'error' => [
-                                'code' => 'INVALID_DUE_DATE',
+                        return [
+                            'status' => 422,
+                            'body' => [
+                                'message' => 'Tenggat pelunasan tidak boleh sebelum tanggal mulai sewa.',
+                                'error' => [
+                                    'code' => 'INVALID_DUE_DATE',
+                                ],
                             ],
-                        ], 422);
+                        ];
                     }
 
-                    $penghunian->update([
-                        'tenggat_pelunasan' => $tanggalTenggat,
-                    ]);
+                    /*
+                     * Simpan sementara.
+                     * Belum mengubah database.
+                     */
+                    $tenggatBaru = $validated['tenggat_pelunasan'];
                 }
             }
 
-            // Hitung pembayaran terverifikasi sebelumnya.
-            $totalTerbayarSebelum = round(
-                (float) Pembayaran::where(
-                    'id_penghunian',
-                    $penghunian->id_penghunian
-                )
-                    ->where('status', 'terverifikasi')
-                    ->sum('jumlah'),
-                2
-            );
-
-            $sisaSebelum = max(
-                0,
-                round($totalSewa - $totalTerbayarSebelum, 2)
-            );
-
-            // VALIDASI CICILAN DAN PELUNASAN
-            if ($jenis !== 'dp') {
-
-                if ($sisaSebelum <= 0) {
-                    return response()->json([
-                        'message' => 'Tagihan kamar sudah lunas.',
-                        'error' => [
-                            'code' => 'RENT_ALREADY_PAID',
-                        ],
-                    ], 422);
-                }
-
-                if ($jumlah > $sisaSebelum) {
-                    return response()->json([
-                        'message' =>
-                            'Jumlah pembayaran melebihi sisa tagihan.',
-                        'error' => [
-                            'code' => 'PAYMENT_EXCEEDS_REMAINING',
-                            'sisa_tagihan' => $sisaSebelum,
-                        ],
-                    ], 422);
-                }
-
-                if (
-                    $jenis === 'pelunasan' &&
-                    $jumlah != $sisaSebelum
-                ) {
-                    return response()->json([
-                        'message' =>
-                            'Jumlah pelunasan harus sama dengan sisa tagihan.',
-                        'error' => [
-                            'code' => 'INVALID_FINAL_PAYMENT_AMOUNT',
-                            'sisa_tagihan' => $sisaSebelum,
-                        ],
-                    ], 422);
-                }
-            }
-
-            // SIMPAN PEMBAYARAN
-            $pembayaran = Pembayaran::create([
-                'id_penghunian' => $penghunian->id_penghunian,
-                'jenis_pembayaran' => $jenis,
-                'tanggal_bayar' => $validated['tanggal_bayar'],
-                'jumlah' => $jumlah,
-                'metode_pembayaran' =>
-                    $validated['metode_pembayaran'],
-                'bukti_pembayaran' =>
-                    $validated['bukti_pembayaran'] ?? null,
-                'status' => 'terverifikasi',
-            ]);
-
-            // Hitung total pembayaran setelah transaksi.
+            /*
+             * Hitung total pembayaran yang sudah terverifikasi.
+             */
             $totalTerbayar = round(
                 (float) Pembayaran::where(
                     'id_penghunian',
@@ -508,12 +513,126 @@ class PembayaranController extends Controller
                 2
             );
 
-            $sisaTagihan = max(
-                0,
-                round($totalSewa - $totalTerbayar, 2)
+            $sisaTagihan = round(
+                max(0, $totalSewa - $totalTerbayar),
+                2
             );
 
-            $statusPembayaran = $sisaTagihan <= 0
+            if ($sisaTagihan <= 0) {
+                return [
+                    'status' => 422,
+                    'body' => [
+                        'message' => 'Tagihan sudah lunas. Tidak dapat menambahkan pembayaran lagi.',
+                        'error' => [
+                            'code' => 'BILL_ALREADY_PAID',
+                        ],
+                    ],
+                ];
+            }
+
+            /*
+             * Jumlah pembayaran tidak boleh melebihi
+             * sisa tagihan.
+             */
+            if ($jumlah > $sisaTagihan) {
+                return [
+                    'status' => 422,
+                    'body' => [
+                        'message' => 'Jumlah pembayaran melebihi sisa tagihan.',
+                        'error' => [
+                            'code' => 'PAYMENT_EXCEEDS_REMAINING',
+                        ],
+                        'sisa_tagihan' => $sisaTagihan,
+                    ],
+                ];
+            }
+
+            /*
+             * Pelunasan wajib sama dengan sisa tagihan.
+             */
+            if (
+                $jenis === 'pelunasan' &&
+                $jumlah != $sisaTagihan
+            ) {
+                return [
+                    'status' => 422,
+                    'body' => [
+                        'message' => 'Jumlah pelunasan harus sama dengan sisa tagihan.',
+                        'error' => [
+                            'code' => 'INVALID_SETTLEMENT_AMOUNT',
+                        ],
+                        'sisa_tagihan' => $sisaTagihan,
+                    ],
+                ];
+            }
+
+            /*
+             * Cicilan tahunan tidak boleh menghabiskan
+             * seluruh sisa tagihan.
+             *
+             * Jika ingin membayar seluruh sisa tagihan,
+             * gunakan jenis pembayaran pelunasan.
+             */
+            if (
+                $jenis === 'cicilan' &&
+                $jumlah >= $sisaTagihan
+            ) {
+                return [
+                    'status' => 422,
+                    'body' => [
+                        'message' => 'Jika membayar seluruh sisa tagihan, pilih jenis pembayaran pelunasan.',
+                        'error' => [
+                            'code' => 'USE_SETTLEMENT_FOR_FULL_PAYMENT',
+                        ],
+                        'sisa_tagihan' => $sisaTagihan,
+                    ],
+                ];
+            }
+
+            /*
+             * Jika semua validasi berhasil,
+             * baru simpan perubahan tenggat pelunasan.
+             */
+            if ($tenggatBaru !== null) {
+                $penghunian->update([
+                    'tenggat_pelunasan' => $tenggatBaru,
+                ]);
+            }
+
+            /*
+             * Simpan pembayaran.
+             * Status terverifikasi mengikuti alur controller
+             * sebelumnya.
+             */
+            $pembayaran = Pembayaran::create([
+                'id_penghunian' => $penghunian->id_penghunian,
+                'jenis_pembayaran' => $jenis,
+                'tanggal_bayar' => $validated['tanggal_bayar'],
+                'jumlah' => $jumlah,
+                'metode_pembayaran' => $validated['metode_pembayaran'],
+                'bukti_pembayaran' => $validated['bukti_pembayaran'] ?? null,
+                'status' => 'terverifikasi',
+            ]);
+
+            /*
+             * Hitung ulang total pembayaran.
+             */
+            $totalTerbayarBaru = round(
+                (float) Pembayaran::where(
+                    'id_penghunian',
+                    $penghunian->id_penghunian
+                )
+                    ->where('status', 'terverifikasi')
+                    ->sum('jumlah'),
+                2
+            );
+
+            $sisaBaru = round(
+                max(0, $totalSewa - $totalTerbayarBaru),
+                2
+            );
+
+            $statusPembayaran = $sisaBaru <= 0
                 ? 'lunas'
                 : 'belum_lunas';
 
@@ -521,26 +640,30 @@ class PembayaranController extends Controller
                 'status_pembayaran' => $statusPembayaran,
             ]);
 
-            return response()->json([
-                'message' => $jenis === 'dp'
-                    ? 'DP berhasil dicatat.'
-                    : 'Pembayaran berhasil dicatat.',
-                'data' => [
-                    'pembayaran' => $pembayaran->load([
+            return [
+                'status' => 201,
+                'body' => [
+                    'message' => 'Pembayaran berhasil dicatat.',
+                    'data' => $pembayaran->fresh()->load([
                         'penghunian.kamar',
                         'penghunian.penghuni',
                     ]),
                     'total_sewa' => $totalSewa,
-                    'total_terbayar' => $totalTerbayar,
-                    'sisa_tagihan' => $sisaTagihan,
+                    'total_terbayar' => $totalTerbayarBaru,
+                    'sisa_tagihan' => $sisaBaru,
                     'status_pembayaran' => $statusPembayaran,
                 ],
-            ], 201);
+            ];
         });
+
+        return response()->json(
+            $hasil['body'],
+            $hasil['status']
+        );
     }
 
     /**
-     * Memperbarui pembayaran yang belum terverifikasi.
+     * Mengubah data pembayaran yang belum terverifikasi.
      */
     public function update(Request $request, int $id)
     {
@@ -557,8 +680,7 @@ class PembayaranController extends Controller
 
         if ($pembayaran->status === 'terverifikasi') {
             return response()->json([
-                'message' =>
-                    'Pembayaran yang sudah terverifikasi tidak dapat diubah.',
+                'message' => 'Pembayaran yang sudah terverifikasi tidak dapat diubah.',
                 'error' => [
                     'code' => 'PAYMENT_ALREADY_VERIFIED',
                 ],
@@ -570,16 +692,19 @@ class PembayaranController extends Controller
                 'sometimes',
                 'date',
             ],
+
             'jumlah' => [
                 'sometimes',
                 'numeric',
                 'gt:0',
             ],
+
             'metode_pembayaran' => [
                 'sometimes',
                 'string',
                 'max:30',
             ],
+
             'bukti_pembayaran' => [
                 'sometimes',
                 'nullable',
@@ -600,8 +725,7 @@ class PembayaranController extends Controller
     }
 
     /**
-     * Mengubah status pembayaran dan menghitung ulang
-     * status pembayaran pada penghunian.
+     * Mengubah status pembayaran.
      */
     public function updateStatus(Request $request, int $id)
     {
@@ -616,75 +740,101 @@ class PembayaranController extends Controller
             ],
         ]);
 
-        return DB::transaction(function () use ($validated, $id) {
-
-            $pembayaran = Pembayaran::lockForUpdate()->find($id);
+        $hasil = DB::transaction(function () use (
+            $id,
+            $validated
+        ) {
+            $pembayaran = Pembayaran::where(
+                'id_pembayaran',
+                $id
+            )
+                ->lockForUpdate()
+                ->first();
 
             if (!$pembayaran) {
-                return response()->json([
-                    'message' => 'Data pembayaran tidak ditemukan.',
-                    'error' => [
-                        'code' => 'PAYMENT_NOT_FOUND',
+                return [
+                    'status' => 404,
+                    'body' => [
+                        'message' => 'Data pembayaran tidak ditemukan.',
+                        'error' => [
+                            'code' => 'PAYMENT_NOT_FOUND',
+                        ],
                     ],
-                ], 404);
+                ];
             }
 
-            $penghunian = Penghunian::lockForUpdate()->find(
+            $penghunian = Penghunian::where(
+                'id_penghunian',
                 $pembayaran->id_penghunian
-            );
+            )
+                ->lockForUpdate()
+                ->first();
 
             if (!$penghunian) {
-                return response()->json([
-                    'message' => 'Data penghunian tidak ditemukan.',
-                    'error' => [
-                        'code' => 'OCCUPANCY_NOT_FOUND',
+                return [
+                    'status' => 404,
+                    'body' => [
+                        'message' => 'Data penghunian tidak ditemukan.',
+                        'error' => [
+                            'code' => 'OCCUPANCY_NOT_FOUND',
+                        ],
                     ],
-                ], 404);
+                ];
             }
+
+            $statusBaru = $validated['status'];
 
             $totalSewa = round(
                 (float) ($penghunian->total_sewa ?? 0),
                 2
             );
 
-            // Cegah pembayaran terverifikasi melebihi total sewa.
-            if (
-                $validated['status'] === 'terverifikasi' &&
-                $totalSewa > 0
-            ) {
-                $pembayaranLain = (float) Pembayaran::where(
-                    'id_penghunian',
-                    $penghunian->id_penghunian
-                )
-                    ->where('status', 'terverifikasi')
-                    ->where(
-                        'id_pembayaran',
-                        '!=',
-                        $pembayaran->id_pembayaran
+            /*
+             * Jika akan diverifikasi, pastikan total pembayaran
+             * tidak melebihi total sewa.
+             */
+            if ($statusBaru === 'terverifikasi') {
+                $totalPembayaranLain = round(
+                    (float) Pembayaran::where(
+                        'id_penghunian',
+                        $penghunian->id_penghunian
                     )
-                    ->sum('jumlah');
+                        ->where('status', 'terverifikasi')
+                        ->where(
+                            'id_pembayaran',
+                            '!=',
+                            $pembayaran->id_pembayaran
+                        )
+                        ->sum('jumlah'),
+                    2
+                );
 
-                if (
-                    round(
-                        $pembayaranLain +
-                        (float) $pembayaran->jumlah,
-                        2
-                    ) > $totalSewa
-                ) {
-                    return response()->json([
-                        'message' =>
-                            'Verifikasi menyebabkan pembayaran melebihi total sewa.',
-                        'error' => [
-                            'code' => 'PAYMENT_EXCEEDS_RENT',
+                $totalSetelahVerifikasi = round(
+                    $totalPembayaranLain +
+                    (float) $pembayaran->jumlah,
+                    2
+                );
+
+                if ($totalSetelahVerifikasi > $totalSewa) {
+                    return [
+                        'status' => 422,
+                        'body' => [
+                            'message' => 'Pembayaran tidak dapat diverifikasi karena melebihi total sewa.',
+                            'error' => [
+                                'code' => 'PAYMENT_EXCEEDS_RENT',
+                            ],
                         ],
-                    ], 422);
+                    ];
                 }
             }
 
             $pembayaran->update([
-                'status' => $validated['status'],
+                'status' => $statusBaru,
             ]);
 
+            /*
+             * Hitung ulang pembayaran terverifikasi.
+             */
             $totalTerbayar = round(
                 (float) Pembayaran::where(
                     'id_penghunian',
@@ -695,9 +845,9 @@ class PembayaranController extends Controller
                 2
             );
 
-            $sisaTagihan = max(
-                0,
-                round($totalSewa - $totalTerbayar, 2)
+            $sisaTagihan = round(
+                max(0, $totalSewa - $totalTerbayar),
+                2
             );
 
             $statusPembayaran = (
@@ -711,17 +861,25 @@ class PembayaranController extends Controller
                 'status_pembayaran' => $statusPembayaran,
             ]);
 
-            return response()->json([
-                'message' =>
-                    'Status pembayaran berhasil diperbarui.',
-                'data' => [
-                    'pembayaran' => $pembayaran->fresh(),
+            return [
+                'status' => 200,
+                'body' => [
+                    'message' => 'Status pembayaran berhasil diperbarui.',
+                    'data' => $pembayaran->fresh()->load([
+                        'penghunian.kamar',
+                        'penghunian.penghuni',
+                    ]),
                     'total_sewa' => $totalSewa,
                     'total_terbayar' => $totalTerbayar,
                     'sisa_tagihan' => $sisaTagihan,
                     'status_pembayaran' => $statusPembayaran,
                 ],
-            ]);
+            ];
         });
+
+        return response()->json(
+            $hasil['body'],
+            $hasil['status']
+        );
     }
 }
