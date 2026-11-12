@@ -1,0 +1,64 @@
+$kind: http-example
+request:
+  url: "{{base_url}}/penghunian/66"
+  method: GET
+  headers:
+    Accept: application/json
+    Content-Type: application/json
+    Authorization: Bearer 1|SGm785QgdMEnT3KPMYjM3R23IeYcfKBcRVclSGqG947e0637
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Host: 127.0.0.1:8000
+    Connection: close
+    X-Powered-By: PHP/8.2.12
+    Cache-Control: no-cache, private
+    Date: Sun, 08 Nov 2026 12:15:44 GMT
+    Content-Type: application/json; charset=utf-8
+    Access-Control-Allow-Origin: "*"
+  body:
+    type: json
+    content: |-
+      {
+        "message": "Data penghunian berhasil diambil.",
+        "data": {
+          "id_penghunian": 66,
+          "id_kamar": 10,
+          "id_penghuni": 41,
+          "tanggal_mulai": null,
+          "tanggal_selesai": null,
+          "status": "aktif",
+          "created_at": "2026-11-08T12:18:53.000000Z",
+          "updated_at": "2026-11-08T05:44:26.000000Z",
+          "skema_sewa": "bulanan",
+          "total_sewa": "600000.00",
+          "dp_minimum": "300000.00",
+          "tenggat_pelunasan": null,
+          "status_pembayaran": "belum_lunas",
+          "penyewa_utama": true,
+          "kamar": {
+            "id_kamar": 10,
+            "no_kamar": "10",
+            "tipe_kamar": "Standard",
+            "harga": "600000.00",
+            "harga_tahunan": null,
+            "status": "terisi",
+            "id_kost": 1,
+            "created_at": null,
+            "updated_at": "2026-11-08T12:18:53.000000Z"
+          },
+          "penghuni": {
+            "id_penghuni": 41,
+            "user_id": null,
+            "nama_penghuni": "Nadia Putri",
+            "no_telepon": "080000000021",
+            "email": "nadia.putri@example.com",
+            "alamat": "Cirebon",
+            "created_at": "2026-11-08T12:18:53.000000Z",
+            "updated_at": "2026-11-08T12:18:53.000000Z"
+          },
+          "pembayaran": []
+        }
+      }
+order: 1000

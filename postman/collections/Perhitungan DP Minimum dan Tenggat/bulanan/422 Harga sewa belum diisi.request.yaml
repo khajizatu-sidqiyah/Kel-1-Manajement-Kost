@@ -1,0 +1,85 @@
+$kind: http-request
+url: "{{base_url}}/penghunian/70/hitung-dp"
+method: POST
+headers:
+  Accept: application/json
+  Authorization: Bearer 1|SGm785QgdMEnT3KPMYjM3R23IeYcfKBcRVclSGqG947e0637
+body:
+  type: json
+  content: "{\r
+
+    \    \"id_kamar\": 17,\r
+
+    \    \"id_penghuni\": 45,\r
+
+    \    \"tanggal_mulai\": \"2026-11-08\",\r
+
+    \    \"skema_sewa\": \"bulanan\"\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: 1|SGm785QgdMEnT3KPMYjM3R23IeYcfKBcRVclSGqG947e0637
+scripts:
+  - type: afterResponse
+    code: "pm.test(\"Status HTTP 422\", function () {\r
+
+      \    pm.response.to.have.status(422);\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Pesan harga sewa bulanan belum diisi\", function () {\r
+
+      \    const body = pm.response.json();\r
+
+      \r
+
+      \    pm.expect(body.message).to.eql(\r
+
+      \        \"Harga sewa bulanan kamar belum diisi atau tidak valid.\"\r
+
+      \    );\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Kode error sesuai\", function () {\r
+
+      \    const body = pm.response.json();\r
+
+      \r
+
+      \    pm.expect(body.error.code).to.eql(\"INVALID_MONTHLY_RENT\");\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Status error sesuai\", function () {\r
+
+      \    const body = pm.response.json();\r
+
+      \r
+
+      \    pm.expect(body.error.status).to.eql(\"INVALID_ARGUMENT\");\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Perhitungan DP tidak berhasil disimpan\", function () {\r
+
+      \    const body = pm.response.json();\r
+
+      \r
+
+      \    pm.expect(body.success).to.not.eql(true);\r
+
+      });"
+    language: text/javascript
+examples: .resources/422 Harga sewa belum diisi.resources/examples
+order: 10000

@@ -69,7 +69,7 @@ class PembayaranTest extends TestCase
             'skema_sewa' => $skema,
             'total_sewa' => $totalSewa,
             'dp_minimum' => $dpMinimum,
-            'tenggat_pelunasan' => '2027-01-05',
+            'tenggat_pelunasan' => '2027-02-05',
             'status_pembayaran' => 'belum_lunas',
             'created_at' => now(),
             'updated_at' => now(),
@@ -156,7 +156,7 @@ class PembayaranTest extends TestCase
      * 3. DP di bawah minimum memberikan peringatan
      *    dan belum disimpan.
      */
-    public function test_dp_di_bawah_minimum_memberikan_peringatan_tanpa_menyimpan(): void
+    public function test_dp_di_bawah_minimum_langsung_ditolak_tanpa_menyimpan(): void
     {
         $id = $this->buatPenghunianPembayaran(
             totalSewa: 5000000,
@@ -164,13 +164,13 @@ class PembayaranTest extends TestCase
         );
 
         $this->bayar($id, 'dp', 200000)
-            ->assertOk()
+            ->assertUnprocessable()
             ->assertJsonPath(
-                'data.konfirmasi_diperlukan',
-                true
+                'error.code',
+                'DP_BELOW_MINIMUM'
             )
             ->assertJsonPath(
-                'data.dp_minimum',
+                'error.dp_minimum',
                 500000
             );
 
@@ -181,7 +181,7 @@ class PembayaranTest extends TestCase
      * 4. DP di bawah minimum dapat disimpan
      *    setelah pemilik memberikan konfirmasi.
      */
-    public function test_dp_di_bawah_minimum_dapat_disimpan_setelah_dikonfirmasi(): void
+    public function test_konfirmasi_dp_tidak_dapat_melewati_batas_minimum(): void
     {
         $id = $this->buatPenghunianPembayaran(
             totalSewa: 5000000,
@@ -195,14 +195,13 @@ class PembayaranTest extends TestCase
             tambahan: [
                 'konfirmasi_dp' => true,
             ]
-        )->assertCreated();
+        )->assertUnprocessable()
+            ->assertJsonPath(
+                'error.code',
+                'DP_BELOW_MINIMUM'
+            );
 
-        $this->assertDatabaseHas('pembayaran', [
-            'id_penghunian' => $id,
-            'jenis_pembayaran' => 'dp',
-            'jumlah' => 200000,
-            'status' => 'terverifikasi',
-        ]);
+        $this->assertDatabaseCount('pembayaran', 0);
     }
 
     /**
@@ -475,13 +474,13 @@ class PembayaranTest extends TestCase
     }
 
     /**
-     * 15. Skema tahunan menghasilkan tenggat dua bulan
-     *     setelah tanggal masuk.
+     * 15. Skema tahunan menghasilkan tenggat tiga bulan
+     *     setelah tanggal masuk sesuai keputusan terbaru pemilik.
      *
      * Tanggal masuk : 5 November 2026
-     * Tenggat       : 5 Januari 2027
+     * Tenggat       : 5 Februari 2027
      */
-    public function test_hitung_skema_tahunan_menghasilkan_tenggat_dua_bulan(): void
+    public function test_hitung_skema_tahunan_menghasilkan_tenggat_tiga_bulan(): void
     {
         $id = $this->buatPenghunianPembayaran();
 
@@ -509,13 +508,13 @@ class PembayaranTest extends TestCase
             )
             ->assertJsonPath(
                 'data.tenggat_pelunasan',
-                '2027-01-05'
+                '2027-02-05'
             );
 
         $this->assertDatabaseHas('penghunian', [
             'id_penghunian' => $id,
             'skema_sewa' => 'tahunan',
-            'tenggat_pelunasan' => '2027-01-05',
+            'tenggat_pelunasan' => '2027-02-05',
         ]);
     }
 

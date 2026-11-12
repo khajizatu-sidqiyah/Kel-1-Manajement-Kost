@@ -1,0 +1,74 @@
+$kind: http-request
+url: "{{base_url}}/penghunian/67/dp"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer 1|SGm785QgdMEnT3KPMYjM3R23IeYcfKBcRVclSGqG947e0637
+body:
+  type: json
+  content: "{\r
+
+    \    \"id_penghunian\": 67,\r
+
+    \    \"jenis_pembayaran\": \"dp\",\r
+
+    \    \"tanggal_bayar\": \"2026-11-08\",\r
+
+    \    \"jumlah\": 650000,\r
+
+    \    \"metode_pembayaran\": \"Transfer Bank\",\r
+
+    \    \"bukti_pembayaran\": null,\r
+
+    \    \"skema_sewa\": \"bulanan\",\r
+
+    \    \"tenggat_pelunasan\": \"2026-12-05\"\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: 1|SGm785QgdMEnT3KPMYjM3R23IeYcfKBcRVclSGqG947e0637
+scripts:
+  - type: afterResponse
+    code: "const jsonData = pm.response.json();\r
+
+      \r
+
+      pm.test(\"Respons menggunakan JSON\", function () {\r
+
+      \    pm.response.to.be.json;\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Status code 422 - DP melebihi total sewa\", function () {\r
+
+      \    pm.response.to.have.status(422);\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Pesan penolakan DP sesuai\", function () {\r
+
+      \    pm.expect(jsonData.message).to.eql(\r
+
+      \        \"Jumlah DP tidak boleh melebihi total sewa.\"\r
+
+      \    );\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Kode error DP melebihi total sewa\", function () {\r
+
+      \    pm.expect(jsonData.error.code).to.eql(\"DP_EXCEEDS_RENT\");\r
+
+      });"
+    language: text/javascript
+examples: .resources/200 DP melebihi total sewa.resources/examples
+order: 8000

@@ -1,0 +1,54 @@
+$kind: http-request
+url: "{{base_url}}/penghunian/63/tenggat-berikutnya"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer 1|SGm785QgdMEnT3KPMYjM3R23IeYcfKBcRVclSGqG947e0637
+body:
+  type: json
+  content: "{\r
+
+    \    \"id_penghunian\": 63,\r
+
+    \    \"skema_sewa\": \"tahunan\",\r
+
+    \    \"tanggal_mulai\": \"2026-11-05\"\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: 1|SGm785QgdMEnT3KPMYjM3R23IeYcfKBcRVclSGqG947e0637
+scripts:
+  - type: afterResponse
+    code: "const jsonData = pm.response.json();\r
+
+      \r
+
+      pm.test(\"Response berupa JSON\", function () {\r
+
+      \    pm.response.to.be.json;\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Status HTTP 422\", function () {\r
+
+      \    pm.response.to.have.status(422);\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Sistem menolak skema tahunan\", function () {\r
+
+      \    pm.expect(jsonData).to.have.property(\"message\");\r
+
+      \    pm.expect(jsonData.message.toLowerCase()).to.include(\"bulanan\");\r
+
+      });"
+    language: text/javascript
+examples: .resources/422 Skema Tahunan Ditolak pada Endpoint Tenggat Berikutnya.resources/examples
+order: 11000
