@@ -1,3 +1,4 @@
+
 <?php
 
 namespace Tests\Feature;
@@ -70,7 +71,7 @@ class PembayaranTest extends TestCase
             'skema_sewa' => $skema,
             'total_sewa' => $totalSewa,
             'dp_minimum' => $dpMinimum,
-            'tenggat_pelunasan' => '2027-01-05',
+            'tenggat_pelunasan' => '2027-02-05',
             'status_pembayaran' => 'belum_lunas',
             'created_at' => now(),
             'updated_at' => now(),
@@ -154,9 +155,9 @@ class PembayaranTest extends TestCase
     }
 
     /**
-     * 3. DP di bawah minimum langsung ditolak.
+     * 3. DP di bawah minimum langsung ditolak tanpa menyimpan.
      */
-    public function test_dp_di_bawah_minimum_langsung_ditolak(): void
+    public function test_dp_di_bawah_minimum_langsung_ditolak_tanpa_menyimpan(): void
     {
         $id = $this->buatPenghunianPembayaran(
             totalSewa: 5000000,
@@ -166,7 +167,37 @@ class PembayaranTest extends TestCase
         $this->bayar($id, 'dp', 200000)
             ->assertUnprocessable()
             ->assertJsonPath(
-                'error.status',
+                'error.code',
+                'DP_BELOW_MINIMUM'
+            )
+            ->assertJsonPath(
+                'error.dp_minimum',
+                500000
+            );
+
+        $this->assertDatabaseCount('pembayaran', 0);
+    }
+
+    /**
+     * 4. Konfirmasi DP tidak dapat melewati batas minimum.
+     */
+    public function test_konfirmasi_dp_tidak_dapat_melewati_batas_minimum(): void
+    {
+        $id = $this->buatPenghunianPembayaran(
+            totalSewa: 5000000,
+            dpMinimum: 500000
+        );
+
+        $this->bayar(
+            $id,
+            'dp',
+            200000,
+            tambahan: [
+                'konfirmasi_dp' => true,
+            ]
+        )->assertUnprocessable()
+            ->assertJsonPath(
+                'error.code',
                 'DP_BELOW_MINIMUM'
             );
 
@@ -174,7 +205,7 @@ class PembayaranTest extends TestCase
     }
 
     /**
-     * 4. Nominal DP nol dan negatif harus ditolak.
+     * 5. Nominal DP nol dan negatif harus ditolak.
      */
     public function test_dp_nol_dan_negatif_ditolak(): void
     {
@@ -190,7 +221,7 @@ class PembayaranTest extends TestCase
     }
 
     /**
-     * 5. Pembayaran yang melebihi sisa tagihan ditolak.
+     * 6. Pembayaran yang melebihi sisa tagihan ditolak.
      */
     public function test_pembayaran_melebihi_sisa_tagihan_ditolak(): void
     {
@@ -210,7 +241,7 @@ class PembayaranTest extends TestCase
     }
 
     /**
-     * 6. Cicilan hanya tersedia untuk skema tahunan.
+     * 7. Cicilan hanya tersedia untuk skema tahunan.
      */
     public function test_cicilan_hanya_tersedia_untuk_skema_tahunan(): void
     {
@@ -231,7 +262,7 @@ class PembayaranTest extends TestCase
     }
 
     /**
-     * 7. Cicilan tahunan mengurangi sisa tagihan.
+     * 8. Cicilan tahunan mengurangi sisa tagihan.
      *
      * Total sewa  : Rp5.000.000
      * DP          : Rp300.000
@@ -270,7 +301,7 @@ class PembayaranTest extends TestCase
     }
 
     /**
-     * 8. Pembayaran terakhir mengubah status menjadi lunas.
+     * 9. Pembayaran terakhir mengubah status menjadi lunas.
      */
     public function test_pembayaran_terakhir_mengubah_status_menjadi_lunas(): void
     {
@@ -300,7 +331,7 @@ class PembayaranTest extends TestCase
     }
 
     /**
-     * 9. Pembayaran pada penghunian yang tidak aktif ditolak.
+     * 10. Pembayaran pada penghunian yang tidak aktif ditolak.
      */
     public function test_pembayaran_penghunian_tidak_aktif_ditolak(): void
     {
@@ -319,7 +350,7 @@ class PembayaranTest extends TestCase
     }
 
     /**
-     * 10. DP ditolak jika skema sewa belum dipilih.
+     * 11. DP ditolak jika skema sewa belum dipilih.
      */
     public function test_dp_ditolak_jika_skema_belum_dipilih(): void
     {
@@ -344,7 +375,7 @@ class PembayaranTest extends TestCase
     }
 
     /**
-     * 11. Pembayaran dari penghuni kedua tetap dicatat
+     * 12. Pembayaran dari penghuni kedua tetap dicatat
      *     atas nama penyewa utama.
      */
     public function test_penghunian_penghuni_kedua_dicatat_ke_penyewa_utama(): void
@@ -395,7 +426,7 @@ class PembayaranTest extends TestCase
     }
 
     /**
-     * 12. Satu penghuni otomatis menjadi penyewa utama.
+     * 13. Satu penghuni otomatis menjadi penyewa utama.
      */
     public function test_satu_penghuni_otomatis_dijadikan_penyewa_utama(): void
     {
@@ -418,10 +449,35 @@ class PembayaranTest extends TestCase
     }
 
     /**
-     * 13. Skema tahunan menghasilkan tenggat dua bulan
-     *     setelah tanggal masuk.
+     * 14. Tenggat yang diedit pemilik saat mencatat DP tersimpan.
      */
-    public function test_hitung_skema_tahunan_menghasilkan_tenggat_dua_bulan(): void
+    public function test_tenggat_yang_diedit_saat_dp_disimpan(): void
+    {
+        $id = $this->buatPenghunianPembayaran();
+
+        $this->bayar(
+            $id,
+            'dp',
+            300000,
+            tambahan: [
+                'tenggat_pelunasan' => '2027-01-20',
+            ]
+        )->assertCreated();
+
+        $this->assertDatabaseHas('penghunian', [
+            'id_penghunian' => $id,
+            'tenggat_pelunasan' => '2027-01-20',
+        ]);
+    }
+
+    /**
+     * 15. Skema tahunan menghasilkan tenggat tiga bulan
+     *     setelah tanggal masuk sesuai keputusan terbaru pemilik.
+     *
+     * Tanggal masuk : 5 November 2026
+     * Tenggat       : 5 Februari 2027
+     */
+    public function test_hitung_skema_tahunan_menghasilkan_tenggat_tiga_bulan(): void
     {
         $id = $this->buatPenghunianPembayaran();
 
@@ -445,28 +501,22 @@ class PembayaranTest extends TestCase
             )
             ->assertJsonPath(
                 'data.dp_minimum',
-                300000
+                '300000.00'
+            )
+            ->assertJsonPath(
+                'data.tenggat_pelunasan',
+                '2027-02-05'
             );
 
-        $penghunian = DB::table('penghunian')
-            ->where('id_penghunian', $id)
-            ->first();
-
-        $this->assertEquals(
-            'tahunan',
-            $penghunian->skema_sewa
-        );
-
-        $this->assertEquals(
-            '2027-01-05',
-            Carbon::parse(
-                $penghunian->tenggat_pelunasan
-            )->toDateString()
-        );
+        $this->assertDatabaseHas('penghunian', [
+            'id_penghunian' => $id,
+            'skema_sewa' => 'tahunan',
+            'tenggat_pelunasan' => '2027-02-05',
+        ]);
     }
 
     /**
-     * 14. Jenis pembayaran yang tidak dikenal ditolak.
+     * 16. Jenis pembayaran yang tidak dikenal ditolak.
      */
     public function test_jenis_pembayaran_tidak_valid_ditolak(): void
     {
@@ -479,7 +529,7 @@ class PembayaranTest extends TestCase
     }
 
     /**
-     * 15. DP tidak boleh melebihi total sewa.
+     * 17. DP tidak boleh melebihi total sewa.
      */
     public function test_dp_melebihi_total_sewa_ditolak(): void
     {
@@ -499,7 +549,7 @@ class PembayaranTest extends TestCase
     }
 
     /**
-     * 16. DP bulanan minimal 50% harga kamar.
+     * 18. DP bulanan minimal 50% harga kamar.
      */
     public function test_dp_bulanan_di_bawah_50_persen_ditolak(): void
     {
@@ -520,7 +570,7 @@ class PembayaranTest extends TestCase
     }
 
     /**
-     * 17. Cicilan tidak boleh menghabiskan seluruh sisa tagihan.
+     * 19. Cicilan tidak boleh menghabiskan seluruh sisa tagihan.
      */
     public function test_cicilan_yang_menghabiskan_sisa_tagihan_ditolak(): void
     {
@@ -540,7 +590,7 @@ class PembayaranTest extends TestCase
     }
 
     /**
-     * 18. Pelunasan harus sama dengan sisa tagihan.
+     * 20. Pelunasan harus sama dengan sisa tagihan.
      */
     public function test_pelunasan_harus_sesuai_sisa_tagihan(): void
     {
@@ -566,7 +616,7 @@ class PembayaranTest extends TestCase
     }
 
     /**
-     * 19. Tanggal bayar boleh tidak dikirim.
+     * 21. Tanggal bayar boleh tidak dikirim.
      */
     public function test_tanggal_bayar_boleh_tidak_dikirim(): void
     {
@@ -590,7 +640,7 @@ class PembayaranTest extends TestCase
     }
 
     /**
-     * 20. Tanggal bayar boleh bernilai null.
+     * 22. Tanggal bayar boleh bernilai null.
      */
     public function test_tanggal_bayar_boleh_null(): void
     {

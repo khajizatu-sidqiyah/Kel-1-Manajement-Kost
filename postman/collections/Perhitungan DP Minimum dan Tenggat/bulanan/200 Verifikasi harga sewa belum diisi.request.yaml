@@ -1,0 +1,81 @@
+$kind: http-request
+url: "{{base_url}}/penghunian/70"
+method: GET
+headers:
+  Accept: application/json
+  Content-Type: appication/json
+  Authorization: Bearer 1|SGm785QgdMEnT3KPMYjM3R23IeYcfKBcRVclSGqG947e0637
+auth:
+  type: bearer
+  credentials:
+    token: 1|SGm785QgdMEnT3KPMYjM3R23IeYcfKBcRVclSGqG947e0637
+scripts:
+  - type: afterResponse
+    code: "pm.test(\"Status HTTP 200\", function () {\r
+
+      \    pm.response.to.have.status(200);\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Data penghunian berhasil diambil\", function () {\r
+
+      \    const body = pm.response.json();\r
+
+      \    pm.expect(body.data).to.exist;\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Skema bulanan tetap tersimpan\", function () {\r
+
+      \    const body = pm.response.json();\r
+
+      \    pm.expect(body.data.skema_sewa).to.eql(\"bulanan\");\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Total sewa tetap null\", function () {\r
+
+      \    const body = pm.response.json();\r
+
+      \    pm.expect(body.data.total_sewa).to.eql(null);\r
+
+      });\r
+
+      \r
+
+      pm.test(\"DP minimum tetap null\", function () {\r
+
+      \    const body = pm.response.json();\r
+
+      \    pm.expect(body.data.dp_minimum).to.eql(null);\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Tenggat pelunasan tetap null\", function () {\r
+
+      \    const body = pm.response.json();\r
+
+      \    pm.expect(body.data.tenggat_pelunasan).to.eql(null);\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Harga kamar memang kosong\", function () {\r
+
+      \    const body = pm.response.json();\r
+
+      \    pm.expect(Number(body.data.kamar.harga)).to.eql(0);\r
+
+      });"
+    language: text/javascript
+examples: .resources/200 Verifikasi harga sewa belum diisi.resources/examples
+order: 11000

@@ -15,6 +15,7 @@ class Pembayaran extends Model
         'id_penghunian',
         'jenis_pembayaran',
         'tanggal_bayar',
+        'periode_tagihan',
         'jumlah',
         'metode_pembayaran',
         'bukti_pembayaran',
@@ -25,6 +26,7 @@ class Pembayaran extends Model
     {
         return [
             'tanggal_bayar' => 'date',
+            'periode_tagihan' => 'date',
             'jumlah' => 'decimal:2',
         ];
     }

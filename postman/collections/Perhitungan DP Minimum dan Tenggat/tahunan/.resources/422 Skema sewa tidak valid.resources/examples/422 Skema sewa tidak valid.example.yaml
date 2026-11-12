@@ -1,0 +1,53 @@
+$kind: http-example
+request:
+  url: "{{base_url}}/penghunian/59/hitung-dp"
+  method: POST
+  headers:
+    Accept: application/json
+    Content-Type: application/json
+    Authorization: Bearer 1|SGm785QgdMEnT3KPMYjM3R23IeYcfKBcRVclSGqG947e0637
+  body:
+    type: json
+    content: "{\r
+
+      \    \"id_kamar\": 3,\r
+
+      \    \"id_penghuni\": 30,\r
+
+      \    \"tanggal_mulai\": \"2026-11-05\",\r
+
+      \    \"skema_sewa\": \"mingguan\",\r
+
+      \    \"harga\": 5000000,\r
+
+      \    \"dp_minimum\": 300000\r
+
+      }"
+response:
+  statusCode: 422
+  statusText: Unprocessable Content
+  headers:
+    Host: 127.0.0.1:8000
+    Connection: close
+    X-Powered-By: PHP/8.2.12
+    Cache-Control: no-cache, private
+    Date: Thu, 05 Nov 2026 00:21:50 GMT
+    Content-Type: application/json; charset=utf-8
+    Access-Control-Allow-Origin: "*"
+  body:
+    type: json
+    content: |-
+      {
+        "message": "Parameter permintaan tidak valid.",
+        "error": {
+          "code": 422,
+          "message": "Validasi gagal.",
+          "status": "INVALID_ARGUMENT",
+          "details": {
+            "skema_sewa": [
+              "Skema sewa harus bulanan atau tahunan."
+            ]
+          }
+        }
+      }
+order: 1000

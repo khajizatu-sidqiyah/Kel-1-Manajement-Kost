@@ -85,6 +85,11 @@ Route::middleware('api.contract')->group(function () {
         // Melihat seluruh pembayaran
         Route::get('/pembayaran', [PembayaranController::class, 'index']);
 
+        // Card 5.2b: daftar pembayaran per kamar dan riwayatnya
+        Route::get('/pembayaran/per-kamar', [PembayaranController::class, 'perKamar']);
+        Route::get('/pembayaran/kamar/{id_kamar}/riwayat', [PembayaranController::class, 'riwayatPerKamar'])
+            ->whereNumber('id_kamar');
+
         // Mencatat pembayaran DP, cicilan, atau pelunasan
         Route::post('/pembayaran', [PembayaranController::class, 'store']);
 

@@ -7,6 +7,7 @@ use App\Models\PengaturanSewa;
 use App\Models\Penghuni;
 use App\Models\Penghunian;
 use App\Models\Pembayaran;
+use App\Services\TenggatSewaService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -652,14 +653,24 @@ class PenghunianController extends Controller
                     )->toDateString()
                     : null;
             } else {
+
+                // Harga tahunan mengikuti jumlah penghuni aktif saat masa sewa dimulai.
+                // Field harga_tahunan lama tetap menjadi fallback agar data lama aman.
+                $jumlahPenghuniAktif = $penghuniAktif->count();
+
+                $hargaTahunanTerpilih = $jumlahPenghuniAktif >= 2
+                    ? ($kamar->harga_tahunan_2_orang ?? $kamar->harga_tahunan)
+                    : ($kamar->harga_tahunan_1_orang ?? $kamar->harga_tahunan);
+
                 if (
                     !is_numeric($kamar->harga_tahunan) ||
                     (float) $kamar->harga_tahunan <= 0
                 ) {
                     return response()->json([
-                        'message' => 'Harga sewa tahunan kamar belum diisi atau tidak valid.',
+                        'message' => 'Harga sewa tahunan kamar untuk jumlah penghuni tersebut belum diisi atau tidak valid.',
                         'error' => [
                             'code' => 'INVALID_ANNUAL_RENT',
+                            'jumlah_penghuni' => $jumlahPenghuniAktif,
                         ],
                     ], 422);
                 }
@@ -680,7 +691,7 @@ class PenghunianController extends Controller
                 }
 
                 $totalSewa = round(
-                    (float) $kamar->harga_tahunan,
+                    (float) $hargaTahunanTerpilih,
                     2
                 );
 
@@ -693,7 +704,7 @@ class PenghunianController extends Controller
                     ? Carbon::parse(
                         $penghunian->tanggal_mulai
                     )
-                        ->addMonthsNoOverflow(2)
+                        ->addMonthsNoOverflow(3)
                         ->toDateString()
                     : null;
             }
@@ -706,13 +717,23 @@ class PenghunianController extends Controller
                 'status_pembayaran' => 'belum_lunas',
             ]);
 
+            $dataHasil = $penghunian->fresh()->load([
+                'kamar',
+                'penghuni',
+                'pembayaran',
+            ]);
+
+            if (!$penghunian->tanggal_mulai) {
+                return response()->json([
+                    'message' => 'DP berhasil dihitung. Isi tanggal masuk untuk menghitung tenggat.',
+                    'peringatan' => 'Isi tanggal masuk untuk menghitung tenggat',
+                    'data' => $dataHasil,
+                ]);
+            }
+
             return response()->json([
                 'message' => 'Perhitungan sewa, DP minimum, dan tenggat berhasil disimpan.',
-                'data' => $penghunian->fresh()->load([
-                    'kamar',
-                    'penghuni',
-                    'pembayaran',
-                ]),
+                'data' => $dataHasil,
             ]);
         });
     }
@@ -827,23 +848,18 @@ class PenghunianController extends Controller
             $penghunian->tenggat_pelunasan
         );
 
-        $tanggalBerikutnya = $tenggatSekarang
-            ->copy()
-            ->addMonthNoOverflow();
-
-        if ($tenggatSekarang->isLastOfMonth()) {
-            $tanggalBerikutnya->endOfMonth();
-        }
+        $tanggalBerikutnya = app(TenggatSewaService::class)
+            ->hitungBerikutnya($tenggatSekarang);
 
         $penghunian->update([
-            'tenggat_pelunasan' => $tanggalBerikutnya->toDateString(),
+            'tenggat_pelunasan' => $tanggalBerikutnya,
         ]);
 
         return response()->json([
             'message' => 'Tenggat berikutnya berhasil dihitung.',
             'data' => [
                 'tenggat_sekarang' => $tenggatSekarang->toDateString(),
-                'tenggat_berikutnya' => $tanggalBerikutnya->toDateString(),
+                'tenggat_berikutnya' => $tanggalBerikutnya,
             ],
         ]);
     }

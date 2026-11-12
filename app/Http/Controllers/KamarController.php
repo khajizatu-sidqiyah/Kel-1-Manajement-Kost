@@ -21,6 +21,8 @@ class KamarController extends Controller
             'tipe_kamar' => ['nullable', 'string', 'max:50'],
             'harga' => ['required', 'numeric', 'min:0'],
             'harga_tahunan' => ['nullable', 'numeric', 'min:0'],
+            'harga_tahunan_1_orang' => ['nullable', 'numeric', 'min:0'],
+            'harga_tahunan_2_orang' => ['nullable', 'numeric', 'min:0'],
             'status' => ['sometimes', 'in:kosong,terisi'],
         ]);
         if ($validator->fails()) return response()->json(['message' => 'Parameter permintaan tidak valid.', 'error' => ['code' => 422, 'message' => 'Validasi gagal.', 'status' => 'INVALID_ARGUMENT', 'details' => $validator->errors()]], 422);
@@ -49,6 +51,8 @@ class KamarController extends Controller
             'tipe_kamar' => ['sometimes', 'nullable', 'string', 'max:50'],
             'harga' => ['sometimes', 'required', 'numeric', 'min:0'],
             'harga_tahunan' => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'harga_tahunan_1_orang' => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'harga_tahunan_2_orang' => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'status' => ['sometimes', 'required', 'in:kosong,terisi'],
         ]);
         if ($validator->fails()) return response()->json(['message' => 'Parameter permintaan tidak valid.', 'error' => ['code' => 422, 'message' => 'Validasi gagal.', 'status' => 'INVALID_ARGUMENT', 'details' => $validator->errors()]], 422);
