@@ -53,6 +53,15 @@
 .pb-sel { position: relative; flex: 0 0 auto; width: 135px; }
 .pb-sel select { appearance: none; width: 100%; height: 35px; padding: 0 30px 0 14px; border: 1px solid var(--pb-line-2); border-radius: 12px; background: #fff; font: inherit; font-size: 12.5px; font-weight: 500; color: var(--pb-s700); cursor: pointer; }
 .pb-sel .i { position: absolute; right: 12px; top: 11px; width: 14px; height: 14px; color: var(--pb-s500); pointer-events: none; }
+/* Tombol Filter (panel memakai kelas .fp-* dari penghuni.css) */
+.pb-filter-wrap { position: relative; flex: 0 0 auto; }
+.pb-filter-btn { display: inline-flex; align-items: center; gap: 8px; height: 35px; padding: 0 14px; border: 1px solid var(--pb-line-2); border-radius: 12px; background: #fff; font: inherit; font-size: 12.5px; font-weight: 500; color: var(--pb-s700); cursor: pointer; }
+.pb-filter-btn .i { width: 15px; height: 15px; }
+.pb-filter-btn .fp-chev { margin-left: 6px; transition: transform .15s; }
+.pb-filter-btn:hover { background: #f8fafc; }
+.pb-filter-btn[aria-expanded="true"], .pb-filter-btn.has-filter { border-color: var(--pb-green-900); color: var(--pb-green-900); }
+.pb-filter-btn[aria-expanded="true"] .fp-chev { transform: rotate(180deg); }
+.pb-filter-btn:focus-visible { outline: 2px solid rgba(5, 150, 105, .35); }
 .pb-search input:focus, .pb-sel select:focus { outline: 2px solid rgba(5, 150, 105, .35); }
 
 /* Tab (segmented) */
@@ -201,7 +210,7 @@
 /* ---------- Responsif ---------- */
 @media (min-width: 600px) { .pb-stats { grid-template-columns: 1fr 1fr; } }
 @media (min-width: 1100px) { .pb-stats { grid-template-columns: repeat(4, 1fr); } }
-@media (max-width: 599px) { .pb-sel { flex: 1 1 100%; width: auto; } .pb-search { flex-basis: 100%; max-width: none; } }
+@media (max-width: 599px) { .pb-filter-wrap { flex: 1 1 100%; } .pb-filter-btn { width: 100%; } .pb-sel { flex: 1 1 100%; width: auto; } .pb-search { flex-basis: 100%; max-width: none; } }
 
 /* ---------- Form Catat Pembayaran: DP / Bulanan / Tahunan (desain Dekstop_19 revisi) ---------- */
 .pb-g .req { color: var(--pb-red); }
@@ -248,3 +257,117 @@
 .pb-roomcard .pb-roomsel select:hover { background: var(--pb-soft); padding-left: 8px; }
 .pb-roomcard .pb-roomsel select:focus { padding-left: 8px; }
 .pb-roomcard .pb-roomsel .i { top: 10px; }
+
+/* =========================================================
+   PENYESUAIAN DESAIN "Pembayaran" (v2)
+   - Judul, kartu ringkasan, tab  : Plus Jakarta Sans
+   - Tabel, pencarian, tombol     : Inter
+   - Tabel 9 kolom (ada Jatuh Tempo), aksi tanpa titik tiga
+========================================================= */
+.pb-title h1, .pb-stat .lbl, .pb-stat .val, .pb-stat .sub, .pb-tab { font-family: "Plus Jakarta Sans", "Inter", system-ui, sans-serif; }
+.pb-title h1 { font-size: 22px; font-weight: 700; letter-spacing: -.01em; }
+.pb-title p { margin-top: 4px; font-size: 12px; font-family: "Plus Jakarta Sans", "Inter", system-ui, sans-serif; }
+.pb-stat .lbl { font-size: 11px; font-weight: 500; }
+.pb-stat .val { font-size: 22px; font-weight: 600; }
+.pb-stat .sub { font-size: 11px; }
+
+/* Pencarian (lebar penuh) + tombol Filter: tinggi 41 */
+.pb-search { max-width: none; }
+.pb-search input { height: 41px; font-size: 13px; }
+.pb-search .i { top: 12px; }
+.pb-filter-btn { height: 41px; padding: 0 18px; font-size: 13px; }
+.fp-panel { top: 48px; width: 348px; }
+.pb-tab { font-size: 12px; font-weight: 500; }
+.pb-tab[aria-selected="true"] { font-weight: 700; }
+.pb-card { margin-top: 32px; }
+
+/* Tabel */
+.pb-scroll { padding-bottom: 0; }
+.pb-table { min-width: 1000px; font-size: 12px; }
+.pb-table col.c1 { width: 4.9%; } .pb-table col.c2 { width: 13.7%; } .pb-table col.c3 { width: 12.3%; }
+.pb-table col.c4 { width: 12.3%; } .pb-table col.c5 { width: 13.2%; } .pb-table col.c6 { width: 11.8%; }
+.pb-table col.c7 { width: 8.3%; }  .pb-table col.c8 { width: 15.4%; } .pb-table col.c9 { width: 8.1%; }
+.pb-table thead th { height: 36px; padding: 0 0 0 0; font-size: 12px; font-weight: 600; letter-spacing: .01em; color: var(--pb-ink); white-space: nowrap; }
+.pb-table tbody td { height: 43px; padding: 0; font-size: 12px; white-space: nowrap; }
+.pb-table .th-no, .pb-table td.no { padding-left: 13px; }
+.pb-table td.no { font-family: "Inter", system-ui, sans-serif; font-weight: 500; color: var(--pb-ink-2); }
+.pb-table .th-no { font-family: "Inter", system-ui, sans-serif; }
+.pb-table td.no { padding-left: 20px; }
+.pb-table td.nama { font-weight: 500; color: var(--pb-ink-2); }
+.pb-table td.kamar, .pb-table td.jenis, .pb-table td.per, .pb-table td.tempo { color: var(--pb-s600); }
+.pb-table td.kamar { padding-left: 4px; }
+.pb-table td.jml { font-weight: 600; color: var(--pb-ink); }
+.pb-table th.th-status, .pb-table td.status { text-align: center; padding: 0; }
+.pb-table th.th-aksi, .pb-table td.aksi { text-align: center; padding: 0; }
+@media (min-width: 1280px) { .pb-table th.th-aksi { padding-right: 0; } }
+
+/* Pil status: Belum Dibayar / Sudah Dibayar / Belum Lunas */
+.pb-pill { gap: 5px; min-height: 23px; padding: 0 11px; font-size: 11px; font-weight: 500; }
+.pb-pill .i { width: 12px; height: 12px; }
+.pb-pill--belum { border-color: #FECACA; background: #FEE8E8; color: #B91C1C; }
+.pb-pill--sudah { border-color: #A7F3D0; background: #D1FAE5; color: #166534; }
+.pb-pill--lunas { border-color: #FDE68A; background: #FEF3C7; color: #92400E; }
+.pb-pill--menunggu { max-width: none; padding: 0 11px; border-color: #FDE68A; background: #FEF3C7; color: #92400E; }
+
+/* Aksi: tombol saja, tanpa titik tiga */
+.pb-aksi { justify-content: center; padding-right: 0; }
+.pb-act { display: inline-grid; place-items: center; min-width: 50px; height: 21px; padding: 0 10px; border-radius: 6px; background: var(--pb-soft); font-size: 11px; font-weight: 500; color: var(--pb-s600); }
+.pb-act--main { background: #14503A; color: #fff; }
+.pb-act--main:hover { background: #0E3D2C; }
+
+/* Footer + pagination */
+.pb-foot { margin-top: 48px; }
+.pb-pager button.pb-all { width: auto; padding: 0 10px; }
+@media (max-width: 599px) { .pb-filter-wrap { flex: 1 1 100%; } }
+
+
+/* =========================================================
+   v3: tabel pas di lebar layar (tanpa geser kanan-kiri) + tombol Bayar
+========================================================= */
+.pb-scroll { overflow-x: auto; }
+.pb-table { table-layout: auto; min-width: 0; width: 100%; }
+.pb-table thead th { white-space: normal; padding-right: 6px; }
+.pb-table tbody td { padding-right: 6px; overflow: hidden; text-overflow: ellipsis; }
+.pb-table td.status, .pb-table td.aksi { overflow: visible; padding-right: 0; }
+.pb-table td.nama { max-width: 160px; }
+.pb-pill { white-space: nowrap; }
+
+/* Tombol Bayar: teks putih cerah & tetap hijau saat hover / klik / fokus */
+.pb-act--main, .pb-act--main:hover, .pb-act--main:focus, .pb-act--main:focus-visible, .pb-act--main:active, .pb-act--main:visited {
+    background: #14503A !important; color: #FFFFFF !important; -webkit-text-fill-color: #FFFFFF !important;
+    font-weight: 600; outline: none; -webkit-tap-highlight-color: transparent;
+}
+.pb-act--main:hover { background: #0F4130 !important; }
+.pb-act--main:active { background: #0B3326 !important; }
+.pb-act--main:focus-visible { box-shadow: 0 0 0 2px #fff, 0 0 0 4px rgba(20, 80, 58, .45); }
+.pb-act:not(.pb-act--main), .pb-act:not(.pb-act--main):active, .pb-act:not(.pb-act--main):focus { color: var(--pb-s600); outline: none; }
+
+
+/* =========================================================
+   v4: judul kolom & isi rata tengah, jarak No/Nama/Kamar, teks jumlah data
+========================================================= */
+.pb .pb-table thead th, .pb .pb-table tbody td { text-align: center; padding-left: 8px; padding-right: 8px; overflow: visible; text-overflow: clip; vertical-align: middle; }
+.pb .pb-table thead th:nth-child(2), .pb .pb-table tbody td:nth-child(2) { text-align: left; padding-left: 28px; }   /* Nama Penghuni rata kiri, ada jarak dari kolom No. */
+.pb .pb-table th.th-no, .pb .pb-table td.no { padding-left: 8px; padding-right: 8px; }
+.pb .pb-table td.kamar { padding-left: 8px; }
+.pb-table col.c1 { width: 6%; } .pb-table col.c2 { width: 13.5%; } .pb-table col.c3 { width: 11.5%; }
+.pb-table col.c4 { width: 12%; } .pb-table col.c5 { width: 13%; } .pb-table col.c6 { width: 12.5%; }
+.pb-table col.c7 { width: 9.5%; } .pb-table col.c8 { width: 13.5%; } .pb-table col.c9 { width: 8.5%; }
+.pb-aksi { width: 100%; }
+
+/* Teks "Menampilkan 1–10 dari 12 Tagihan" */
+.pb-foot #pb-count { font-size: 12px; color: var(--pb-s500); }
+.pb-foot #pb-count b { font-weight: 400; color: inherit; }
+
+/* v5: judul kolom selalu satu baris */
+.pb .pb-table thead th { white-space: nowrap; padding-left: 6px; padding-right: 6px; letter-spacing: 0; }
+.pb .pb-table thead th:nth-child(2) { padding-left: 28px; }
+
+
+/* Form catat pembayaran: placeholder "Pilih kamar..." & "Pilih skema" berwarna abu-abu */
+.pb-roomsel.ph select, .pb-in--sel.ph select { color: var(--pb-s400); font-weight: 500; }
+.pb-roomsel select, .pb-in--sel select { cursor: pointer; }
+.pb-roomsel select option, .pb-in--sel select option { color: var(--pb-ink); font-weight: 500; }
+
+/* Opsi yang tidak bisa dipilih (mis. "Tahunan" untuk kamar tanpa harga tahunan) tampil abu-abu */
+.pb-roomsel select option:disabled, .pb-in--sel select option:disabled { color: #94A3B8; }
