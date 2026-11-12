@@ -17,6 +17,8 @@
         <symbol id="pb-bag" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></symbol>
         <symbol id="pb-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
         <symbol id="pb-trend" viewBox="0 0 24 24"><path d="M5 19c2-7 5-10 12-13M12 6h5v5"/></symbol>
+        <symbol id="pb-filter" viewBox="0 0 24 24"><path d="M3 4h18l-7 8v8l-4-2v-6L3 4z"/></symbol>
+        <symbol id="pb-xcircle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9.5 9.5 5 5M14.5 9.5l-5 5"/></symbol>
         <symbol id="pb-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
         <symbol id="pb-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
         <symbol id="pb-chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
@@ -55,15 +57,49 @@
         <div class="pb-filters">
             <label class="pb-search">
                 <svg class="i"><use href="#pb-search"/></svg>
-                <input type="search" id="pb-q" placeholder="Cari nama penghuni, nomor kamar, atau keterangan..." autocomplete="off">
+                <input type="search" id="pb-q" placeholder="Cari nama penyewa atau nomor kamar..." autocomplete="off">
             </label>
-            <div class="pb-sel"><select id="pb-f-bulan" aria-label="Filter bulan"><option value="">Semua Bulan</option></select><svg class="i"><use href="#pb-chev"/></svg></div>
-            <div class="pb-sel">
-                <select id="pb-f-status" aria-label="Filter status">
-                    <option value="">Semua Status</option><option value="belum">Belum Dibayar</option><option value="sudah">Sudah Dibayar</option><option value="menunggu">Menunggu Konfirmasi</option>
-                </select><svg class="i"><use href="#pb-chev"/></svg>
+            {{-- Tombol Filter + panel (default tertutup). Sesuai desain: Status Tagihan, Skema Sewa, Lantai Kamar (tanpa Periode) --}}
+            <div class="pb-filter-wrap" id="fp-wrap">
+                <button type="button" class="pb-filter-btn" id="fp-toggle" aria-haspopup="true" aria-expanded="false" aria-controls="fp-panel">
+                    <svg class="i"><use href="#pb-filter"/></svg>
+                    <span>Filter</span>
+                    <span class="fp-badge" id="fp-badge" hidden>0</span>
+                    <svg class="i fp-chev"><use href="#pb-chev"/></svg>
+                </button>
+                <div class="fp-panel" id="fp-panel" role="dialog" aria-label="Filter data" hidden>
+                    <div class="fp-head">
+                        <h3>Filter Data</h3>
+                        <button type="button" class="fp-close" id="fp-close" aria-label="Tutup filter"><svg class="i"><use href="#pb-x"/></svg></button>
+                    </div>
+                    <div class="fp-group">
+                        <h4>Status Tagihan</h4>
+                        <div class="fp-opts">
+                            <label class="fp-check"><input type="checkbox" name="status" value="belum"><span class="box"><svg class="i"><use href="#pb-tick"/></svg></span>Belum Dibayar</label>
+                            <label class="fp-check"><input type="checkbox" name="status" value="sudah"><span class="box"><svg class="i"><use href="#pb-tick"/></svg></span>Sudah Dibayar</label>
+                            <label class="fp-check"><input type="checkbox" name="status" value="lunasbelum"><span class="box"><svg class="i"><use href="#pb-tick"/></svg></span>Belum Lunas</label>
+                        </div>
+                    </div>
+                    <div class="fp-group">
+                        <h4>Skema Sewa</h4>
+                        <div class="fp-opts">
+                            <label class="fp-check"><input type="checkbox" name="skema" value="bulanan"><span class="box"><svg class="i"><use href="#pb-tick"/></svg></span>Bulanan</label>
+                            <label class="fp-check"><input type="checkbox" name="skema" value="tahunan"><span class="box"><svg class="i"><use href="#pb-tick"/></svg></span>Tahunan</label>
+                        </div>
+                    </div>
+                    <div class="fp-group">
+                        <h4>Lantai Kamar</h4>
+                        <div class="fp-opts">
+                            <label class="fp-check"><input type="checkbox" name="lantai" value="1"><span class="box"><svg class="i"><use href="#pb-tick"/></svg></span>Lantai 1</label>
+                            <label class="fp-check"><input type="checkbox" name="lantai" value="2"><span class="box"><svg class="i"><use href="#pb-tick"/></svg></span>Lantai 2</label>
+                        </div>
+                    </div>
+                    <div class="fp-foot">
+                        <button type="button" class="fp-btn fp-btn--ghost" id="fp-reset">Reset</button>
+                        <button type="button" class="fp-btn fp-btn--primary" id="fp-apply">Terapkan</button>
+                    </div>
+                </div>
             </div>
-            <div class="pb-sel"><select id="pb-f-kamar" aria-label="Filter kamar"><option value="">Semua Kamar</option></select><svg class="i"><use href="#pb-chev"/></svg></div>
         </div>
 
         {{-- Tab --}}
@@ -77,13 +113,13 @@
             <div class="pb-scroll">
                 <table class="pb-table">
                     <colgroup>
-                        <col class="c1"><col class="c2"><col class="c3"><col class="c4">
-                        <col class="c5"><col class="c6"><col class="c7"><col class="c8">
+                        <col class="c1"><col class="c2"><col class="c3"><col class="c4"><col class="c5">
+                        <col class="c6"><col class="c7"><col class="c8"><col class="c9">
                     </colgroup>
                     <thead>
                         <tr>
-                            <th class="th-no">No.</th><th>Nama<br>Penghuni</th><th>Kamar</th><th>Jenis<br>Tagihan</th>
-                            <th>Periode</th><th>Jumlah</th><th>Status</th><th class="th-aksi">Aksi</th>
+                            <th class="th-no">No.</th><th>Nama Penghuni</th><th>Kamar</th><th>Jenis Tagihan</th>
+                            <th>Periode</th><th>Jatuh Tempo</th><th>Jumlah</th><th class="th-status">Status</th><th class="th-aksi">Aksi</th>
                         </tr>
                     </thead>
                     <tbody id="pb-rows"></tbody>
@@ -93,7 +129,7 @@
         </section>
 
         <footer class="pb-foot">
-            <span id="pb-info">&nbsp;</span>
+            <span id="pb-count">&nbsp;</span>
             <nav class="pb-pager" id="pb-pager" aria-label="Halaman"></nav>
         </footer>
     </div>
@@ -131,7 +167,8 @@
 
                 <div class="pb-g" id="f-skema-g" hidden>
                     <label for="f-skema">Skema Sewa</label>
-                    <div class="pb-in pb-in--sel"><select id="f-skema"><option value="bulanan">Bulanan</option><option value="tahunan">Tahunan</option></select><svg class="i"><use href="#pb-chev"/></svg></div>
+                    <div class="pb-in pb-in--sel"><select id="f-skema"><option value="" disabled selected>Pilih skema</option><option value="bulanan">Bulanan</option><option value="tahunan">Tahunan</option></select><svg class="i"><use href="#pb-chev"/></svg></div>
+                    <p class="pb-help pb-help--err" id="f-skema-err" hidden></p>
                 </div>
 
                 <div class="pb-row" id="f-tarif-row" hidden>
