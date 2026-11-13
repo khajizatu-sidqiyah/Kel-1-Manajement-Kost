@@ -362,7 +362,7 @@
     const lunas = (dp ? F.hitung.total > 0 : true) && sisa <= 0;
     $("f-sum-l").textContent = dp ? "Sisa Tagihan Setelah DP" : "Sisa Tagihan Setelah Pembayaran";
     $("f-sum-v").textContent = rpRapat(sisa);
-    $("f-sum-p").className = "pb-tag" + (lunas ? " pb-tag--soft" : "");
+    $("f-sum-p").className = "pb-tag" + (lunas ? " pb-tag" : "");
     $("f-sum-p").innerHTML = lunas ? ic("tick") + "Lunas" : dp ? ic("clock") + "Menunggu Pelunasan" : ic("clock") + "Belum Lunas";
     box.hidden = false;
   }
@@ -446,7 +446,7 @@
 
       $("f-min-l").textContent = tahunan
         ? "DP Minimum Tahunan"
-        : "Min. DP (50%)";
+        : "Min. Rekomendasi DP (50%)";
 
       // DP minimum selalu mengikuti hasil backend.
       $("f-min").value = rpRapat(F.hitung.dpMin);
@@ -465,8 +465,6 @@
 
       hitungRingkas();
 
-      $("f-jumlah").focus();
-      if ($("f-jumlah").select) $("f-jumlah").select();
 
     } catch (e) {
       if (seq !== F.seq) return;
