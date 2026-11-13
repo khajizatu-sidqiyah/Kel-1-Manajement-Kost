@@ -413,7 +413,7 @@ body.app { background: var(--pg-bg); }
 .shortcut-btn[hidden] { display: none; }
 .shortcut-btn--ghost { border: 1px solid #CBD5E1; background: #FFFFFF; color: #0F172A; }
 .shortcut-btn--ghost:hover { background: #F1F5F9; }
-.shortcut-btn--main { border: 1px solid #065F46; background: #065F46; color: #FFFFFF; }
+.shortcut-btn--main { border: 1px solid #065F46; background: #065F46; color: #FFFFFF !important; }
 .shortcut-btn--main:hover { background: #0E533C; }
 .shortcut-x { position: absolute; top: 10px; right: 10px; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; color: #475569; }
 .shortcut-x:hover { background: #F1F5F9; }

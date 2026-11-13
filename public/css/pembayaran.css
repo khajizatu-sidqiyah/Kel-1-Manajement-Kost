@@ -249,7 +249,7 @@
 .pb-sum b { display: block; margin-top: 3px; font-size: 20px; font-weight: 700; color: var(--pb-ink); }
 .pb-tag { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; background: var(--pb-green-900); font-size: 11.5px; font-weight: 600; white-space: nowrap; color: #fff; }
 .pb-tag .i { width: 13px; height: 13px; }
-.pb-tag--soft { background: #A7F3D0; color: var(--pb-green-900); }
+.pb-tag--soft { background: var(--pb-green-900); color: #fff; }
 
 /* Kartu kamar: dropdown kamar di dalam kartu (form dibuka dari tombol header) */
 .pb-roomcard .pb-roomsel { flex: 1; min-width: 0; }
