@@ -371,3 +371,25 @@
 
 /* Opsi yang tidak bisa dipilih (mis. "Tahunan" untuk kamar tanpa harga tahunan) tampil abu-abu */
 .pb-roomsel select option:disabled, .pb-in--sel select option:disabled { color: #94A3B8; }
+
+/* Informasi DP Minimum */
+.pb-in--ok input[readonly] {
+    border-color: #A7F3D0;
+    background: var(--pb-green-50);
+    font-weight: 600;
+    color: var(--pb-green-700);
+}
+
+/* Keterangan perhitungan DP minimum */
+#f-min-help {
+    display: block;
+    margin-top: 6px;
+    font-size: 11.5px;
+    line-height: 1.45;
+    color: var(--pb-s500);
+}
+
+#f-min-help[hidden] {
+    display: none;
+}
+

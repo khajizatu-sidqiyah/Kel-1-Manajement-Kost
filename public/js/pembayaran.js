@@ -18,7 +18,7 @@
   const AUTH = { Authorization: `Bearer ${localStorage.getItem("token") || ""}` };
 
   const PER_PAGE = 10; // desain: 10 baris per halaman, tombol "Lihat semua data" menampilkan semuanya
-  const state = { rows: [], tab: "tagihan", page: 1, loading: true, error: "", all: false, view: [], dpTahunan: 300000 };
+  const state = { rows: [], tab: "tagihan", page: 1, loading: true, error: "", all: false, view: [] };
   // Filter yang sedang diterapkan (diisi dari panel Filter: Status Tagihan, Skema Sewa, Lantai Kamar)
   const FILTER_KEYS = ["status", "skema", "lantai"];
   const applied = { status: [], skema: [], lantai: [] };
@@ -363,7 +363,7 @@
     $("f-sum-l").textContent = dp ? "Sisa Tagihan Setelah DP" : "Sisa Tagihan Setelah Pembayaran";
     $("f-sum-v").textContent = rpRapat(sisa);
     $("f-sum-p").className = "pb-tag" + (lunas ? " pb-tag--soft" : "");
-    $("f-sum-p").innerHTML = lunas ? ic("tick") + "Lunas" : dp ? ic("clock") + "Menunggu Pelunasan" : ic("tick") + "Belum Lunas";
+    $("f-sum-p").innerHTML = lunas ? ic("tick") + "Lunas" : dp ? ic("clock") + "Menunggu Pelunasan" : ic("clock") + "Belum Lunas";
     box.hidden = false;
   }
 
@@ -394,107 +394,159 @@
     F.seq++; kosongkanDp();
     if (!k) { $("f-skema").value = ""; phSync(); formError("Pilih kamar terlebih dahulu."); return; }
     if (F.mode !== "dp" || !s) return;
-    await hitungSkema(k, s, 0);
+    await hitungSkema(k, s);
   }
 
   // total = total sewa tahunan yang diketik pemilik (opsional). Kosong -> BE memakai kamar.harga_tahunan.
-  async function hitungSkema(k, s, total) {
-    const seq = ++F.seq, tahunan = s === "tahunan";
-    $("f-skema").disabled = true; $("f-simpan").disabled = true;
+  async function hitungSkema(k, s) {
+    const seq = ++F.seq;
+    const tahunan = s === "tahunan";
+
+    $("f-skema").disabled = true;
+    $("f-simpan").disabled = true;
+
     try {
-      const body = { skema_sewa: s }; if (tahunan && total > 0) body.total_sewa = total;
-      const res = await kirim(`/api/penghunian/${k.utama.id}/hitung-dp`, "POST", body);
+      // Backend menghitung total sewa, DP minimum, dan tenggat.
+      // Frontend hanya mengirim skema sewa.
+      const res = await kirim(
+        `/api/penghunian/${k.utama.id}/hitung-dp`,
+        "POST",
+        { skema_sewa: s }
+      );
+
       if (seq !== F.seq) return;
-      const d = res.data || {}, awalMin = F.hitung ? F.hitung.dpMin : 0;
-      F.hitung = { total: num(d.total_sewa), dpMin: num(d.dp_minimum), tenggat: iso(d.tenggat_pelunasan) };
-      $("f-tarif-l").textContent = tahunan ? "Total Tagihan Tahunan" : "Tarif Kamar";
-      $("f-tarif").readOnly = !tahunan; $("f-tarif").tabIndex = tahunan ? 0 : -1; // tahunan: total boleh diubah pemilik
-      $("f-tarif").value = tahunan ? rpRapat(F.hitung.total) : `${rpRapat(F.hitung.total)} / bulan`;
-      $("f-tarif-help").textContent = tahunan ? "Terisi dari harga tahunan kamar. Boleh diubah." : "Otomatis dari harga unit kamar";
-      $("f-min-l").textContent = tahunan ? "Min. DP Tahunan" : "Min. Rekomendasi DP (50%)";
+
+      const d = res.data || res;
+
+      F.hitung = {
+        total: num(d.total_sewa),
+        dpMin: num(d.dp_minimum),
+        tenggat: iso(d.tenggat_pelunasan || d.tenggat)
+      };
+
+      if (!F.hitung.total || !F.hitung.dpMin) {
+        throw new Error("Data perhitungan sewa dari backend belum lengkap.");
+      }
+
+      $("f-tarif-l").textContent = tahunan
+        ? "Total Tagihan Tahunan"
+        : "Tarif Kamar";
+
+      // Total sewa selalu berasal dari backend dan tidak dapat diedit.
+      $("f-tarif").readOnly = true;
+      $("f-tarif").tabIndex = -1;
+
+      $("f-tarif").value = tahunan
+        ? rpRapat(F.hitung.total)
+        : `${rpRapat(F.hitung.total)} / bulan`;
+
+      $("f-tarif-help").textContent = tahunan
+        ? "Otomatis dihitung oleh sistem berdasarkan jumlah penghuni aktif."
+        : "Otomatis dari harga unit kamar.";
+
+      $("f-min-l").textContent = tahunan
+        ? "DP Minimum Tahunan"
+        : "Min. DP (50%)";
+
+      // DP minimum selalu mengikuti hasil backend.
       $("f-min").value = rpRapat(F.hitung.dpMin);
-      const j = parseRp($("f-jumlah").value);
-      if (!j || j === awalMin) setJumlah(F.hitung.dpMin, false);
-      setDate("f-tenggat", F.hitung.tenggat); $("f-tenggat").disabled = !tahunan; // BE: tenggat hanya bisa diubah untuk sewa tahunan
+
+      const jumlahSekarang = parseRp($("f-jumlah").value);
+
+      if (!jumlahSekarang) {
+        setJumlah(F.hitung.dpMin, false);
+      }
+
+      // Tenggat diisi dari backend.
+      setDate("f-tenggat", F.hitung.tenggat);
+
+      // Tenggat tahunan boleh disesuaikan, bulanan tidak.
+      $("f-tenggat").disabled = !tahunan;
+
       hitungRingkas();
-      if (!total) { $("f-jumlah").focus(); if ($("f-jumlah").select) $("f-jumlah").select(); } // fokus ke Jumlah DP
+
+      $("f-jumlah").focus();
+      if ($("f-jumlah").select) $("f-jumlah").select();
+
     } catch (e) {
       if (seq !== F.seq) return;
-      F.hitung = null; $("f-min").value = ""; $("f-sum").hidden = true;
-      // ApiContractMiddleware (BE) mengganti kode teks error menjadi angka HTTP, jadi dikenali juga dari status 422 + isi pesan BE
-      const hargaTahunanKosong = e.code === "INVALID_ANNUAL_RENT" || (e.status === 422 && /harga sewa tahunan/i.test(e.userMessage || ""));
-      if (tahunan && hargaTahunanKosong && !total) {
-        // Kamar belum punya harga tahunan: pemilik mengetik total tahunan sendiri
-        $("f-tarif-l").textContent = "Total Tagihan Tahunan";
-        $("f-tarif").readOnly = false; $("f-tarif").tabIndex = 0; $("f-tarif").value = "";
-        $("f-tarif-help").textContent = "Harga tahunan kamar belum diisi. Ketik total tagihan tahunan.";
-        $("f-tarif").focus();
-      } else {
-        const pesan = e.userMessage || "Gagal menghitung skema sewa. Coba lagi.", id = total ? "f-tarif-err" : "f-skema-err";
-        if ($(id)) { fieldErr(id, pesan); $(id).scrollIntoView({ block: "nearest", behavior: "smooth" }); }
-        else { formError(pesan); $("f-error").scrollIntoView({ block: "nearest", behavior: "smooth" }); }
-      }
+
+      F.hitung = null;
+      $("f-min").value = "";
+      $("f-tarif").value = "";
+      $("f-sum").hidden = true;
+
+      const pesan = e.userMessage || e.message ||
+        "Gagal menghitung skema sewa. Coba lagi.";
+
+      fieldErr("f-skema-err", pesan);
+      $("f-skema-err").scrollIntoView({
+        block: "nearest",
+        behavior: "smooth"
+      });
+
     } finally {
-      if (seq === F.seq) { $("f-skema").disabled = false; $("f-simpan").disabled = false; }
+      if (seq === F.seq) {
+        $("f-skema").disabled = false;
+        $("f-simpan").disabled = false;
+      }
     }
   }
 
-  // Pemilik mengubah total tagihan tahunan -> BE menghitung ulang DP minimum & tenggat
-  async function onTotal() {
-    const k = curRoom();
-    if (!k || F.mode !== "dp" || skemaDp() !== "tahunan" || $("f-tarif").readOnly) return;
-    fieldErr("f-tarif-err", "");
-    const total = parseRp($("f-tarif").value);
-    if (!total) { F.seq++; F.hitung = null; $("f-min").value = ""; $("f-sum").hidden = true; return; }
-    if (F.hitung && F.hitung.total === total) return;
-    await hitungSkema(k, "tahunan", total);
-  }
+    // Pemilik mengubah total tagihan tahunan -> BE menghitung ulang DP minimum & tenggat
+    async function simpan() {
+        if (F.saving) return;
 
-  // Dipanggil saat kamar berubah / form dibuka. Seluruh form selalu tampil; isinya terisi setelah kamar & skema dipilih.
-  function onKamar() {
-    const k = curRoom(); clearErrors(); phSync(); opsiTahunan(k);
-    F.mode = k ? modeOf(k) : ""; F.selesai = false; F.seq++;
-    const dp = !k || F.mode === "dp"; // sebelum kamar dipilih: tampilan DP (default)
-    show("f-card-t", !F.pickable && !!k); show("f-kamar-w", F.pickable); show("f-info-dp", dp); show("f-info-ok", !!k && !dp);
-    show("f-card-b", !!k); ["f-skema-g", "f-tarif-row", "f-jenis-g", "f-fields"].forEach((id) => show(id, true));
-    show("f-jenis-sel", !dp); show("f-jenis-fix", dp); show("f-tenggat-wrap", dp); show("f-periode-g", F.mode === "tahunan");
-    $("f-simpan").disabled = false;
-    setDate("f-tgl", todayIso()); setMetode(""); F.tenggatManual = false;
-    if (dp) {
-      $("f-skema").disabled = false; $("f-skema").value = ""; phSync(); // default: "Pilih skema"
-      kosongkanDp();
-      $("f-jenis-help").textContent = "Setelah DP tersimpan, jenis tagihan berikutnya yang terbuka adalah Pelunasan atau Cicilan (cicilan hanya untuk sewa tahunan).";
-      if (k) { $("f-card-t").textContent = `Kamar ${fmtNo(k.no)} - ${k.utama.nama}`; $("f-card-b").textContent = "Pencatatan DP"; }
-      hitungRingkas(); return;
+        const v = validasi();
+        if (!v) return;
+
+        await kirimPembayaran(v);
+      }
+    // Dipanggil saat kamar berubah / form dibuka. Seluruh form selalu tampil; isinya terisi setelah kamar & skema dipilih.
+    function onKamar() {
+      const k = curRoom(); clearErrors(); phSync(); opsiTahunan(k);
+      F.mode = k ? modeOf(k) : ""; F.selesai = false; F.seq++;
+      const dp = !k || F.mode === "dp"; // sebelum kamar dipilih: tampilan DP (default)
+      show("f-card-t", !F.pickable && !!k); show("f-kamar-w", F.pickable); show("f-info-dp", dp); show("f-info-ok", !!k && !dp);
+      show("f-card-b", !!k); ["f-skema-g", "f-tarif-row", "f-jenis-g", "f-fields"].forEach((id) => show(id, true));
+      show("f-jenis-sel", !dp); show("f-jenis-fix", dp); show("f-tenggat-wrap", dp); show("f-periode-g", F.mode === "tahunan");
+      $("f-simpan").disabled = false;
+      setDate("f-tgl", todayIso()); setMetode(""); F.tenggatManual = false;
+      if (dp) {
+        $("f-skema").disabled = false; $("f-skema").value = ""; phSync(); // default: "Pilih skema"
+        kosongkanDp();
+        $("f-jenis-help").textContent = "Setelah DP tersimpan, jenis tagihan berikutnya yang terbuka adalah Pelunasan atau Cicilan (cicilan hanya untuk sewa tahunan).";
+        if (k) { $("f-card-t").textContent = `Kamar ${fmtNo(k.no)} - ${k.utama.nama}`; $("f-card-b").textContent = "Pencatatan DP"; }
+        hitungRingkas(); return;
+      }
+      $("f-card-t").textContent = `Kamar ${fmtNo(k.no)} - ${k.utama.nama}`;
+      $("f-card-b").textContent = F.mode === "tahunan" ? "Skema Tahunan" : "Skema Bulanan";
+      setDate("f-tenggat", "");
+
+      // Sudah ada DP: skema sudah tersimpan di BE dan tidak bisa diganti
+      const r = ringkas(k), tahunan = r.tahunan, sisa = sisaBE(k), totalDpAmt = dpRows(k).reduce((s, b) => s + b.jumlah, 0);
+      $("f-skema").disabled = true; $("f-skema").value = F.mode; phSync();
+      $("f-jumlah-l").innerHTML = 'Jumlah Pembayaran <span class="req">*</span>';
+      $("f-info-ok-t").textContent = `DP ${rpRapat(totalDpAmt)} pada ${tglPanjang(dpDate(k))}`;
+      $("f-tarif").readOnly = true;
+      $("f-tarif-l").textContent = tahunan ? "Total Tagihan Tahunan" : "Jumlah Tagihan";
+      $("f-tarif").value = tahunan ? rpRapat(k.total) : `${rpRapat(k.total)} / bulan`;
+      $("f-tarif-help").textContent = tahunan ? "Otomatis dari harga tahunan kamar" : "Otomatis dari harga kamar";
+      $("f-min-l").textContent = "Sisa Tagihan";
+      $("f-min").value = rpRapat(sisa);
+      $("f-jenis-help").textContent = tahunan
+        ? "Sewa tahunan: Cicilan (sebagian) atau Pelunasan (sama dengan sisa tagihan)."
+        : "Sewa bulanan: Pelunasan sebesar sisa tagihan.";
+
+      if (sisa <= 0) { // BE menolak pembayaran bila tagihan sudah lunas (BILL_ALREADY_PAID)
+        F.selesai = true; show("f-jenis-g", false); show("f-fields", false); $("f-simpan").disabled = true;
+        formError("Tagihan kamar ini sudah lunas. Tidak ada pembayaran yang perlu dicatat."); hitungRingkas(); return;
+      }
+      const opts = tahunan ? ["cicilan", "pelunasan"] : ["pelunasan"]; // jenis yang diterima BE; cicilan hanya tahunan
+      const nama = { cicilan: "Cicilan", pelunasan: "Pelunasan" };
+      $("f-jenis").innerHTML = opts.map((j) => `<option value="${j}">${nama[j]}</option>`).join("");
+      onJenis();
     }
-    $("f-card-t").textContent = `Kamar ${fmtNo(k.no)} - ${k.utama.nama}`;
-    $("f-card-b").textContent = F.mode === "tahunan" ? "Skema Tahunan" : "Skema Bulanan";
-    setDate("f-tenggat", "");
-
-    // Sudah ada DP: skema sudah tersimpan di BE dan tidak bisa diganti
-    const r = ringkas(k), tahunan = r.tahunan, sisa = sisaBE(k), totalDpAmt = dpRows(k).reduce((s, b) => s + b.jumlah, 0);
-    $("f-skema").disabled = true; $("f-skema").value = F.mode; phSync();
-    $("f-jumlah-l").innerHTML = 'Jumlah Pembayaran <span class="req">*</span>';
-    $("f-info-ok-t").textContent = `DP ${rpRapat(totalDpAmt)} pada ${tglPanjang(dpDate(k))}`;
-    $("f-tarif").readOnly = true;
-    $("f-tarif-l").textContent = tahunan ? "Total Tagihan Tahunan" : "Jumlah Tagihan";
-    $("f-tarif").value = tahunan ? rpRapat(k.total) : `${rpRapat(k.total)} / bulan`;
-    $("f-tarif-help").textContent = tahunan ? "Otomatis dari harga tahunan kamar" : "Otomatis dari harga kamar";
-    $("f-min-l").textContent = "Sisa Tagihan";
-    $("f-min").value = rpRapat(sisa);
-    $("f-jenis-help").textContent = tahunan
-      ? "Sewa tahunan: Cicilan (sebagian) atau Pelunasan (sama dengan sisa tagihan)."
-      : "Sewa bulanan: Pelunasan sebesar sisa tagihan.";
-
-    if (sisa <= 0) { // BE menolak pembayaran bila tagihan sudah lunas (BILL_ALREADY_PAID)
-      F.selesai = true; show("f-jenis-g", false); show("f-fields", false); $("f-simpan").disabled = true;
-      formError("Tagihan kamar ini sudah lunas. Tidak ada pembayaran yang perlu dicatat."); hitungRingkas(); return;
-    }
-    const opts = tahunan ? ["cicilan", "pelunasan"] : ["pelunasan"]; // jenis yang diterima BE; cicilan hanya tahunan
-    const nama = { cicilan: "Cicilan", pelunasan: "Pelunasan" };
-    $("f-jenis").innerHTML = opts.map((j) => `<option value="${j}">${nama[j]}</option>`).join("");
-    onJenis();
-  }
 
   // Mode setelah DP: jenis berubah -> jumlah awal, periode cicilan (hanya teks)
   function onJenis() {
@@ -611,7 +663,7 @@
     const id = it.tipe === "tagihan" ? it.pendingId : it.pay?.id;
     if (!id) return toast("Data pembayaran yang menunggu konfirmasi tidak ditemukan.", true);
     if (!confirm("Konfirmasi pembayaran ini sebagai lunas?")) return;
-    try { await kirim(`/api/pembayaran/${id}/status`, "PATCH", { status: "terverifikasi" }); toast("Pembayaran dikonfirmasi."); refresh(); }
+    try { await kirim(`/api/pembayaran/${id}/status`, "PUT", { status: "terverifikasi" }); toast("Pembayaran dikonfirmasi."); refresh(); }
     catch (e) { toast(e.userMessage || "Gagal mengonfirmasi pembayaran.", true); }
   }
 
@@ -683,9 +735,9 @@
   $("f-kamar").addEventListener("change", onKamar);
   $("f-skema").addEventListener("change", onSkema);
   $("f-kamar").addEventListener("change", phSync);
-  $("f-tarif").addEventListener("change", onTotal);
+  
   $("f-jenis").addEventListener("change", () => { fieldErr("f-jenis-err", ""); onJenis(); });
-  [["f-jumlah", () => fieldErr("f-jumlah-help", "")], ["f-tarif", () => { fieldErr("f-tarif-err", ""); }]].forEach(([id, extra]) => {
+  [["f-jumlah", () => fieldErr("f-jumlah-help", "")]].forEach(([id, extra]) => {
     $(id).addEventListener("input", (e) => {
       if (e.target.readOnly) return;
       const d = e.target.value.replace(/\D/g, ""); e.target.value = d ? rpRapat(Number(d)) : ""; extra(); hitungRingkas();
@@ -735,6 +787,6 @@
     bukaForm({ kamarId: k.id });
   }
 
-  fetch("/api/pengaturan-sewa", { headers: { Accept: "application/json", ...AUTH } }).then((r) => r.json()).then((j) => { const n = num(j.data?.dp_minimum_tahunan); if (n) state.dpTahunan = n; }).catch(() => {});
+  
   refresh().then(dariParameter);
 })();

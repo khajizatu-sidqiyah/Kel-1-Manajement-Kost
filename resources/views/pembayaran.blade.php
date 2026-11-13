@@ -179,8 +179,11 @@
                         <p class="pb-help" id="f-tarif-help"></p>
                     </div>
                     <div class="pb-g">
-                        <label for="f-min" id="f-min-l">Min. Rekomendasi DP (50%)</label>
-                        <div class="pb-in pb-in--ok"><input type="text" id="f-min" readonly tabindex="-1"></div>
+                        <label for="f-min" id="f-min-l">DP Minimum</label>
+                        <div class="pb-in pb-in--ok">
+                            <input type="text" id="f-min" readonly tabindex="-1" placeholder="Otomatis dihitung">
+                        </div>
+                        <p class="pb-help" id="f-min-help" hidden></p>
                     </div>
                 </div>
 
