@@ -679,7 +679,7 @@ class PenghunianController extends Controller
                         ? Carbon::parse(
                             $penghunian->tanggal_mulai
                         )
-                            ->addMonthsNoOverflow(2)
+                            ->addMonthsNoOverflow(3)
                             ->toDateString()
                         : null;
                 }
