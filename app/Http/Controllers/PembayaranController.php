@@ -510,8 +510,15 @@ class PembayaranController extends Controller
                 }
 
                 if (!empty($validated['tenggat_pelunasan'])) {
+                    if (!$penghunian->tanggal_mulai) {
+                        return $this->errorResponse(
+                            422,
+                            'Isi tanggal masuk terlebih dahulu sebelum mengatur tenggat pelunasan.',
+                            'START_DATE_NOT_SET'
+                        );
+                    }
+
                     if (
-                        $penghunian->tanggal_mulai &&
                         Carbon::parse($validated['tenggat_pelunasan'])->lt(
                             Carbon::parse($penghunian->tanggal_mulai)
                         )
@@ -1158,27 +1165,23 @@ class PembayaranController extends Controller
      */
     public function perKamar(Request $request)
     {
-        $validated = $request->validate([
+        $validated = $this->validateRequest($request, [
             'page' => ['sometimes', 'integer', 'min:1'],
             'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
         ]);
 
-        $penghunianAktif = Penghunian::with([
-            'kamar',
-            'penghuni',
-        ])
+        if ($validated instanceof \Illuminate\Http\JsonResponse) {
+            return $validated;
+        }
+
+        // Ambil semua penghunian aktif beserta kamar dan data penghuni.
+        $penghunianAktif = Penghunian::with(['kamar', 'penghuni'])
             ->where('status', 'aktif')
             ->get();
 
-        $idSemuaPenghunian = Penghunian::pluck(
-            'id_penghunian'
-        )->all();
-
-        $adaPembayaran = !empty($idSemuaPenghunian)
-            && Pembayaran::whereIn(
-                'id_penghunian',
-                $idSemuaPenghunian
-            )->exists();
+        // Jika belum ada satu pun transaksi pembayaran di sistem,
+        // kembalikan kondisi kosong sesuai acceptance criteria.
+        $adaPembayaran = Pembayaran::exists();
 
         if (!$adaPembayaran) {
             return response()->json([
@@ -1187,90 +1190,91 @@ class PembayaranController extends Controller
             ]);
         }
 
+        // Satu kamar hanya menghasilkan satu baris.
         $rows = $penghunianAktif
             ->groupBy('id_kamar')
             ->map(function ($daftar) {
+                $penghunianPertama = $daftar->first();
 
-                $utama = $daftar->firstWhere(
-                    'penyewa_utama',
-                    true
-                );
+                // Cari penyewa utama dari penghuni aktif.
+                $utama = $daftar->firstWhere('penyewa_utama', true);
 
+                // Jika hanya ada satu penghuni aktif, gunakan dia sebagai utama.
                 if (!$utama && $daftar->count() === 1) {
                     $utama = $daftar->first();
                 }
 
-                $idPenghunianKamar = Penghunian::where(
+                // Hitung seluruh transaksi dari seluruh masa penghunian kamar.
+                // Ini hanya untuk jumlah transaksi, bukan untuk status tagihan aktif.
+                $idSemuaPenghunianKamar = Penghunian::where(
                     'id_kamar',
-                    $daftar->first()->id_kamar
-                )
-                    ->pluck('id_penghunian')
-                    ->all();
+                    $penghunianPertama->id_kamar
+                )->pluck('id_penghunian');
 
                 $jumlahPembayaran = Pembayaran::whereIn(
                     'id_penghunian',
-                    $idPenghunianKamar
+                    $idSemuaPenghunianKamar
                 )->count();
 
                 $penyewaUtama = $utama ? [
                     'id_penghuni' => $utama->id_penghuni,
-                    'nama_penghuni' =>
-                        $utama->penghuni->nama_penghuni ?? '-',
+                    'nama_penghuni' => $utama->penghuni->nama_penghuni ?? '-',
                 ] : null;
 
-                $statusPembayaran = 'belum_ada_pembayaran';
+                // Status tagihan hanya dihitung dari penghunian penyewa utama
+                // yang sedang aktif. Pembayaran penghuni lama tidak boleh tercampur.
+                if ($jumlahPembayaran === 0) {
+                    $statusPembayaran = 'belum_ada_pembayaran';
+                } elseif (!$utama) {
+                    $statusPembayaran = 'belum_lunas';
+                } else {
+                    $queryPembayaranAktif = Pembayaran::where(
+                        'id_penghunian',
+                        $utama->id_penghunian
+                    )->where('status', 'terverifikasi');
 
-                if ($jumlahPembayaran > 0 && $utama) {
-
-                    $periode = (
+                    // Untuk bulanan, hitung hanya periode yang sedang ditagihkan.
+                    if (
                         $utama->skema_sewa === 'bulanan' &&
                         $utama->tenggat_pelunasan
-                    )
-                        ? Carbon::parse(
+                    ) {
+                        $periodeAktif = Carbon::parse(
                             $utama->tenggat_pelunasan
-                        )->startOfMonth()->toDateString()
-                        : null;
+                        )->startOfMonth()->toDateString();
 
-                    $query = Pembayaran::whereIn(
-                        'id_penghunian',
-                        $idPenghunianKamar
-                    )
-                        ->where('status', 'terverifikasi');
-
-                    if ($periode) {
-                        $query->whereDate(
+                        $queryPembayaranAktif->whereDate(
                             'periode_tagihan',
-                            $periode
+                            $periodeAktif
                         );
                     }
 
-                    $terbayar = (float) $query->sum('jumlah');
-                    $tagihan = (float) ($utama->total_sewa ?? 0);
+                    $totalTerbayar = (float) $queryPembayaranAktif->sum('jumlah');
+                    $totalTagihan = (float) ($utama->total_sewa ?? 0);
 
                     $statusPembayaran = (
-                        $tagihan > 0 &&
-                        $terbayar >= $tagihan
-                    )
-                        ? 'lunas'
-                        : 'belum_lunas';
-
-                } elseif ($jumlahPembayaran > 0) {
-                    $statusPembayaran = 'belum_lunas';
+                        $totalTagihan > 0 &&
+                        $totalTerbayar >= $totalTagihan
+                    ) ? 'lunas' : 'belum_lunas';
                 }
 
-                $kamar = $daftar->first()->kamar;
+                $kamar = $penghunianPertama->kamar;
 
                 return [
-                    'id_kamar' => $daftar->first()->id_kamar,
+                    'id_kamar' => $penghunianPertama->id_kamar,
                     'no_kamar' => $kamar->no_kamar ?? '-',
                     'penyewa_utama' => $penyewaUtama,
                     'jumlah_penghuni_aktif' => $daftar->count(),
                     'jumlah_pembayaran' => $jumlahPembayaran,
+                    'skema_sewa' => $utama->skema_sewa ?? null,
                     'status_pembayaran' => $statusPembayaran,
-                    'riwayat_url' =>
-                        '/api/pembayaran/kamar/' .
-                        $daftar->first()->id_kamar .
-                        '/riwayat',
+                    // Tenggat ditampilkan agar pemilik dapat melihat tanggal
+                    // yang akan berubah otomatis setelah periode lunas.
+                    'tenggat_pelunasan' => $utama && $utama->tenggat_pelunasan
+                        ? Carbon::parse($utama->tenggat_pelunasan)->toDateString()
+                        : null,
+                    'riwayat_url' => '/api/pembayaran/kamar/'
+                        . $penghunianPertama->id_kamar
+                        . '/riwayat',
                 ];
             })
             ->values();
@@ -1284,7 +1288,6 @@ class PembayaranController extends Controller
 
         $page = (int) ($validated['page'] ?? 1);
         $perPage = (int) ($validated['per_page'] ?? 10);
-
         $total = $rows->count();
 
         $data = $rows
@@ -1298,10 +1301,7 @@ class PembayaranController extends Controller
                 'current_page' => $page,
                 'per_page' => $perPage,
                 'total' => $total,
-                'last_page' => max(
-                    1,
-                    (int) ceil($total / $perPage)
-                ),
+                'last_page' => max(1, (int) ceil($total / $perPage)),
             ],
         ]);
     }
@@ -1365,6 +1365,9 @@ class PembayaranController extends Controller
                         ? Carbon::parse(
                             $item->tanggal_bayar
                         )->toDateString()
+                        : null,
+                    'periode_tagihan' => $item->periode_tagihan
+                        ? Carbon::parse($item->periode_tagihan)->toDateString()
                         : null,
                     'jumlah' => (float) $item->jumlah,
                     'metode_pembayaran' => $item->metode_pembayaran,
