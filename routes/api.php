@@ -102,7 +102,7 @@ Route::middleware('api.contract')->group(function () {
             ->whereNumber('id');
 
         // Verifikasi atau penolakan pembayaran
-        Route::put('/pembayaran/{id}/status', [PembayaranController::class, 'updateStatus'])
+        Route::patch('/pembayaran/{id}/status', [PembayaranController::class, 'updateStatus'])
             ->whereNumber('id');
     });
 });

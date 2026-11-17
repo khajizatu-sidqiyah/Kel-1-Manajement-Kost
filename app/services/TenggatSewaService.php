@@ -8,8 +8,8 @@ class TenggatSewaService
 {
     /**
      * Menghitung tenggat bulan berikutnya.
-     * Tanggal 29, 30, dan 31 selalu menjadi hari terakhir
-     * pada bulan berikutnya sesuai keputusan pemilik kos.
+     * Tanggal 29, 30, dan 31 menjadi hari terakhir
+     * pada bulan berikutnya.
      */
     public function hitungBerikutnya($tanggalTenggat): string
     {
@@ -31,14 +31,17 @@ class TenggatSewaService
     }
 
     /**
-     * Memajukan tenggat hanya jika periode tersebut sudah lunas
-     * dan tenggat saat ini masih berada pada bulan periode itu.
-     * Pengecekan bulan mencegah pemrosesan pembayaran yang sama
-     * memajukan tenggat lebih dari satu kali.
+     * Tenggat hanya maju jika tagihan periode tersebut sudah lunas.
      */
-    public function majukanJikaLunas($penghunian, string $periodeTagihan, float $totalTerverifikasi): ?string
-    {
-        if ($penghunian->skema_sewa !== 'bulanan' || !$penghunian->tenggat_pelunasan) {
+    public function majukanJikaLunas(
+        $penghunian,
+        string $periodeTagihan,
+        float $totalTerverifikasi
+    ): ?string {
+        if (
+            $penghunian->skema_sewa !== 'bulanan' ||
+            !$penghunian->tenggat_pelunasan
+        ) {
             return null;
         }
 
@@ -51,7 +54,10 @@ class TenggatSewaService
 
         $totalTagihan = (float) ($penghunian->total_sewa ?? 0);
 
-        if ($totalTagihan <= 0 || $totalTerverifikasi < $totalTagihan) {
+        if (
+            $totalTagihan <= 0 ||
+            $totalTerverifikasi < $totalTagihan
+        ) {
             return null;
         }
 
