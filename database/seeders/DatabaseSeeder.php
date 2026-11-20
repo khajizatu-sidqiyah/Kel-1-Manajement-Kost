@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use App\Models\Penghuni;
+use App\Models\PengaturanSewa;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
@@ -36,6 +37,11 @@ class DatabaseSeeder extends Seeder
             'alamat' => 'Cirebon',
         ]);
         // 4. Data kos
+        PengaturanSewa::firstOrCreate(
+            [],
+            ['dp_minimum_tahunan' => 300000]
+        );
+        
         $this->call([
             PemilikSeeder::class,
             KostSeeder::class,

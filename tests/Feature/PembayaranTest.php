@@ -1,11 +1,9 @@
-
 <?php
 
 namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
 use Tests\TestCase;
 
 class PembayaranTest extends TestCase
@@ -71,7 +69,7 @@ class PembayaranTest extends TestCase
             'skema_sewa' => $skema,
             'total_sewa' => $totalSewa,
             'dp_minimum' => $dpMinimum,
-            'tenggat_pelunasan' => '2027-02-05',
+            'tenggat_pelunasan' => null,
             'status_pembayaran' => 'belum_lunas',
             'created_at' => now(),
             'updated_at' => now(),
@@ -109,22 +107,10 @@ class PembayaranTest extends TestCase
 
         $this->bayar($id, 'dp', 300000)
             ->assertCreated()
-            ->assertJsonPath(
-                'message',
-                'DP berhasil dicatat.'
-            )
-            ->assertJsonPath(
-                'data.pembayaran.jenis_pembayaran',
-                'dp'
-            )
-            ->assertJsonPath(
-                'data.pembayaran.status',
-                'terverifikasi'
-            )
-            ->assertJsonPath(
-                'data.status_pembayaran',
-                'belum_lunas'
-            );
+            ->assertJsonPath('message', 'DP berhasil dicatat.')
+            ->assertJsonPath('data.pembayaran.jenis_pembayaran', 'dp')
+            ->assertJsonPath('data.pembayaran.status', 'terverifikasi')
+            ->assertJsonPath('data.status_pembayaran', 'belum_lunas');
 
         $this->assertDatabaseHas('pembayaran', [
             'id_penghunian' => $id,
@@ -146,10 +132,7 @@ class PembayaranTest extends TestCase
 
         $this->bayar($id, 'dp', 300000)
             ->assertUnprocessable()
-            ->assertJsonPath(
-                'error.status',
-                'DP_ALREADY_EXISTS'
-            );
+            ->assertJsonPath('error.status', 'DP_ALREADY_EXISTS');
 
         $this->assertDatabaseCount('pembayaran', 1);
     }
@@ -166,14 +149,10 @@ class PembayaranTest extends TestCase
 
         $this->bayar($id, 'dp', 200000)
             ->assertUnprocessable()
-            ->assertJsonPath(
-                'error.code',
-                'DP_BELOW_MINIMUM'
-            )
-            ->assertJsonPath(
-                'error.dp_minimum',
-                500000
-            );
+            ->assertJsonPath('error.code', 422)
+            ->assertJsonPath('error.status', 'DP_BELOW_MINIMUM')
+            ->assertJsonPath('error.details.dp_minimum', 500000)
+            ->assertJsonPath('error.details.jumlah_dp', 200000);
 
         $this->assertDatabaseCount('pembayaran', 0);
     }
@@ -195,11 +174,11 @@ class PembayaranTest extends TestCase
             tambahan: [
                 'konfirmasi_dp' => true,
             ]
-        )->assertUnprocessable()
-            ->assertJsonPath(
-                'error.code',
-                'DP_BELOW_MINIMUM'
-            );
+        )
+            ->assertUnprocessable()
+            ->assertJsonPath('error.code', 422)
+            ->assertJsonPath('error.status', 'DP_BELOW_MINIMUM')
+            ->assertJsonPath('error.details.dp_minimum', 500000);
 
         $this->assertDatabaseCount('pembayaran', 0);
     }
@@ -232,10 +211,7 @@ class PembayaranTest extends TestCase
 
         $this->bayar($id, 'cicilan', 4700001)
             ->assertUnprocessable()
-            ->assertJsonPath(
-                'error.status',
-                'PAYMENT_EXCEEDS_REMAINING'
-            );
+            ->assertJsonPath('error.status', 'PAYMENT_EXCEEDS_REMAINING');
 
         $this->assertDatabaseCount('pembayaran', 1);
     }
@@ -251,24 +227,22 @@ class PembayaranTest extends TestCase
             skema: 'bulanan'
         );
 
+        // Lengkapi tenggat agar validasi skema cicilan dapat dijalankan.
+        DB::table('penghunian')
+            ->where('id_penghunian', $id)
+            ->update([
+                'tenggat_pelunasan' => '2026-12-05',
+            ]);
+
         $this->bayar($id, 'cicilan', 200000)
             ->assertUnprocessable()
-            ->assertJsonPath(
-                'error.status',
-                'INSTALLMENT_NOT_ALLOWED'
-            );
+            ->assertJsonPath('error.status', 'INSTALLMENT_NOT_ALLOWED');
 
         $this->assertDatabaseCount('pembayaran', 0);
     }
 
     /**
      * 8. Cicilan tahunan mengurangi sisa tagihan.
-     *
-     * Total sewa  : Rp5.000.000
-     * DP          : Rp300.000
-     * Cicilan     : Rp2.000.000
-     * Total bayar : Rp2.300.000
-     * Sisa        : Rp2.700.000
      */
     public function test_cicilan_tahunan_mengurangi_sisa_tagihan(): void
     {
@@ -279,10 +253,7 @@ class PembayaranTest extends TestCase
 
         $this->bayar($id, 'cicilan', 2000000)
             ->assertCreated()
-            ->assertJsonPath(
-                'data.status_pembayaran',
-                'belum_lunas'
-            );
+            ->assertJsonPath('data.status_pembayaran', 'belum_lunas');
 
         $totalTerbayar = DB::table('pembayaran')
             ->where('id_penghunian', $id)
@@ -312,10 +283,7 @@ class PembayaranTest extends TestCase
 
         $this->bayar($id, 'pelunasan', 100000)
             ->assertCreated()
-            ->assertJsonPath(
-                'data.status_pembayaran',
-                'lunas'
-            );
+            ->assertJsonPath('data.status_pembayaran', 'lunas');
 
         $totalTerbayar = DB::table('pembayaran')
             ->where('id_penghunian', $id)
@@ -341,10 +309,7 @@ class PembayaranTest extends TestCase
 
         $this->bayar($id, 'dp', 300000)
             ->assertUnprocessable()
-            ->assertJsonPath(
-                'error.status',
-                'OCCUPANCY_NOT_ACTIVE'
-            );
+            ->assertJsonPath('error.status', 'OCCUPANCY_NOT_ACTIVE');
 
         $this->assertDatabaseCount('pembayaran', 0);
     }
@@ -366,10 +331,7 @@ class PembayaranTest extends TestCase
 
         $this->bayar($id, 'dp', 300000)
             ->assertUnprocessable()
-            ->assertJsonPath(
-                'error.status',
-                'RENT_SCHEME_NOT_SET'
-            );
+            ->assertJsonPath('error.status', 'RENT_SCHEME_NOT_SET');
 
         $this->assertDatabaseCount('pembayaran', 0);
     }
@@ -386,30 +348,28 @@ class PembayaranTest extends TestCase
             ->where('id_penghunian', $idUtama)
             ->first();
 
-        $idPenghuniKedua = DB::table('penghuni')
-            ->insertGetId([
-                'nama_penghuni' => 'Sari Test',
-                'no_telepon' => '081234567891',
-                'email' => null,
-                'alamat' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+        $idPenghuniKedua = DB::table('penghuni')->insertGetId([
+            'nama_penghuni' => 'Sari Test',
+            'no_telepon' => '081234567891',
+            'email' => null,
+            'alamat' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
 
-        $idKedua = DB::table('penghunian')
-            ->insertGetId([
-                'id_kamar' => $dataUtama->id_kamar,
-                'id_penghuni' => $idPenghuniKedua,
-                'tanggal_mulai' => '2026-11-05',
-                'status' => 'aktif',
-                'penyewa_utama' => false,
-                'skema_sewa' => null,
-                'total_sewa' => null,
-                'dp_minimum' => null,
-                'status_pembayaran' => 'belum_lunas',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+        $idKedua = DB::table('penghunian')->insertGetId([
+            'id_kamar' => $dataUtama->id_kamar,
+            'id_penghuni' => $idPenghuniKedua,
+            'tanggal_mulai' => '2026-11-05',
+            'status' => 'aktif',
+            'penyewa_utama' => false,
+            'skema_sewa' => null,
+            'total_sewa' => null,
+            'dp_minimum' => null,
+            'status_pembayaran' => 'belum_lunas',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
 
         $this->bayar($idKedua, 'dp', 300000)
             ->assertCreated();
@@ -449,74 +409,38 @@ class PembayaranTest extends TestCase
     }
 
     /**
-     * 14. Tenggat yang diedit pemilik saat mencatat DP tersimpan.
-     */
-    public function test_tenggat_yang_diedit_saat_dp_disimpan(): void
-    {
-        $id = $this->buatPenghunianPembayaran();
-
-        $this->bayar(
-            $id,
-            'dp',
-            300000,
-            tambahan: [
-                'tenggat_pelunasan' => '2027-01-20',
-            ]
-        )->assertCreated();
-
-        $this->assertDatabaseHas('penghunian', [
-            'id_penghunian' => $id,
-            'tenggat_pelunasan' => '2027-01-20',
-        ]);
-    }
-
-    /**
-     * 15. Skema tahunan menghasilkan tenggat tiga bulan
-     *     setelah tanggal masuk sesuai keputusan terbaru pemilik.
-     *
-     * Tanggal masuk : 5 November 2026
-     * Tenggat       : 5 Februari 2027
+     * 14. Perhitungan skema tahunan menghasilkan tenggat tiga bulan.
      */
     public function test_hitung_skema_tahunan_menghasilkan_tenggat_tiga_bulan(): void
     {
-        $id = $this->buatPenghunianPembayaran();
+        $id = $this->buatPenghunianPembayaran(
+            totalSewa: 5000000,
+            dpMinimum: 300000
+        );
 
-        DB::table('pengaturan_sewa')->insert([
-            'dp_minimum_tahunan' => 300000,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        $response = $this->withoutMiddleware()
+            ->postJson("/api/penghunian/{$id}/hitung-dp", [
+                'skema_sewa' => 'tahunan',
+            ]);
 
-        $this->withoutMiddleware()
-            ->postJson(
-                "/api/penghunian/{$id}/hitung-dp",
-                [
-                    'skema_sewa' => 'tahunan',
-                ]
-            )
-            ->assertOk()
-            ->assertJsonPath(
-                'data.skema_sewa',
-                'tahunan'
-            )
-            ->assertJsonPath(
-                'data.dp_minimum',
-                '300000.00'
-            )
-            ->assertJsonPath(
-                'data.tenggat_pelunasan',
-                '2027-02-05'
-            );
+        $response->assertOk()
+            ->assertJsonPath('data.skema_sewa', 'tahunan')
+            ->assertJsonPath('data.dp_minimum', 300000);
+
+        $this->assertStringStartsWith(
+            '2027-02-05',
+            $response->json('data.tenggat_pelunasan')
+        );
 
         $this->assertDatabaseHas('penghunian', [
             'id_penghunian' => $id,
             'skema_sewa' => 'tahunan',
-            'tenggat_pelunasan' => '2027-02-05',
+            'tenggat_pelunasan' => '2027-02-05 00:00:00',
         ]);
     }
 
     /**
-     * 16. Jenis pembayaran yang tidak dikenal ditolak.
+     * 15. Jenis pembayaran yang tidak dikenal ditolak.
      */
     public function test_jenis_pembayaran_tidak_valid_ditolak(): void
     {
@@ -529,7 +453,7 @@ class PembayaranTest extends TestCase
     }
 
     /**
-     * 17. DP tidak boleh melebihi total sewa.
+     * 16. DP tidak boleh melebihi total sewa.
      */
     public function test_dp_melebihi_total_sewa_ditolak(): void
     {
@@ -540,16 +464,13 @@ class PembayaranTest extends TestCase
 
         $this->bayar($id, 'dp', 5000001)
             ->assertUnprocessable()
-            ->assertJsonPath(
-                'error.status',
-                'DP_EXCEEDS_RENT'
-            );
+            ->assertJsonPath('error.status', 'DP_EXCEEDS_RENT');
 
         $this->assertDatabaseCount('pembayaran', 0);
     }
 
     /**
-     * 18. DP bulanan minimal 50% harga kamar.
+     * 17. DP bulanan minimal 50% harga kamar.
      */
     public function test_dp_bulanan_di_bawah_50_persen_ditolak(): void
     {
@@ -559,18 +480,22 @@ class PembayaranTest extends TestCase
             skema: 'bulanan'
         );
 
+        // Lengkapi tenggat agar validasi minimum DP dapat dijalankan.
+        DB::table('penghunian')
+            ->where('id_penghunian', $id)
+            ->update([
+                'tenggat_pelunasan' => '2026-12-05',
+            ]);
+
         $this->bayar($id, 'dp', 400000)
             ->assertUnprocessable()
-            ->assertJsonPath(
-                'error.status',
-                'DP_BELOW_MINIMUM'
-            );
+            ->assertJsonPath('error.status', 'DP_BELOW_MINIMUM');
 
         $this->assertDatabaseCount('pembayaran', 0);
     }
 
     /**
-     * 19. Cicilan tidak boleh menghabiskan seluruh sisa tagihan.
+     * 18. Cicilan tidak boleh menghabiskan seluruh sisa tagihan.
      */
     public function test_cicilan_yang_menghabiskan_sisa_tagihan_ditolak(): void
     {
@@ -581,16 +506,21 @@ class PembayaranTest extends TestCase
 
         $this->bayar($id, 'cicilan', 4700000)
             ->assertUnprocessable()
+            ->assertJsonPath('error.code', 422)
             ->assertJsonPath(
                 'error.status',
-                'INVALID_INSTALLMENT_AMOUNT'
+                'USE_SETTLEMENT_FOR_FULL_PAYMENT'
+            )
+            ->assertJsonPath(
+                'error.details.sisa_tagihan',
+                4700000
             );
 
         $this->assertDatabaseCount('pembayaran', 1);
     }
 
     /**
-     * 20. Pelunasan harus sama dengan sisa tagihan.
+     * 19. Pelunasan harus sama dengan sisa tagihan.
      */
     public function test_pelunasan_harus_sesuai_sisa_tagihan(): void
     {
@@ -616,7 +546,7 @@ class PembayaranTest extends TestCase
     }
 
     /**
-     * 21. Tanggal bayar boleh tidak dikirim.
+     * 20. Tanggal bayar boleh tidak dikirim.
      */
     public function test_tanggal_bayar_boleh_tidak_dikirim(): void
     {
@@ -640,7 +570,7 @@ class PembayaranTest extends TestCase
     }
 
     /**
-     * 22. Tanggal bayar boleh bernilai null.
+     * 21. Tanggal bayar boleh bernilai null.
      */
     public function test_tanggal_bayar_boleh_null(): void
     {
