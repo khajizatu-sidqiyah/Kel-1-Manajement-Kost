@@ -1,0 +1,536 @@
+openapi: 3.0.3
+info:
+  title: API Status Tagihan Kamar Kos
+  version: 1.0.0
+  description: |
+    Kontrak API untuk user story: *"Sebagai pemilik kos, saya ingin sistem menandai otomatis
+    kamar yang melewati jatuh tempo, sehingga saya tidak perlu memeriksa pembayaran satu per satu."*
+
+    ## Aturan status tagihan kamar (urutan prioritas, dari atas)
+    | # | Kondisi | Status |
+    |---|---------|--------|
+    | 1 | Tagihan lunas | `SUDAH_LUNAS` ("Sudah Lunas") |
+    | 2 | Belum lunas **dan** hari ini > tenggat (berlaku juga untuk pembayaran sebagian) | `TERLAMBAT` ("Terlambat") |
+    | 3 | Belum lunas, tenggat belum lewat, belum ada pembayaran | `BELUM_BAYAR` ("Belum Bayar") |
+    | 4 | Belum lunas, tenggat belum lewat, sudah ada pembayaran sebagian | `BELUM_LUNAS` ("Belum Lunas") |
+
+    ## Catatan penting
+    - `TERLAMBAT` **diturunkan** (derived) dari tenggat dan kondisi tagihan; **tidak ada endpoint untuk mengisinya manual**.
+    - **Asumsi Q1 (menunggu konfirmasi klien):** terlambat mulai **sehari setelah** tenggat (`hari_ini > tenggat`).
+      Bila klien memilih mulai di hari tenggat, aturan menjadi `hari_ini >= tenggat`.
+    - **Asumsi Q2 (menunggu konfirmasi klien):** tagihan dan label terlambat **melekat pada kamar**, bukan penyewa.
+      Daftar penghuni hanya informasi (`occupants`).
+    - Tagihan bulan berikutnya terbit pada tanggal tenggatnya. Sebelum terbit, kamar yang tagihan
+      terakhirnya lunas tetap `SUDAH_LUNAS`.
+    - Kamar tanpa tenggat (skema sewa belum dipilih) dilewati: `status = null`, tanpa label.
+    - Semua tanggal memakai format `YYYY-MM-DD` dan zona waktu `Asia/Jakarta`. Nominal dalam Rupiah (integer).
+  contact:
+    name: Tim Backend
+
+servers:
+  - url: https://api.example.com/v1
+    description: Production
+  - url: https://staging-api.example.com/v1
+    description: Staging
+
+tags:
+  - name: Status Kamar
+    description: Melihat status tagihan kamar (hasil turunan, read-only)
+  - name: Pembayaran
+    description: Pencatatan pembayaran oleh pemilik
+  - name: Pemeriksaan Terjadwal
+    description: Job pemeriksaan jatuh tempo
+
+security:
+  - bearerAuth: []
+
+paths:
+  /rooms/billing-status:
+    get:
+      tags: [Status Kamar]
+      summary: Daftar kamar beserta status tagihan
+      description: |
+        Mengembalikan semua kamar milik pemilik yang login beserta status tagihan terkini,
+        sehingga pemilik tidak perlu memeriksa pembayaran satu per satu.
+        Kamar tanpa tenggat tetap muncul dengan `status: null`.
+      operationId: listRoomBillingStatus
+      parameters:
+        - name: status
+          in: query
+          description: Filter berdasarkan status. Bisa lebih dari satu (dipisah koma).
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/BillingStatus'
+          style: form
+          explode: false
+          example: TERLAMBAT
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+      responses:
+        '200':
+          description: Berhasil
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, pagination]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RoomBillingStatus'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+              example:
+                data:
+                  - roomId: "rm_05"
+                    roomNumber: "05"
+                    occupants:
+                      - { name: "Rina", isPrimary: true }
+                      - { name: "Sari", isPrimary: false }
+                    rentScheme: BULANAN
+                    dueDate: "2026-11-05"
+                    status: TERLAMBAT
+                    statusLabel: "Terlambat"
+                    isOverdue: true
+                    amountDue: 1500000
+                    amountPaid: 0
+                    amountOutstanding: 1500000
+                    evaluatedAt: "2026-11-18T01:00:00+07:00"
+                  - roomId: "rm_07"
+                    roomNumber: "07"
+                    occupants: []
+                    rentScheme: null
+                    dueDate: null
+                    status: null
+                    statusLabel: null
+                    isOverdue: false
+                    amountDue: null
+                    amountPaid: null
+                    amountOutstanding: null
+                    evaluatedAt: "2026-11-18T01:00:00+07:00"
+                pagination:
+                  page: 1
+                  limit: 20
+                  totalItems: 2
+                  totalPages: 1
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /rooms/{roomId}/billing-status:
+    get:
+      tags: [Status Kamar]
+      summary: Detail status tagihan satu kamar
+      operationId: getRoomBillingStatus
+      parameters:
+        - $ref: '#/components/parameters/RoomId'
+      responses:
+        '200':
+          description: Berhasil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomBillingStatus'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /rooms/{roomId}/payments:
+    post:
+      tags: [Pembayaran]
+      summary: Catat pembayaran untuk tagihan berjalan kamar
+      description: |
+        Pemilik mencatat pembayaran. Setelah tersimpan, status dihitung ulang pada response yang sama:
+
+        - Pembayaran **melunasi** tagihan → label "Terlambat" hilang, `status = SUDAH_LUNAS`.
+        - Pembayaran **sebagian** (belum melunasi) → bila sudah lewat tenggat, `status` tetap `TERLAMBAT`;
+          bila belum lewat tenggat menjadi `BELUM_LUNAS`.
+      operationId: recordRoomPayment
+      parameters:
+        - $ref: '#/components/parameters/RoomId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecordPaymentRequest'
+            examples:
+              pelunasan:
+                summary: Melunasi tagihan
+                value:
+                  amount: 1500000
+                  paidAt: "2026-11-18"
+                  method: TRANSFER
+              sebagian:
+                summary: Pembayaran sebagian
+                value:
+                  amount: 500000
+                  paidAt: "2026-11-18"
+                  method: TUNAI
+      responses:
+        '201':
+          description: Pembayaran tercatat dan status dihitung ulang
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordPaymentResponse'
+              examples:
+                pelunasan:
+                  summary: Terlambat → Sudah Lunas
+                  value:
+                    payment:
+                      paymentId: "pay_9f2c"
+                      roomId: "rm_05"
+                      billId: "bill_2026_11_05"
+                      amount: 1500000
+                      paidAt: "2026-11-18"
+                      method: TRANSFER
+                    roomBillingStatus:
+                      roomId: "rm_05"
+                      roomNumber: "05"
+                      occupants:
+                        - { name: "Rina", isPrimary: true }
+                        - { name: "Sari", isPrimary: false }
+                      rentScheme: BULANAN
+                      dueDate: "2026-11-05"
+                      status: SUDAH_LUNAS
+                      statusLabel: "Sudah Lunas"
+                      isOverdue: false
+                      amountDue: 1500000
+                      amountPaid: 1500000
+                      amountOutstanding: 0
+                      evaluatedAt: "2026-11-18T10:15:00+07:00"
+                sebagian:
+                  summary: Tetap Terlambat
+                  value:
+                    payment:
+                      paymentId: "pay_9f2d"
+                      roomId: "rm_05"
+                      billId: "bill_2026_11_05"
+                      amount: 500000
+                      paidAt: "2026-11-18"
+                      method: TUNAI
+                      note: null
+                    roomBillingStatus:
+                      roomId: "rm_05"
+                      roomNumber: "05"
+                      occupants:
+                        - { name: "Rina", isPrimary: true }
+                        - { name: "Sari", isPrimary: false }
+                      rentScheme: BULANAN
+                      dueDate: "2026-11-05"
+                      status: TERLAMBAT
+                      statusLabel: "Terlambat"
+                      isOverdue: true
+                      amountDue: 1500000
+                      amountPaid: 500000
+                      amountOutstanding: 1000000
+                      evaluatedAt: "2026-11-18T10:16:00+07:00"
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: |
+            Konflik. Contoh: tagihan sudah lunas (`BILL_ALREADY_PAID`) atau kamar belum punya tagihan
+            karena skema sewa belum dipilih (`NO_ACTIVE_BILL`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: NO_ACTIVE_BILL
+                message: "Kamar 07 belum memiliki tagihan karena skema sewa belum dipilih."
+        '422':
+          description: Nominal melebihi sisa tagihan (`AMOUNT_EXCEEDS_OUTSTANDING`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: AMOUNT_EXCEEDS_OUTSTANDING
+                message: "Nominal pembayaran melebihi sisa tagihan (Rp1.000.000)."
+
+  /internal/billing-status-checks:
+    post:
+      tags: [Pemeriksaan Terjadwal]
+      summary: Jalankan pemeriksaan jatuh tempo (dipanggil scheduler)
+      description: |
+        Endpoint **internal** untuk scheduler/cron (juga bisa dipakai QA). Menghitung ulang status semua kamar
+        dan menerapkan/menghapus label `TERLAMBAT` berdasarkan aturan prioritas.
+
+        **Ketahanan:** kamar tanpa tenggat **dilewati tanpa label** dan **tidak menggagalkan** pemeriksaan
+        kamar lain. Response selalu `200` selama job berjalan; kamar yang dilewati dilaporkan di `skippedRooms`.
+
+        `asOfDate` hanya untuk pengujian (mensimulasikan "hari ini") dan **ditolak di Production**.
+      operationId: runBillingStatusCheck
+      security:
+        - schedulerKey: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                asOfDate:
+                  type: string
+                  format: date
+                  description: Override tanggal "hari ini" (non-production saja).
+                  example: "2026-11-06"
+      responses:
+        '200':
+          description: Pemeriksaan selesai
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BillingStatusCheckResult'
+              example:
+                checkedAt: "2026-11-18T01:00:00+07:00"
+                asOfDate: "2026-11-18"
+                totalRooms: 12
+                evaluated: 11
+                markedOverdue: 3
+                clearedOverdue: 0
+                skippedRooms:
+                  - roomId: "rm_07"
+                    roomNumber: "07"
+                    reason: NO_DUE_DATE
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: Tidak berwenang, atau `asOfDate` dipakai di Production
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token pemilik kos (sudah login).
+    schedulerKey:
+      type: apiKey
+      in: header
+      name: X-Scheduler-Key
+      description: Kunci khusus job terjadwal.
+
+  parameters:
+    RoomId:
+      name: roomId
+      in: path
+      required: true
+      schema: { type: string }
+      example: "rm_05"
+
+  responses:
+    BadRequest:
+      description: Permintaan tidak valid
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example:
+            code: VALIDATION_ERROR
+            message: "Data tidak valid."
+            details:
+              - { field: amount, message: "Harus lebih besar dari 0." }
+    Unauthorized:
+      description: Belum login / token tidak valid
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example:
+            code: UNAUTHORIZED
+            message: "Silakan login terlebih dahulu."
+    NotFound:
+      description: Kamar tidak ditemukan
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example:
+            code: ROOM_NOT_FOUND
+            message: "Kamar tidak ditemukan."
+
+  schemas:
+    BillingStatus:
+      type: string
+      description: |
+        Status tagihan kamar (turunan, read-only):
+        - `SUDAH_LUNAS` → "Sudah Lunas"
+        - `TERLAMBAT` → "Terlambat"
+        - `BELUM_BAYAR` → "Belum Bayar"
+        - `BELUM_LUNAS` → "Belum Lunas"
+      enum: [SUDAH_LUNAS, TERLAMBAT, BELUM_BAYAR, BELUM_LUNAS]
+
+    RentScheme:
+      type: string
+      nullable: true
+      description: Skema sewa. `null` bila belum dipilih.
+      enum: [BULANAN]
+      # Tambahkan skema lain (mis. HARIAN, TAHUNAN) sesuai kebutuhan produk.
+
+    Occupant:
+      type: object
+      required: [name, isPrimary]
+      properties:
+        name: { type: string, example: "Rina" }
+        isPrimary:
+          type: boolean
+          description: Penyewa utama
+          example: true
+
+    RoomBillingStatus:
+      type: object
+      required: [roomId, roomNumber, occupants, rentScheme, dueDate, status, statusLabel, isOverdue]
+      properties:
+        roomId: { type: string, example: "rm_05" }
+        roomNumber: { type: string, example: "05" }
+        occupants:
+          type: array
+          items: { $ref: '#/components/schemas/Occupant' }
+        rentScheme: { $ref: '#/components/schemas/RentScheme' }
+        dueDate:
+          type: string
+          format: date
+          nullable: true
+          description: Tenggat tagihan berjalan. `null` bila skema sewa belum dipilih.
+          example: "2026-11-05"
+        status:
+          allOf:
+            - $ref: '#/components/schemas/BillingStatus'
+          nullable: true
+          description: "`null` bila kamar tanpa tenggat (dilewati)."
+        statusLabel:
+          type: string
+          nullable: true
+          description: Teks tampilan status.
+          example: "Terlambat"
+        isOverdue:
+          type: boolean
+          description: "`true` bila label Terlambat melekat pada kamar (status = TERLAMBAT)."
+        amountDue:
+          type: integer
+          format: int64
+          nullable: true
+          description: Total tagihan (Rp).
+          example: 1500000
+        amountPaid:
+          type: integer
+          format: int64
+          nullable: true
+          description: Total terbayar pada tagihan berjalan (Rp).
+          example: 0
+        amountOutstanding:
+          type: integer
+          format: int64
+          nullable: true
+          description: Sisa tagihan (Rp).
+          example: 1500000
+        evaluatedAt:
+          type: string
+          format: date-time
+          description: Waktu status terakhir dihitung.
+
+    RecordPaymentRequest:
+      type: object
+      required: [amount, paidAt]
+      properties:
+        amount:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Nominal pembayaran (Rp). Tidak boleh melebihi sisa tagihan.
+          example: 1500000
+        paidAt:
+          type: string
+          format: date
+          description: Tanggal pembayaran diterima. Tidak boleh di masa depan.
+          example: "2026-11-18"
+        method:
+          type: string
+          enum: [TUNAI, TRANSFER, LAINNYA]
+          example: TRANSFER
+        note:
+          type: string
+          nullable: true
+          maxLength: 255
+
+    Payment:
+      type: object
+      required: [paymentId, roomId, billId, amount, paidAt]
+      properties:
+        paymentId: { type: string, example: "pay_9f2c" }
+        roomId: { type: string, example: "rm_05" }
+        billId: { type: string, example: "bill_2026_11_05" }
+        amount: { type: integer, format: int64, example: 1500000 }
+        paidAt: { type: string, format: date, example: "2026-11-18" }
+        method:
+          type: string
+          enum: [TUNAI, TRANSFER, LAINNYA]
+        note: { type: string, nullable: true }
+
+    RecordPaymentResponse:
+      type: object
+      required: [payment, roomBillingStatus]
+      properties:
+        payment: { $ref: '#/components/schemas/Payment' }
+        roomBillingStatus: { $ref: '#/components/schemas/RoomBillingStatus' }
+
+    SkippedRoom:
+      type: object
+      required: [roomId, roomNumber, reason]
+      properties:
+        roomId: { type: string, example: "rm_07" }
+        roomNumber: { type: string, example: "07" }
+        reason:
+          type: string
+          enum: [NO_DUE_DATE]
+          description: "`NO_DUE_DATE` = skema sewa belum dipilih sehingga belum ada tenggat."
+
+    BillingStatusCheckResult:
+      type: object
+      required: [checkedAt, asOfDate, totalRooms, evaluated, markedOverdue, clearedOverdue, skippedRooms]
+      properties:
+        checkedAt: { type: string, format: date-time }
+        asOfDate: { type: string, format: date }
+        totalRooms: { type: integer, example: 12 }
+        evaluated: { type: integer, example: 11 }
+        markedOverdue:
+          type: integer
+          description: Jumlah kamar yang baru diberi label Terlambat pada pemeriksaan ini.
+          example: 3
+        clearedOverdue:
+          type: integer
+          description: Jumlah kamar yang labelnya dihapus pada pemeriksaan ini.
+          example: 0
+        skippedRooms:
+          type: array
+          items: { $ref: '#/components/schemas/SkippedRoom' }
+
+    Pagination:
+      type: object
+      required: [page, limit, totalItems, totalPages]
+      properties:
+        page: { type: integer, example: 1 }
+        limit: { type: integer, example: 20 }
+        totalItems: { type: integer, example: 12 }
+        totalPages: { type: integer, example: 1 }
+
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string, example: VALIDATION_ERROR }
+        message: { type: string }
+        details:
+          type: array
+          items:
+            type: object
+            properties:
+              field: { type: string }
+              message: { type: string }

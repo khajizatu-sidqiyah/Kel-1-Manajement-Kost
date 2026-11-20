@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Foundation\Application;
+use Illuminate\Http\Request;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 
@@ -12,11 +13,13 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->alias([
-            'pemilik' => \App\Http\Middleware\PemilikMiddleware::class,
-            'penghuni' => \App\Http\Middleware\PenghuniMiddleware::class,
-            'api.contract' => \App\Http\Middleware\ApiContractMiddleware::class,
-        ]);
+        $middleware->trustProxies(
+            at: '*',
+            headers: Request::HEADER_X_FORWARDED_FOR |
+                Request::HEADER_X_FORWARDED_HOST |
+                Request::HEADER_X_FORWARDED_PORT |
+                Request::HEADER_X_FORWARDED_PROTO
+        );
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (\Illuminate\Validation\ValidationException $e, \Illuminate\Http\Request $request) {
