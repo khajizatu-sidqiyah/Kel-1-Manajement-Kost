@@ -34,8 +34,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         gd \
         zip \
         intl \
-    && (a2dismod mpm_event mpm_worker || true) \
-    && a2enmod mpm_prefork rewrite headers \
+    && ls -l /etc/apache2/mods-enabled/ \
+    && grep -R "LoadModule mpm_" /etc/apache2/mods-enabled/ \
     && rm -rf /var/lib/apt/lists/*
 
 # Instal Composer
