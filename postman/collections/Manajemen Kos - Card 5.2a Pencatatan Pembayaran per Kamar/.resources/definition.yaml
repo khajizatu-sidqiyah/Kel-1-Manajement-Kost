@@ -1,0 +1,48 @@
+$kind: collection
+description: "Khusus card 5.2a: DP, cicilan, pelunasan tunai/transfer per kamar. Jalankan urut dengan Collection Runner."
+variables:
+  base_url: http://127.0.0.1:8000/api
+  email: pemilik@gmail.com
+  password: password123
+  token: ""
+  run: ""
+  token_sebelum_logout: ""
+  kamarT2: ""
+  penT2_utama: ""
+  penT2_kedua: ""
+  kamarT1: ""
+  penT1: ""
+  kamarB1: ""
+  penB1: ""
+  kamarNS: ""
+  penNS: ""
+  kamarDN: ""
+  penDN: ""
+  kamarB2: ""
+  penB2: ""
+  bayarT2_dp: ""
+  bayarB2_dp: ""
+  bayarT1_pelunasan: ""
+  kamarDPK: ""
+  penDPK: ""
+scripts:
+  - type: http:beforeRequest
+    code: |-
+      // ===== PRE-REQUEST tingkat collection (jalan sebelum setiap request) =====
+      if (!pm.collectionVariables.get('run')) {
+        // akhiran unik agar no_kamar tidak bentrok antar-run, maks 4 karakter supaya muat di batas 20 karakter
+        pm.collectionVariables.set('run', String(Math.floor(1000 + Math.random() * 9000)));
+      }
+    language: text/javascript
+  - type: http:afterResponse
+    code: |-
+      // ===== POST-RESPONSE tingkat collection (jalan setelah SETIAP request) =====
+      pm.test('[umum] Waktu respons < 3000 ms', () => pm.expect(pm.response.responseTime).to.be.below(3000));
+      pm.test('[umum] Tidak ada error 5xx dari server', () => pm.expect(pm.response.code, 'Server error: ' + pm.response.text().slice(0, 300)).to.be.below(500));
+    language: text/javascript
+auth:
+  - id: 01d00e2a-c47f-4d3d-b3d8-08dc6536a87f
+    type: bearer
+    name: bearer auth
+    credentials:
+      token: "{{token}}"
