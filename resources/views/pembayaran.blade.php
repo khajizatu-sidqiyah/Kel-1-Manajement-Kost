@@ -59,7 +59,9 @@
                 <svg class="i"><use href="#pb-search"/></svg>
                 <input type="search" id="pb-q" placeholder="Cari nama penyewa atau nomor kamar..." autocomplete="off">
             </label>
-            {{-- Tombol Filter + panel (default tertutup). Sesuai desain: Status Tagihan, Skema Sewa, Lantai Kamar (tanpa Periode) --}}
+            {{-- Tombol Filter + panel (default tertutup). Isi panel berupa dropdown dan mengikuti tab (diatur pembayaran.js):
+                   Tab Tagihan          -> Status Tagihan, Skema Sewa, Lantai
+                   Tab Riwayat Pembayaran -> Periode, Skema Sewa, Lantai --}}
             <div class="pb-filter-wrap" id="fp-wrap">
                 <button type="button" class="pb-filter-btn" id="fp-toggle" aria-haspopup="true" aria-expanded="false" aria-controls="fp-panel">
                     <svg class="i"><use href="#pb-filter"/></svg>
@@ -68,35 +70,75 @@
                     <svg class="i fp-chev"><use href="#pb-chev"/></svg>
                 </button>
                 <div class="fp-panel" id="fp-panel" role="dialog" aria-label="Filter data" hidden>
-                    <div class="fp-head">
-                        <h3>Filter Data</h3>
+                    <div class="pf-head">
+                        <div>
+                            <h3 id="fp-title">Tagihan</h3>
+                            <p id="fp-sub">Atur filter di bawah untuk melihat perubahan data tagihan</p>
+                        </div>
                         <button type="button" class="fp-close" id="fp-close" aria-label="Tutup filter"><svg class="i"><use href="#pb-x"/></svg></button>
                     </div>
-                    <div class="fp-group">
-                        <h4>Status Tagihan</h4>
-                        <div class="fp-opts">
-                            <label class="fp-check"><input type="checkbox" name="status" value="belum"><span class="box"><svg class="i"><use href="#pb-tick"/></svg></span>Belum Dibayar</label>
-                            <label class="fp-check"><input type="checkbox" name="status" value="sudah"><span class="box"><svg class="i"><use href="#pb-tick"/></svg></span>Sudah Dibayar</label>
-                            <label class="fp-check"><input type="checkbox" name="status" value="lunasbelum"><span class="box"><svg class="i"><use href="#pb-tick"/></svg></span>Belum Lunas</label>
+
+                    <div class="pf-body">
+                        {{-- Hanya tab Tagihan --}}
+                        <div class="pf-g" id="fp-g-status">
+                            <label for="fp-status">Status Tagihan</label>
+                            <div class="pf-sel">
+                                <select id="fp-status">
+                                    <option value="">Semua Status</option>
+                                    <option value="belum_bayar">Belum Bayar</option>
+                                    <option value="belum_lunas">Belum Lunas</option>
+                                    <option value="lunas">Sudah Lunas</option>
+                                </select>
+                                <svg class="i"><use href="#pb-chev"/></svg>
+                            </div>
+                        </div>
+
+                        {{-- Hanya tab Riwayat Pembayaran (berdasarkan tanggal pembayaran) --}}
+                        <div class="pf-g" id="fp-g-periode" hidden>
+                            <label for="fp-periode">Periode</label>
+                            <div class="pf-sel">
+                                <select id="fp-periode">
+                                    <option value="">Semua Periode</option>
+                                    <option value="bulan_ini">Bulan Ini</option>
+                                    <option value="bulan_lalu">Bulan Lalu</option>
+                                    <option value="6_bulan">6 Bulan Lalu</option>
+                                    <option value="tahun_ini">Tahun Ini</option>
+                                    <option value="tahun_lalu">Tahun Lalu</option>
+                                    <option value="2_tahun_lalu">2 Tahun Lalu</option>
+                                </select>
+                                <svg class="i"><use href="#pb-chev"/></svg>
+                            </div>
+                        </div>
+
+                        <div class="pf-row">
+                            <div class="pf-g">
+                                <label for="fp-skema">Skema Sewa</label>
+                                <div class="pf-sel">
+                                    <select id="fp-skema">
+                                        <option value="">Semua Skema</option>
+                                        <option value="bulanan">Bulanan</option>
+                                        <option value="tahunan">Tahunan</option>
+                                    </select>
+                                    <svg class="i"><use href="#pb-chev"/></svg>
+                                </div>
+                            </div>
+                            <div class="pf-g">
+                                <label for="fp-lantai">Lantai</label>
+                                <div class="pf-sel">
+                                    <select id="fp-lantai">
+                                        <option value="">Semua Lantai</option>
+                                        <option value="1">Lantai 1</option>
+                                        <option value="2">Lantai 2</option>
+                                    </select>
+                                    <svg class="i"><use href="#pb-chev"/></svg>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="fp-group">
-                        <h4>Skema Sewa</h4>
-                        <div class="fp-opts">
-                            <label class="fp-check"><input type="checkbox" name="skema" value="bulanan"><span class="box"><svg class="i"><use href="#pb-tick"/></svg></span>Bulanan</label>
-                            <label class="fp-check"><input type="checkbox" name="skema" value="tahunan"><span class="box"><svg class="i"><use href="#pb-tick"/></svg></span>Tahunan</label>
-                        </div>
-                    </div>
-                    <div class="fp-group">
-                        <h4>Lantai Kamar</h4>
-                        <div class="fp-opts">
-                            <label class="fp-check"><input type="checkbox" name="lantai" value="1"><span class="box"><svg class="i"><use href="#pb-tick"/></svg></span>Lantai 1</label>
-                            <label class="fp-check"><input type="checkbox" name="lantai" value="2"><span class="box"><svg class="i"><use href="#pb-tick"/></svg></span>Lantai 2</label>
-                        </div>
-                    </div>
-                    <div class="fp-foot">
-                        <button type="button" class="fp-btn fp-btn--ghost" id="fp-reset">Reset</button>
-                        <button type="button" class="fp-btn fp-btn--primary" id="fp-apply">Terapkan</button>
+
+                    <div class="pf-foot">
+                        <button type="button" class="pf-btn pf-btn--ghost" id="fp-reset">Reset</button>
+                        <button type="button" class="pf-btn pf-btn--primary" id="fp-apply">Terapkan</button>
                     </div>
                 </div>
             </div>
@@ -116,7 +158,8 @@
                         <col class="c1"><col class="c2"><col class="c3"><col class="c4"><col class="c5">
                         <col class="c6"><col class="c7"><col class="c8"><col class="c9">
                     </colgroup>
-                    <thead>
+                    {{-- Isi header diatur pembayaran.js sesuai tab (Tagihan / Riwayat Pembayaran) --}}
+                    <thead id="pb-head">
                         <tr>
                             <th class="th-no">No.</th><th>Nama Penghuni</th><th>Kamar</th><th>Jenis Tagihan</th>
                             <th>Periode</th><th>Jatuh Tempo</th><th>Jumlah</th><th class="th-status">Status</th><th class="th-aksi">Aksi</th>
@@ -137,7 +180,7 @@
     {{-- ===== Modal: Form Catat Pembayaran Baru =====
          Satu form, tiga tampilan (diatur pembayaran.js):
            dp      -> kamar belum punya DP: pilih skema (bulanan/tahunan), catat DP, atur tenggat pelunasan
-           bulanan -> setelah DP: Pelunasan bulan pertama / Tagihan bulanan
+           bulanan -> setelah DP: Pelunasan sebesar sisa tagihan periode berjalan
            tahunan -> setelah DP: Cicilan (periode dikunci: 1 dari 3, 2 dari 3) / Pelunasan (3 dari 3) --}}
     <div class="pb-ov" id="pb-form" hidden>
         <div class="pb-m" role="dialog" aria-modal="true" aria-labelledby="pb-form-title">
