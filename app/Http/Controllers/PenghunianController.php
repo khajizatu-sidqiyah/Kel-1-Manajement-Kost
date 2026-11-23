@@ -6,8 +6,7 @@ use App\Models\Kamar;
 use App\Models\Penghuni;
 use App\Models\Penghunian;
 use App\Models\Pembayaran;
-use App\Models\PengaturanSewa;
-use App\Services\TenggatSewaService;
+use App\Services\TagihanService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -519,27 +518,18 @@ class PenghunianController extends Controller
      */
     public function hitung(Request $request, int $id)
     {
-        $validator = Validator::make($request->all(), [
-    'skema_sewa' => [
-        'required',
-        'string',
-        Rule::in(['bulanan', 'tahunan']),
-    ],
-], [
-    'skema_sewa.required' => 'Pilih skema sewa terlebih dahulu.',
-    'skema_sewa.in' => 'Skema sewa harus bulanan atau tahunan.',
-]);
-
-if ($validator->fails()) {
-    return $this->apiErrorResponse(
-        422,
-        'Validasi request gagal.',
-        'VALIDATION_ERROR',
-        $validator->errors()->toArray()
-    );
-}
-
-$validated = $validator->validated();
+        $validated = $request->validate([
+            'skema_sewa' => [
+                'required',
+                Rule::in([
+                    'bulanan',
+                    'tahunan',
+                ]),
+            ],
+        ], [
+            'skema_sewa.required' => 'Pilih skema sewa terlebih dahulu.',
+            'skema_sewa.in' => 'Skema sewa harus bulanan atau tahunan.',
+        ]);
 
         return DB::transaction(function () use ($validated, $id) {
             $penghunian = Penghunian::with('kamar')
@@ -592,51 +582,13 @@ $validated = $validator->validated();
                 !$utama ||
                 (int) $utama->id_penghunian !==
                 (int) $penghunian->id_penghunian
-        ) {
-            return $this->apiErrorResponse(
-                422,
-                'Skema sewa harus diatur melalui penghunian penyewa utama.',
-                'VALIDATION_ERROR',
-            [
-                'penyewa_utama' => [
-                    'Pengaturan skema sewa hanya dapat dilakukan melalui penyewa utama.',
-                ],
-            ]
-        );
-    }
-
-            // Simpan harga saat skema masa sewa pertama kali dihitung.
-            // Perubahan harga kamar berikutnya tidak boleh mengubah kontrak aktif.
-            if (
-                $penghunian->skema_sewa === $validated['skema_sewa'] &&
-                (float) ($penghunian->total_sewa ?? 0) > 0 &&
-                (float) ($penghunian->dp_minimum ?? 0) > 0
             ) {
-                // Jika tanggal masuk baru dilengkapi setelah DP dihitung,
-                // isi tenggat dari tanggal tersebut tanpa membaca ulang harga kamar.
-                if (!$penghunian->tenggat_pelunasan && $penghunian->tanggal_mulai) {
-                    $tanggalMasuk = Carbon::parse($penghunian->tanggal_mulai);
-                    $tenggatTersimpan = $validated['skema_sewa'] === 'tahunan'
-                        ? $tanggalMasuk->copy()->addMonthsNoOverflow(3)->toDateString()
-                        : $tanggalMasuk->toDateString();
-
-                    $penghunian->update([
-                        'tenggat_pelunasan' => $tenggatTersimpan,
-                    ]);
-                }
-
-                $penghunian->refresh();
-
                 return response()->json([
-                    'message' => $penghunian->tenggat_pelunasan
-                        ? 'Perhitungan sewa menggunakan harga yang telah disimpan.'
-                        : 'DP berhasil dihitung. Isi tanggal masuk untuk menghitung tenggat.',
-                    'data' => $penghunian->load([
-                        'kamar',
-                        'penghuni',
-                        'pembayaran',
-                    ]),
-                ]);
+                    'message' => 'Skema sewa harus diatur melalui penghunian penyewa utama.',
+                    'error' => [
+                        'code' => 'NOT_PRIMARY_TENANT',
+                    ],
+                ], 422);
             }
 
             $idPenghunianAktif = Penghunian::where(
@@ -672,64 +624,65 @@ $validated = $validator->validated();
             }
 
             if ($validated['skema_sewa'] === 'bulanan') {
-                // Harga bulanan dikunci pada penghunian saat skema dimulai.
-                if (!is_numeric($kamar->harga) || (float) $kamar->harga <= 0) {
-                    return response()->json([
-                        'message' => 'Harga sewa kamar belum diisi',
-                        'error' => ['code' => 'INVALID_RENT'],
-                    ], 422);
-                }
-
-                $totalSewa = round((float) $kamar->harga, 2);
-                $dpMinimum = round($totalSewa * 0.5, 2);
-                // Bulanan: sisa bulan pertama jatuh tempo pada tanggal masuk.
-                $tenggat = $penghunian->tanggal_mulai
-                    ? Carbon::parse($penghunian->tanggal_mulai)->toDateString()
-                    : null;
-            } else {
-                $jumlahPenghuni = $penghuniAktif->count();
-
-                if ($jumlahPenghuni < 1 || $jumlahPenghuni > 2) {
-                    return response()->json([
-                        'message' => 'Jumlah penghuni kamar tidak valid.',
-                        'error' => ['code' => 'INVALID_TENANT_COUNT'],
-                    ], 422);
-                }
-
-                    /// Tarif tahunan dibaca dari data kamar, bukan ditulis di controller.
-                $totalSewa = $jumlahPenghuni === 1
-                    ? $kamar->harga_tahunan_1_orang
-                    : $kamar->harga_tahunan_2_orang;
-
-                if (!is_numeric($totalSewa) || (float) $totalSewa <= 0) {
-                    return response()->json([
-                        'message' => 'Harga sewa kamar belum diisi',
-                        'error' => ['code' => 'INVALID_RENT'],
-                    ], 422);
-                }
-
-                $pengaturan = PengaturanSewa::query()->first();
                 if (
-                    !$pengaturan ||
-                    !is_numeric($pengaturan->dp_minimum_tahunan) ||
-                    (float) $pengaturan->dp_minimum_tahunan <= 0
+                    !is_numeric($kamar->harga) ||
+                    (float) $kamar->harga <= 0
                 ) {
                     return response()->json([
-                        'message' => 'Pengaturan DP minimum tahunan belum tersedia atau tidak valid.',
-                        'error' => ['code' => 'INVALID_ANNUAL_DP_SETTING'],
+                        'message' => 'Harga sewa bulanan kamar belum diisi atau tidak valid.',
+                        'error' => [
+                            'code' => 'INVALID_MONTHLY_RENT',
+                        ],
                     ], 422);
                 }
 
-                $totalSewa = round((float) $totalSewa, 2);
-                $dpMinimum = round((float) $pengaturan->dp_minimum_tahunan, 2);
+                $totalSewa = round(
+                    (float) $kamar->harga,
+                    2
+                );
 
-                // Aturan R-03: pelunasan tahunan tiga bulan setelah tanggal masuk.
+                $dpMinimum = round(
+                    $totalSewa * 0.5,
+                    2
+                );
+
+                // Tenggat pertama: satu bulan setelah tanggal masuk.
                 $tenggat = $penghunian->tanggal_mulai
                     ? Carbon::parse($penghunian->tanggal_mulai)
-                        ->addMonthsNoOverflow(3)
+                        ->addMonthNoOverflow()
                         ->toDateString()
                     : null;
-            }
+
+                } else {
+                    // Harga tahunan berdasarkan jumlah penghuni aktif
+                    $jumlahPenghuni = $penghuniAktif->count();
+
+                    if ($jumlahPenghuni < 1 || $jumlahPenghuni > 2) {
+                        return response()->json([
+                            'message' => 'Jumlah penghuni kamar tidak valid.',
+                            'error' => [
+                                'code' => 'INVALID_TENANT_COUNT',
+                            ],
+                        ], 422);
+                    }
+
+                    // Harga tahunan:
+                    // 1 orang = Rp5.000.000
+                    // 2 orang = Rp6.900.000
+                    $totalSewa = $jumlahPenghuni === 1
+                        ? 5000000
+                        : 6900000;
+
+                    // DP minimum tahunan tetap Rp300.000
+                    $dpMinimum = 300000;
+
+                    // Tenggat pelunasan 2 bulan setelah tanggal masuk
+                    $tenggat = $penghunian->tanggal_mulai
+                        ? Carbon::parse($penghunian->tanggal_mulai)
+                            ->addMonthsNoOverflow(2)
+                            ->toDateString()
+                        : null;
+                }
 
             $penghunian->update([
                 'skema_sewa' => $validated['skema_sewa'],
@@ -739,10 +692,14 @@ $validated = $validator->validated();
                 'status_pembayaran' => 'belum_lunas',
             ]);
 
+            // Terbitkan tagihan pertama setelah skema dan tenggat disimpan.
+            $penghunian->refresh();
+            
+            app(TagihanService::class)
+                ->terbitkanTagihan($penghunian);
+
             return response()->json([
-                'message' => $tenggat === null
-                    ? 'DP berhasil dihitung. Isi tanggal masuk untuk menghitung tenggat.'
-                    : 'Perhitungan sewa, DP minimum, dan tenggat berhasil disimpan.',
+                'message' => 'Perhitungan sewa, DP minimum, dan tenggat berhasil disimpan.',
                 'data' => $penghunian->fresh()->load([
                     'kamar',
                     'penghuni',
@@ -752,184 +709,108 @@ $validated = $validator->validated();
         });
     }
 
+    /**
+     * Mengubah tenggat pembayaran tahunan.
+     */
+    public function ubahTenggat(Request $request, int $id)
+    {
+        $validated = $request->validate([
+            'tenggat_pelunasan' => [
+                'required',
+                'date',
+            ],
+        ]);
 
-/**
- * Mengubah tenggat pembayaran tahunan.
- */
-public function ubahTenggat(Request $request, int $id)
-{
-    $validator = Validator::make($request->all(), [
-        'tenggat_pelunasan' => [
-            'required',
-            'date',
-        ],
-    ], [
-        'tenggat_pelunasan.required' => 'Tanggal tenggat wajib diisi.',
-        'tenggat_pelunasan.date' => 'Format tanggal tenggat tidak valid.',
-    ]);
+        $penghunian = Penghunian::find($id);
 
-    if ($validator->fails()) {
-        return $this->apiErrorResponse(
-            422,
-            'Validasi request gagal.',
-            'VALIDATION_ERROR',
-            $validator->errors()->toArray()
-        );
-    }
-
-    $validated = $validator->validated();
-
-    $penghunian = Penghunian::find($id);
-
-    if (!$penghunian) {
-        return $this->apiErrorResponse(
-            404,
-            'Data penghunian tidak ditemukan.',
-            'NOT_FOUND',
-            []
-        );
-    }
-
-    if ($penghunian->skema_sewa !== 'tahunan') {
-        return $this->apiErrorResponse(
-            422,
-            'Pengubahan tenggat hanya berlaku untuk sewa tahunan.',
-            'VALIDATION_ERROR',
-            [
-                'skema_sewa' => [
-                    'Skema sewa harus tahunan.',
+        if (!$penghunian) {
+            return response()->json([
+                'message' => 'Data penghunian tidak ditemukan.',
+                'error' => [
+                    'code' => 'OCCUPANCY_NOT_FOUND',
                 ],
-            ]
-        );
-    }
+            ], 404);
+        }
 
-    if (!$penghunian->tanggal_mulai) {
-        return $this->apiErrorResponse(
-            422,
-            'Isi tanggal masuk terlebih dahulu sebelum mengubah tenggat.',
-            'VALIDATION_ERROR',
-            [
-                'tanggal_mulai' => [
-                    'Tanggal mulai sewa wajib tersedia.',
+        if ($penghunian->skema_sewa !== 'tahunan') {
+            return response()->json([
+                'message' => 'Pengubahan tenggat hanya berlaku untuk sewa tahunan.',
+                'error' => [
+                    'code' => 'INVALID_RENT_SCHEME',
                 ],
-            ]
-        );
-    }
+            ], 422);
+        }
 
-    $tanggalMulai = Carbon::parse(
-        $penghunian->tanggal_mulai
-    )->startOfDay();
-
-    $tanggalTenggat = Carbon::parse(
-        $validated['tenggat_pelunasan']
-    )->startOfDay();
-
-    if ($tanggalTenggat->lt($tanggalMulai)) {
-        return $this->apiErrorResponse(
-            422,
-            'Tenggat tidak boleh sebelum tanggal mulai sewa.',
-            'VALIDATION_ERROR',
-            [
-                'tenggat_pelunasan' => [
-                    'Tenggat tidak boleh sebelum tanggal mulai sewa.',
+        if (!$penghunian->tanggal_mulai) {
+            return response()->json([
+                'message' => 'Isi tanggal masuk terlebih dahulu sebelum mengubah tenggat.',
+                'error' => [
+                    'code' => 'START_DATE_NOT_SET',
                 ],
-            ]
-        );
+            ], 422);
+        }
+
+        $tanggalMulai = Carbon::parse(
+            $penghunian->tanggal_mulai
+        )->startOfDay();
+
+        $tanggalTenggat = Carbon::parse(
+            $validated['tenggat_pelunasan']
+        )->startOfDay();
+
+        if ($tanggalTenggat->lt($tanggalMulai)) {
+            return response()->json([
+                'message' => 'Tenggat tidak boleh sebelum tanggal mulai sewa.',
+                'error' => [
+                    'code' => 'INVALID_DUE_DATE',
+                ],
+            ], 422);
+        }
+
+        $penghunian->update([
+            'tenggat_pelunasan' => $tanggalTenggat->toDateString(),
+        ]);
+
+        return response()->json([
+            'message' => 'Tenggat pelunasan berhasil diubah.',
+            'data' => $penghunian->fresh()->load([
+                'kamar',
+                'penghuni',
+                'pembayaran',
+            ]),
+        ]);
     }
-
-    $penghunian->update([
-        'tenggat_pelunasan' => $tanggalTenggat->toDateString(),
-    ]);
-
-    return response()->json([
-        'message' => 'Tenggat pelunasan berhasil diubah.',
-        'data' => $penghunian->fresh()->load([
-            'kamar',
-            'penghuni',
-            'pembayaran',
-        ]),
-    ], 200);
-}
-
 
     /**
      * Menghitung tenggat bulanan berikutnya.
      */
     public function tenggatBerikutnya(int $id)
     {
-        return DB::transaction(function () use ($id) {
-        $penghunian = Penghunian::whereKey($id)
-            ->lockForUpdate()
-            ->first();
+        $penghunian = Penghunian::find($id);
 
         if (!$penghunian) {
-            return $this->apiErrorResponse(
-                404,
-                'Data penghunian tidak ditemukan.',
-                'NOT_FOUND',
-                []
-            );
+            return response()->json([
+                'message' => 'Data penghunian tidak ditemukan.',
+                'error' => [
+                    'code' => 'OCCUPANCY_NOT_FOUND',
+                ],
+            ], 404);
         }
 
-        if ($penghunian->status !== 'aktif') {
-            return $this->apiErrorResponse(
-                422,
-                'Skema sewa hanya dapat diatur untuk penghunian aktif.',
-                'VALIDATION_ERROR',
-                [
-                    'status' => [
-                'Penghunian harus berstatus aktif.',
-            ],
-        ]
-    );
-}
-
-        // Hanya berlaku untuk skema bulanan.
         if ($penghunian->skema_sewa !== 'bulanan') {
             return response()->json([
                 'message' => 'Fitur ini hanya berlaku untuk sewa bulanan.',
                 'error' => [
-                    'code' => 422,
-                    'message' => 'Fitur ini hanya berlaku untuk sewa bulanan.',
-                    'status' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'skema_sewa' => ['Skema sewa harus bulanan.'],
-                    ],
+                    'code' => 'INVALID_RENT_SCHEME',
                 ],
             ], 422);
         }
 
         if (!$penghunian->tenggat_pelunasan) {
             return response()->json([
-                'message' => 'Tenggat pembayaran belum tersedia.',
+                'message' => 'Tenggat pembayaran saat ini belum tersedia.',
                 'error' => [
-                    'code' => 422,
-                    'message' => 'Tenggat pembayaran belum tersedia.',
-                    'status' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'tenggat_pelunasan' => [
-                            'Tenggat pembayaran wajib tersedia.',
-                        ],
-                    ],
-                ],
-            ], 422);
-        }
-
-        $totalTagihan = round(
-            (float) ($penghunian->total_sewa ?? 0),
-            2
-        );
-
-        if ($totalTagihan <= 0) {
-            return response()->json([
-                'message' => 'Total tagihan belum tersedia.',
-                'error' => [
-                    'code' => 422,
-                    'message' => 'Total tagihan belum tersedia.',
-                    'status' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'total_sewa' => ['Total sewa harus lebih besar dari nol.'],
-                    ],
+                    'code' => 'DUE_DATE_NOT_SET',
                 ],
             ], 422);
         }
@@ -938,87 +819,26 @@ public function ubahTenggat(Request $request, int $id)
             $penghunian->tenggat_pelunasan
         );
 
-        // Tagihan bulanan mengikuti bulan pada tenggat saat ini.
-        $periodeTagihan = $tenggatSekarang
+        $tanggalBerikutnya = $tenggatSekarang
             ->copy()
-            ->startOfMonth()
-            ->toDateString();
+            ->addMonthNoOverflow();
 
-        // Hanya pembayaran terverifikasi yang dihitung.
-        $totalTerverifikasi = (float) Pembayaran::query()
-            ->where('id_penghunian', $penghunian->id_penghunian)
-            ->where('status', 'terverifikasi')
-            ->whereDate('periode_tagihan', $periodeTagihan)
-            ->sum('jumlah');
-
-        $totalTerverifikasi = round($totalTerverifikasi, 2);
-
-        // Belum lunas: kembalikan 422 dan jangan mengubah tenggat.
-        if ($totalTerverifikasi < $totalTagihan) {
-            return response()->json([
-                'message' => 'Pembayaran bulan berjalan belum lunas. Tenggat tidak berubah.',
-                'error' => [
-                    'code' => 422,
-                    'message' => 'Pembayaran bulan berjalan belum lunas.',
-                    'status' => 'PAYMENT_NOT_SETTLED',
-                    'details' => [
-                        'total_tagihan' => $totalTagihan,
-                        'total_terverifikasi' => $totalTerverifikasi,
-                        'sisa_tagihan' => round(
-                            $totalTagihan - $totalTerverifikasi,
-                            2
-                        ),
-                    ],
-                ],
-            ], 422);
+        if ($tenggatSekarang->isLastOfMonth()) {
+            $tanggalBerikutnya->endOfMonth();
         }
 
-        // Gunakan service 5.1 untuk aturan akhir bulan.
-        $tenggatBaru = app(TenggatSewaService::class)
-            ->majukanJikaLunas(
-                $penghunian,
-                $periodeTagihan,
-                $totalTerverifikasi
-            );
-
-        if (!$tenggatBaru) {
-            return response()->json([
-                'message' => 'Tenggat tidak dapat dimajukan untuk periode ini.',
-                'error' => [
-                    'code' => 422,
-                    'message' => 'Tenggat tidak dapat dimajukan untuk periode ini.',
-                    'status' => 'DUE_DATE_NOT_ADVANCED',
-                    'details' => (object) [],
-                ],
-            ], 422);
-        }
+        $penghunian->update([
+            'tenggat_pelunasan' => $tanggalBerikutnya->toDateString(),
+        ]);
 
         return response()->json([
             'message' => 'Tenggat berikutnya berhasil dihitung.',
             'data' => [
                 'tenggat_sekarang' => $tenggatSekarang->toDateString(),
-                'tenggat_berikutnya' => $tenggatBaru,
+                'tenggat_berikutnya' => $tanggalBerikutnya->toDateString(),
             ],
-        ], 200);
-    });
-}
-
-    private function apiErrorResponse(
-    int $httpStatus,
-    string $message,
-    string $status,
-    array $details = []
-) {
-    return response()->json([
-        'message' => $message,
-        'error' => [
-            'code' => $httpStatus,
-            'message' => $message,
-            'status' => $status,
-            'details' => $details,
-        ],
-    ], $httpStatus);
-}
+        ]);
+    }
 
     /**
      * Menyelesaikan penghunian.

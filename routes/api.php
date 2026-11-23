@@ -1,4 +1,3 @@
-
 <?php
 
 use Illuminate\Support\Facades\Route;
@@ -96,6 +95,12 @@ Route::middleware('api.contract')->group(function () {
 
         // Mencatat pembayaran DP, cicilan, atau pelunasan
         Route::post('/pembayaran', [PembayaranController::class, 'store']);
+
+        // Riwayat pembayaran seluruh kamar
+        Route::get('/pembayaran/riwayat', [
+            PembayaranController::class,
+            'riwayat'
+        ]);
 
         // Melihat detail pembayaran
         Route::get('/pembayaran/{id}', [PembayaranController::class, 'show'])

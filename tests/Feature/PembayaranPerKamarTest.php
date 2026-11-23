@@ -159,7 +159,8 @@ class PembayaranPerKamarTest extends TestCase
             ->getJson("/api/pembayaran/kamar/{$kamar['id_kamar']}/riwayat")
             ->assertOk()
             ->assertJsonCount(2, 'data.pembayaran')
-            ->assertJsonPath('data.penyewa_utama', 'Rina');
+            ->assertJsonPath('data.penyewa_utama', 'Rina')
+            ->assertJsonPath('data.pembayaran.0.no_kamar', '05');
     }
 
     public function test_daftar_pembayaran_kosong_menampilkan_pesan(): void
@@ -266,6 +267,14 @@ class PembayaranPerKamarTest extends TestCase
             ])
             ->assertOk()
             ->assertJsonPath('data.total_sewa', 5000000);
+
+        $this->assertDatabaseHas('tagihan', [
+            'id_penghunian' => $kamar['id_penghunian'][0],
+            'jenis_tagihan' => 'tahunan',
+            'kode_periode' => 'tahunan',
+            'jumlah_tagihan' => 5000000,
+            'status' => 'belum_bayar',
+]);
     }
 
     public function test_harga_tahunan_dua_penghuni_menggunakan_tarif_dua_orang(): void
@@ -299,4 +308,43 @@ class PembayaranPerKamarTest extends TestCase
             ->assertJsonPath('error.code', 404)
             ->assertJsonPath('error.status', 'NOT_FOUND');
     }
+
+    public function test_tagihan_bulanan_pertama_diterbitkan_setelah_skema_disimpan(): void
+{
+    $kamar = $this->buatKamarDenganPenghuni(
+        '10',
+        ['Dina']
+    );
+
+    $idPenghunian = $kamar['id_penghunian'][0];
+
+    // Sebelum skema disimpan, tagihan belum tersedia.
+    $this->assertDatabaseMissing('tagihan', [
+        'id_penghunian' => $idPenghunian,
+    ]);
+
+    // Simpan skema bulanan.
+    $this->withoutMiddleware()
+        ->postJson(
+            "/api/penghunian/{$idPenghunian}/hitung-dp",
+            [
+                'skema_sewa' => 'bulanan',
+            ]
+        )
+        ->assertOk()
+        ->assertJsonPath(
+            'data.skema_sewa',
+            'bulanan'
+        );
+
+    // Tagihan pertama harus langsung dibuat.
+    $this->assertDatabaseHas('tagihan', [
+        'id_penghunian' => $idPenghunian,
+        'jenis_tagihan' => 'bulanan',
+        'kode_periode' => '2026-12',
+        'jatuh_tempo' => '2026-12-05',
+        'jumlah_tagihan' => 600000,
+        'status' => 'belum_bayar',
+    ]);
+}
 }
