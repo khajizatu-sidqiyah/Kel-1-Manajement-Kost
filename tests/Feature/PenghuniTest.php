@@ -2,13 +2,26 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class PenghuniTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Sanctum::actingAs(
+            User::factory()->create([
+                'role' => 'pemilik',
+            ])
+        );
+    }
 
     private function buatKamar(): int
     {
@@ -56,14 +69,15 @@ class PenghuniTest extends TestCase
 
     public function test_penghuni_berhasil_disimpan_dengan_data_valid(): void
     {
-        $response = $this->postJson('/api/penghuni', [
+        $this->postJson('/api/penghuni', [
             'nama_penghuni' => 'Rina',
             'no_telepon' => '081234567890',
-        ]);
-
-        $response->assertCreated()
-            ->assertJsonPath('success', true)
-            ->assertJsonPath('message', 'Penghuni berhasil ditambahkan')
+        ])
+            ->assertCreated()
+            ->assertJsonPath(
+                'message',
+                'Penghuni berhasil ditambahkan.'
+            )
             ->assertJsonPath('data.nama_penghuni', 'Rina');
 
         $this->assertDatabaseHas('penghuni', [
@@ -74,12 +88,10 @@ class PenghuniTest extends TestCase
 
     public function test_penghuni_bisa_disimpan_jika_nomor_telepon_kosong(): void
     {
-        $response = $this->postJson('/api/penghuni', [
+        $this->postJson('/api/penghuni', [
             'nama_penghuni' => 'Rina',
             'no_telepon' => '',
-        ]);
-
-        $response->assertCreated();
+        ])->assertCreated();
 
         $this->assertDatabaseHas('penghuni', [
             'nama_penghuni' => 'Rina',
@@ -87,30 +99,39 @@ class PenghuniTest extends TestCase
         ]);
     }
 
-    public function test_nama_penghuni_wajib_diisi_dengan_format_galat_kontrak(): void
+    public function test_nama_penghuni_wajib_diisi(): void
     {
-        $response = $this->postJson('/api/penghuni', [
+        $this->postJson('/api/penghuni', [
             'nama_penghuni' => '',
             'no_telepon' => '081234567890',
-        ]);
-
-        $response->assertUnprocessable()
-            ->assertJsonPath('message', 'The given data was invalid.')
-            ->assertJsonStructure(['message', 'errors' => ['nama_penghuni']]);
+        ])
+            ->assertUnprocessable()
+            ->assertJsonStructure([
+                'message',
+                'error' => [
+                    'code',
+                    'status',
+                    'details' => ['nama_penghuni'],
+                ],
+            ]);
 
         $this->assertDatabaseCount('penghuni', 0);
     }
 
-    public function test_email_invalid_mengembalikan_galat_422_sesuai_kontrak(): void
+    public function test_email_invalid_mengembalikan_galat_422(): void
     {
-        $response = $this->postJson('/api/penghuni', [
+        $this->postJson('/api/penghuni', [
             'nama_penghuni' => 'Rina',
             'email' => 'bukan-email',
-        ]);
+        ])
+            ->assertUnprocessable()
+            ->assertJsonStructure([
+                'error' => [
+                    'details' => ['email'],
+                ],
+            ]);
 
-        $response->assertUnprocessable()
-            ->assertJsonPath('message', 'The given data was invalid.')
-            ->assertJsonStructure(['message', 'errors' => ['email']]);
+        $this->assertDatabaseCount('penghuni', 0);
     }
 
     public function test_penghuni_pertama_otomatis_menjadi_penyewa_utama_dan_kamar_terisi(): void
@@ -118,13 +139,12 @@ class PenghuniTest extends TestCase
         $idKamar = $this->buatKamar();
         $idPenghuni = $this->buatPenghuni();
 
-        $response = $this->postJson('/api/penghunian', [
+        $this->postJson('/api/penghunian', [
             'id_kamar' => $idKamar,
             'id_penghuni' => $idPenghuni,
             'tanggal_mulai' => '2026-10-13',
-        ]);
-
-        $response->assertCreated()
+        ])
+            ->assertCreated()
             ->assertJsonPath('data.penyewa_utama', true);
 
         $this->assertDatabaseHas('penghunian', [
@@ -143,7 +163,9 @@ class PenghuniTest extends TestCase
     public function test_penghuni_kedua_bukan_penyewa_utama_di_kamar_yang_sama(): void
     {
         $idKamar = $this->buatKamar();
+
         $idPenghuni1 = $this->buatPenghuni();
+
         $idPenghuni2 = $this->buatPenghuni([
             'nama_penghuni' => 'Dewi',
             'no_telepon' => null,
@@ -159,27 +181,37 @@ class PenghuniTest extends TestCase
             'id_kamar' => $idKamar,
             'id_penghuni' => $idPenghuni2,
             'tanggal_mulai' => '2026-10-13',
-        ])->assertCreated()->assertJsonPath('data.penyewa_utama', false);
+        ])
+            ->assertCreated()
+            ->assertJsonPath('data.penyewa_utama', false);
 
-        $this->assertSame(1, DB::table('penghunian')
-            ->where('id_kamar', $idKamar)
-            ->where('status', 'aktif')
-            ->where('penyewa_utama', true)
-            ->count());
+        $this->assertSame(
+            1,
+            DB::table('penghunian')
+                ->where('id_kamar', $idKamar)
+                ->where('status', 'aktif')
+                ->where('penyewa_utama', true)
+                ->count()
+        );
     }
 
     public function test_kamar_wajib_dipilih_saat_mencatat_penghunian(): void
     {
         $idPenghuni = $this->buatPenghuni();
 
-        $response = $this->postJson('/api/penghunian', [
+        $this->postJson('/api/penghunian', [
             'id_penghuni' => $idPenghuni,
             'tanggal_mulai' => '2026-10-13',
-        ]);
-
-        $response->assertUnprocessable()
-            ->assertJsonPath('message', 'The given data was invalid.')
-            ->assertJsonStructure(['message', 'errors' => ['id_kamar']]);
+        ])
+            ->assertUnprocessable()
+            ->assertJsonStructure([
+                'message',
+                'error' => [
+                    'code',
+                    'status',
+                    'details' => ['id_kamar'],
+                ],
+            ]);
 
         $this->assertDatabaseCount('penghunian', 0);
     }

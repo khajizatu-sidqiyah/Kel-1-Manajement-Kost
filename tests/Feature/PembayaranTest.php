@@ -69,7 +69,7 @@ class PembayaranTest extends TestCase
             'skema_sewa' => $skema,
             'total_sewa' => $totalSewa,
             'dp_minimum' => $dpMinimum,
-            'tenggat_pelunasan' => null,
+            'tenggat_pelunasan' => now()->addMonth()->toDateString(),
             'status_pembayaran' => 'belum_lunas',
             'created_at' => now(),
             'updated_at' => now(),
@@ -411,33 +411,42 @@ class PembayaranTest extends TestCase
     /**
      * 14. Perhitungan skema tahunan menghasilkan tenggat tiga bulan.
      */
+
     public function test_hitung_skema_tahunan_menghasilkan_tenggat_tiga_bulan(): void
-    {
-        $id = $this->buatPenghunianPembayaran(
-            totalSewa: 5000000,
-            dpMinimum: 300000
-        );
+{
+    $id = $this->buatPenghunianPembayaran(
+        totalSewa: 5000000,
+        dpMinimum: 300000
+    );
 
-        $response = $this->withoutMiddleware()
-            ->postJson("/api/penghunian/{$id}/hitung-dp", [
-                'skema_sewa' => 'tahunan',
-            ]);
-
-        $response->assertOk()
-            ->assertJsonPath('data.skema_sewa', 'tahunan')
-            ->assertJsonPath('data.dp_minimum', 300000);
-
-        $this->assertStringStartsWith(
-            '2027-02-05',
-            $response->json('data.tenggat_pelunasan')
-        );
-
-        $this->assertDatabaseHas('penghunian', [
-            'id_penghunian' => $id,
-            'skema_sewa' => 'tahunan',
-            'tenggat_pelunasan' => '2027-02-05 00:00:00',
+    // Kosongkan tenggat agar endpoint menghitungnya
+    // berdasarkan tanggal mulai penghunian.
+    DB::table('penghunian')
+        ->where('id_penghunian', $id)
+        ->update([
+            'tenggat_pelunasan' => null,
         ]);
-    }
+
+    $response = $this->withoutMiddleware()
+        ->postJson("/api/penghunian/{$id}/hitung-dp", [
+            'skema_sewa' => 'tahunan',
+        ]);
+
+    $response->assertOk()
+        ->assertJsonPath('data.skema_sewa', 'tahunan')
+        ->assertJsonPath('data.dp_minimum', 300000);
+
+    $this->assertStringStartsWith(
+        '2027-02-05',
+        $response->json('data.tenggat_pelunasan')
+    );
+
+    $this->assertDatabaseHas('penghunian', [
+        'id_penghunian' => $id,
+        'skema_sewa' => 'tahunan',
+        'tenggat_pelunasan' => '2027-02-05 00:00:00',
+    ]);
+}
 
     /**
      * 15. Jenis pembayaran yang tidak dikenal ditolak.

@@ -53,7 +53,8 @@ class ApiContractMiddleware
                 'error' => [
                     'code' => $code,
                     'message' => $errorMessage,
-                    'status' => $this->statusName($status),
+                    'status' => $body['error']['status']
+                        ?? $this->statusName($status),
                     'details' => $details,
                 ],
             ];
