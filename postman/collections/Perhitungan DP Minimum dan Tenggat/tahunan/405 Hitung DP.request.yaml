@@ -1,0 +1,39 @@
+$kind: http-request
+url: "{{base_url}}/penghunian/59/hitung-dp"
+method: GET
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer 1|SGm785QgdMEnT3KPMYjM3R23IeYcfKBcRVclSGqG947e0637
+auth:
+  type: bearer
+  credentials:
+    token: 1|SGm785QgdMEnT3KPMYjM3R23IeYcfKBcRVclSGqG947e0637
+scripts:
+  - type: afterResponse
+    code: "pm.test(\"Status HTTP 405\", function () {\r
+
+      \    pm.response.to.have.status(405);\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Method tidak didukung oleh endpoint\", function () {\r
+
+      \    const response = pm.response.json();\r
+
+      \r
+
+      \    pm.expect(response.error.code).to.equal(405);\r
+
+      \    pm.expect(response.message).to.include(\r
+
+      \        \"Supported methods: POST\"\r
+
+      \    );\r
+
+      });"
+    language: text/javascript
+examples: .resources/405 Hitung DP.resources/examples
+order: 2000

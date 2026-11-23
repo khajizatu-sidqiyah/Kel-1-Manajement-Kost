@@ -1,0 +1,56 @@
+$kind: http-request
+url: "{{base_url}}/penghunian/69/hitung-dp"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer 1|SGm785QgdMEnT3KPMYjM3R23IeYcfKBcRVclSGqG947e0637
+body:
+  type: json
+  content: "{\r
+
+    \    \"id_kamar\": 16,\r
+
+    \    \"id_penghuni\": 44,\r
+
+    \    \"tanggal_mulai\": null,\r
+
+    \    \"skema_sewa\": \"tahunan\",\r
+
+    \    \"penyewa_utama\": true\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: 1|SGm785QgdMEnT3KPMYjM3R23IeYcfKBcRVclSGqG947e0637
+scripts:
+  - type: afterResponse
+    code: "pm.test(\"Penghunian berhasil dibuat\", function () {\r
+
+      \    pm.expect([200, 201]).to.include(pm.response.code);\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Tanggal masuk bernilai null\", function () {\r
+
+      \    const body = pm.response.json();\r
+
+      \    const data = body.data ?? body;\r
+
+      \r
+
+      \    pm.expect(data.tanggal_mulai).to.eql(null);\r
+
+      \r
+
+      \    pm.environment.set(\"id_penghunian_tanggal_kosong_tahunan\",\r
+
+      \        data.id_penghunian);\r
+
+      });"
+    language: text/javascript
+examples: .resources/200 Tanggal masuk kosong.resources/examples
+order: 17000

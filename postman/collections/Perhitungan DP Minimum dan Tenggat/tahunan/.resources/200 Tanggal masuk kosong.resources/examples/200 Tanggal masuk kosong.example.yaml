@@ -1,0 +1,79 @@
+$kind: http-example
+request:
+  url: "{{base_url}}/penghunian/69/hitung-dp"
+  method: POST
+  headers:
+    Accept: application/json
+    Content-Type: application/json
+    Authorization: Bearer 1|SGm785QgdMEnT3KPMYjM3R23IeYcfKBcRVclSGqG947e0637
+  body:
+    type: json
+    content: "{\r
+
+      \    \"id_kamar\": 16,\r
+
+      \    \"id_penghuni\": 44,\r
+
+      \    \"tanggal_mulai\": null,\r
+
+      \    \"skema_sewa\": \"tahunan\",\r
+
+      \    \"penyewa_utama\": true\r
+
+      }"
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Host: 127.0.0.1:8000
+    Connection: close
+    X-Powered-By: PHP/8.2.12
+    Cache-Control: no-cache, private
+    Date: Sun, 08 Nov 2026 07:42:39 GMT
+    Content-Type: application/json; charset=utf-8
+    Access-Control-Allow-Origin: "*"
+  body:
+    type: json
+    content: |-
+      {
+        "message": "Perhitungan sewa berhasil disimpan. Isi tanggal masuk untuk menentukan tenggat.",
+        "data": {
+          "id_penghunian": 69,
+          "id_kamar": 16,
+          "id_penghuni": 44,
+          "tanggal_mulai": null,
+          "tanggal_selesai": null,
+          "status": "aktif",
+          "created_at": "2026-11-08T12:18:53.000000Z",
+          "updated_at": "2026-11-08T07:42:39.000000Z",
+          "skema_sewa": "tahunan",
+          "total_sewa": "5000000.00",
+          "dp_minimum": "300000.00",
+          "tenggat_pelunasan": null,
+          "status_pembayaran": "belum_lunas",
+          "penyewa_utama": true,
+          "kamar": {
+            "id_kamar": 16,
+            "no_kamar": "16",
+            "tipe_kamar": "Standard",
+            "harga": "750000.00",
+            "harga_tahunan": "5000000.00",
+            "status": "terisi",
+            "id_kost": 1,
+            "created_at": null,
+            "updated_at": "2026-11-08T12:18:53.000000Z"
+          },
+          "penghuni": {
+            "id_penghuni": 44,
+            "user_id": null,
+            "nama_penghuni": "Nabila Rahma",
+            "no_telepon": "080000000024",
+            "email": "nabila.rahma@example.com",
+            "alamat": "Cirebon",
+            "created_at": "2026-11-08T12:18:53.000000Z",
+            "updated_at": "2026-11-08T12:18:53.000000Z"
+          },
+          "pembayaran": []
+        }
+      }
+order: 1000

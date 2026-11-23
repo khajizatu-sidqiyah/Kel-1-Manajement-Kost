@@ -1,0 +1,39 @@
+$kind: http-request
+url: "{{base_url}}/penghunian/59"
+method: GET
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer 1|SGm785QgdMEnT3KPMYjM3R23IeYcfKBcRVclSGqG947e0637
+auth:
+  type: bearer
+  credentials:
+    token: 1|SGm785QgdMEnT3KPMYjM3R23IeYcfKBcRVclSGqG947e0637
+scripts:
+  - type: afterResponse
+    code: "pm.test(\"Data penghunian berhasil diambil\", function () {\r
+
+      \    pm.response.to.have.status(200);\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Tenggat tidak berubah akibat request gagal\", function () {\r
+
+      \    const response = pm.response.json();\r
+
+      \    const data = response.data ?? response;\r
+
+      \r
+
+      \    const tenggat = data.tenggat_pelunasan.substring(0, 10);\r
+
+      \r
+
+      \    pm.expect(tenggat).to.equal(\"2027-02-20\");\r
+
+      });"
+    language: text/javascript
+examples: .resources/200 Memastikan data tidak berubah ketika request gagal.resources/examples
+order: 10000

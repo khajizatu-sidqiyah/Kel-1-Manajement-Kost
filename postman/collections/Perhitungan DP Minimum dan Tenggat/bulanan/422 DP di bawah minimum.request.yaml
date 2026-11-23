@@ -1,0 +1,104 @@
+$kind: http-request
+url: "{{base_url}}/penghunian/67/dp"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer 1|SGm785QgdMEnT3KPMYjM3R23IeYcfKBcRVclSGqG947e0637
+body:
+  type: json
+  content: "{\r
+
+    \    \"id_penghunian\": 67,\r
+
+    \    \"jenis_pembayaran\": \"dp\",\r
+
+    \    \"tanggal_bayar\": \"2026-11-05\",\r
+
+    \    \"jumlah\": 100000,\r
+
+    \    \"metode_pembayaran\": \"Transfer Bank\",\r
+
+    \    \"bukti_pembayaran\": null\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: 1|SGm785QgdMEnT3KPMYjM3R23IeYcfKBcRVclSGqG947e0637
+scripts:
+  - type: afterResponse
+    code: "const jsonData = pm.response.json();\r
+
+      \r
+
+      const dpMinimum = 300000;\r
+
+      const jumlahDP = 100000;\r
+
+      \r
+
+      pm.test(\"Respons menggunakan JSON\", function () {\r
+
+      \    pm.response.to.be.json;\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Status code 422 - DP ditolak\", function () {\r
+
+      \    pm.response.to.have.status(422);\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Pesan penolakan DP sesuai\", function () {\r
+
+      \    pm.expect(jsonData.message).to.eql(\r
+
+      \        \"Pembayaran DP ditolak karena jumlahnya kurang dari DP minimum.\"\r
+
+      \    );\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Kode error DP di bawah minimum\", function () {\r
+
+      \    pm.expect(jsonData.error.code).to.eql(\"DP_BELOW_MINIMUM\");\r
+
+      });\r
+
+      \r
+
+      pm.test(\"DP minimum sebesar Rp300.000\", function () {\r
+
+      \    pm.expect(dpMinimum).to.eql(300000);\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Jumlah DP yang dimasukkan Rp100.000\", function () {\r
+
+      \    pm.expect(jumlahDP).to.eql(100000);\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Pesan penolakan DP sesuai\", function () {\r
+
+      \    pm.expect(jsonData.message).to.eql(\r
+
+      \        \"Pembayaran DP ditolak karena jumlahnya kurang dari DP minimum.\"\r
+
+      \    );\r
+
+      });"
+    language: text/javascript
+examples: .resources/422 DP di bawah minimum.resources/examples
+order: 7000

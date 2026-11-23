@@ -1,0 +1,49 @@
+$kind: http-request
+url: "{{base_url}}/penghunian/58/tenggat-berikutnya"
+method: POST
+headers:
+  Accept: application/json
+  Authorization: Bearer 1|SGm785QgdMEnT3KPMYjM3R23IeYcfKBcRVclSGqG947e0637
+body:
+  type: json
+  content: "{\r
+
+    \    \"id_penghunian\": 58,\r
+
+    \    \"id_kamar\": 1,\r
+
+    \    \"id_penghuni\": 32,\r
+
+    \    \"tanggal_mulai\": \"2026-12-31\",\r
+
+    \    \"skema_sewa\": \"bulanan\",\r
+
+    \    \"total_sewa\": 600000,\r
+
+    \    \"dp_minimum\": 300000,\r
+
+    \    \"tenggat_pelunasan\": \"2026-12-31\"\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: 1|SGm785QgdMEnT3KPMYjM3R23IeYcfKBcRVclSGqG947e0637
+scripts:
+  - type: afterResponse
+    code: "pm.test(\"Tenggat berikutnya berhasil diproses\", function () {\r
+
+      \    pm.expect(pm.response.code).to.be.oneOf([200, 201]);\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Response berupa JSON\", function () {\r
+
+      \    pm.response.to.be.json;\r
+
+      });"
+    language: text/javascript
+examples: .resources/200 Tenggat berikutnya akhir.resources/examples
+order: 16000

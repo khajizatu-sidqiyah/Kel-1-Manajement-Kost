@@ -1,0 +1,51 @@
+$kind: http-example
+request:
+  url: "{{base_url}}/penghunian/67/tenggat-berikutnya"
+  method: POST
+  headers:
+    Accept: application/json
+    Content-Type: application/json
+    Authorization: 1|SGm785QgdMEnT3KPMYjM3R23IeYcfKBcRVclSGqG947e0637
+  body:
+    type: json
+    content: "{\r
+
+      \    \"id_penghunian\": 67,\r
+
+      \    \"id_kamar\": 14,\r
+
+      \    \"id_penghuni\": 42,\r
+
+      \    \"tanggal_mulai\": \"2027-01-31\",\r
+
+      \    \"skema_sewa\": \"bulanan\",\r
+
+      \    \"total_sewa\": 600000,\r
+
+      \    \"dp_minimum\": 300000,\r
+
+      \    \"tenggat_pelunasan\": \"2027-01-31\"\r
+
+      }"
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Host: 127.0.0.1:8000
+    Connection: close
+    X-Powered-By: PHP/8.2.12
+    Cache-Control: no-cache, private
+    Date: Sun, 08 Nov 2026 06:22:44 GMT
+    Content-Type: application/json; charset=utf-8
+    Access-Control-Allow-Origin: "*"
+  body:
+    type: json
+    content: |-
+      {
+        "message": "Tenggat berikutnya berhasil dihitung.",
+        "data": {
+          "tenggat_sekarang": "2027-01-31",
+          "tenggat_berikutnya": "2027-02-28"
+        }
+      }
+order: 1000

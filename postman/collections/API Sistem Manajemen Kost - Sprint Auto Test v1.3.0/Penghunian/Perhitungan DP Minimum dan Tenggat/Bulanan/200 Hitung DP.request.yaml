@@ -1,0 +1,56 @@
+$kind: http-request
+url: "{{base_url}}/penghunian/58/hitung-dp"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer 1|SGm785QgdMEnT3KPMYjM3R23IeYcfKBcRVclSGqG947e0637
+body:
+  type: json
+  content: "{\r
+
+    \    \"skema_sewa\": \"bulanan\",\r
+
+    \    \"tanggal_mulai\": \"2026-11-05\",\r
+
+    \    \"tanggal_selesai\": null,\r
+
+    \    \"total_sewa\": 600000,\r
+
+    \    \"dp_minimum\": 300000,\r
+
+    \    \"tenggat_pelunasan\": \"2026-11-05\"\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: 1|SGm785QgdMEnT3KPMYjM3R23IeYcfKBcRVclSGqG947e0637
+scripts:
+  - type: afterResponse
+    code: "pm.test(\"Status response berhasil\", function () {\r
+
+      \    pm.expect(pm.response.code).to.be.oneOf([200, 201]);\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Response berupa JSON\", function () {\r
+
+      \    pm.response.to.be.json;\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Perhitungan DP bulanan berhasil diproses\", function () {\r
+
+      \    const response = pm.response.json();\r
+
+      \    pm.expect(response).to.be.an(\"object\");\r
+
+      });"
+    language: text/javascript
+examples: .resources/200 Hitung DP.resources/examples
+order: 1000

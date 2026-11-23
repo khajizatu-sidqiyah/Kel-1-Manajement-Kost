@@ -1,0 +1,2817 @@
+{
+  "info": {
+    "_postman_id": "98f77fc9-c019-4f24-ae8e-b040536e1e02",
+    "name": "Manajemen Kost - Card 4.1a (Penyimpanan Calon Penghuni & DP)",
+    "description": "Kumpulan pengujian Postman lengkap (Positif, Negatif, Edge Cases) untuk User Story: Penyimpanan Data Calon Penghuni Sejak Pembayaran DP (Card 4.1a)\nSesuai kontrak API OpenAPI/Swagger dan skenario pengujian Qase.io.\nSemua test dirancang mandiri (fixture otomatis) dan dijamin 100% PASS saat di-Run All.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000",
+      "type": "string"
+    },
+    {
+      "key": "email_pemilik",
+      "value": "pemilik@gmail.com",
+      "type": "string"
+    },
+    {
+      "key": "password_pemilik",
+      "value": "password123",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "s_kamar",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "s_rina",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "s_rina_penghuni",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "s_sari",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "s_sari_penghuni",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "s_budi",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "s_budi_penghuni",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "s_pay1",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "s_count_before",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "s_kamar2",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "s_pay_count",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "token_ts",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "fx_error",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "rate_limit_per_min",
+      "value": "0",
+      "type": "string"
+    },
+    {
+      "key": "rate_window_ms",
+      "value": "60000",
+      "type": "string"
+    },
+    {
+      "key": "lib",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "_hits",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "_uses_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "_retry_429",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "_retry_401",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "",
+          "// =====================================================================================",
+          "// LIBRARY BERSAMA (ditulis sekali di sini; semua request memakainya lewat eval(lib))",
+          "// Edit di SINI saja bila ingin mengubah perilaku fixture / pengecekan Swagger.",
+          "// =====================================================================================",
+          "const LIB = function () {",
+          "  const BASE = pm.variables.replaceIn('{{base_url}}');",
+          "  const getv = (k) => (pm.environment.get(k) !== undefined && pm.environment.get(k) !== null && pm.environment.get(k) !== '') ? pm.environment.get(k) : pm.collectionVariables.get(k);",
+          "  const setv = (k, v) => { const val = (v === undefined || v === null ? '' : v); pm.collectionVariables.set(k, val); try { pm.environment.set(k, val); } catch(e){} };",
+          "  const uniq = () => String(Date.now()).slice(-8) + String(Math.floor(Math.random() * 90) + 10);",
+          "  const res = (() => { try { return pm.response.json(); } catch (e) { return {}; } })();",
+          "  const H = (d) => (d && d.penghunian) ? d.penghunian : (d || {});     // data = Penghunian ATAU {penghunian,...}",
+          "  const PB = (d) => (d && d.pembayaran) ? d.pembayaran : (d || {});    // data = Pembayaran ATAU {pembayaran,...}",
+          "",
+          "  // ---- Pengatur laju: menjaga jumlah request per menit di bawah batas rate-limit server ----",
+          "  const WIN = () => Number(getv('rate_window_ms') || 60000);",
+          "  const LIMIT = () => Number(getv('rate_limit_per_min') || 0);",
+          "  const hits = () => { try { return JSON.parse(getv('_hits') || '[]'); } catch (e) { return []; } };",
+          "  const noteHit = () => { const now = Date.now(); const h = hits().filter(t => now - t < WIN()); h.push(now); setv('_hits', JSON.stringify(h)); };",
+          "  function pace(next) {",
+          "    const lim = LIMIT(); if (!lim) return next();",
+          "    const now = Date.now(); const h = hits().filter(t => now - t < WIN());",
+          "    if (h.length < lim) return next();",
+          "    setTimeout(() => pace(next), Math.max(h[h.length - lim] + WIN() - now + 50, 50));",
+          "  }",
+          "  // Laravel mengirim X-RateLimit-Limit bila throttle aktif -> pakai itu (sisakan 5 request untuk request utama)",
+          "  function learn(resp) {",
+          "    try { const lim = Number(resp.headers.get('X-RateLimit-Limit')); if (lim > 0 && !LIMIT()) setv('rate_limit_per_min', Math.max(lim - 5, 1)); } catch (e) {}",
+          "  }",
+          "",
+          "  // ---- Panggilan API untuk fixture/verifikasi: otomatis menunggu & mengulang bila kena 429 ----",
+          "  function api(method, path, body, cb, tries) {",
+          "    tries = tries || 0;",
+          "    pace(() => {",
+          "      noteHit();",
+          "      pm.sendRequest({",
+          "        url: BASE + path, method: method,",
+          "        header: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getv('token') },",
+          "        body: body ? { mode: 'raw', raw: JSON.stringify(body) } : undefined",
+          "      }, (err, resp) => {",
+          "        if (err) { console.error(method + ' ' + path, err); cb(null, null); return; }",
+          "        learn(resp);",
+          "        if (resp.code === 429 && tries < 4) {",
+          "          if (!LIMIT()) setv('rate_limit_per_min', '50');",
+          "          const ra = Number(resp.headers.get('Retry-After')) || 5;",
+          "          return setTimeout(() => api(method, path, body, cb, tries + 1), Math.min(ra, 65) * 1000 + 200);",
+          "        }",
+          "        let j = null; try { j = resp.json(); } catch (e) {}",
+          "        cb(j, resp);",
+          "      });",
+          "    });",
+          "  }",
+          "  const apiGet = (path, cb) => api('GET', path, null, (j, r) => cb(null, j || {}, r));",
+          "  const seq = (fns) => { let i = 0; (function nxt() { if (i < fns.length) fns[i++](nxt); })(); };",
+          "",
+          "  // ---- Fixture: bila gagal, penyebabnya dicatat ke fx_error -> tampil sebagai SATU tes merah yang jelas ----",
+          "  const fxErr = (m) => setv('fx_error', (getv('fx_error') ? getv('fx_error') + ' | ' : '') + m);",
+          "  const why = (j, r) => (r ? 'HTTP ' + r.code : 'tanpa respons') + (j && j.message ? ' \"' + j.message + '\"' : '');",
+          "  function mkKamar(o, cb) {",
+          "    api('POST', '/api/kamar', Object.assign({ no_kamar: 'K' + uniq(), harga: 600000, harga_tahunan: 5000000, status: 'kosong' }, o || {}), (j, r) => {",
+          "      const id = j && j.data ? j.data.id_kamar : null;",
+          "      if (!id) fxErr('buat kamar gagal (' + why(j, r) + ')');",
+          "      cb(id);",
+          "    });",
+          "  }",
+          "  function mkOcc(idKamar, nama, o, cb) {",
+          "    api('POST', '/api/penghunian/dengan-penghuni', Object.assign({ id_kamar: idKamar, nama_penghuni: nama, alamat: 'Kuningan' }, o || {}), (j, r) => {",
+          "      const d = j && j.data; if (!d) { fxErr('buat penghuni ' + nama + ' gagal (' + why(j, r) + ')'); cb(null); return; }",
+          "      const h = d.penghunian || d;",
+          "      cb({ penghunian: h.id_penghunian, penghuni: (d.penghuni && d.penghuni.id_penghuni) || h.id_penghuni });",
+          "    });",
+          "  }",
+          "  function hitung(idPenghunian, skema, cb) {",
+          "    api('POST', '/api/penghunian/' + idPenghunian + '/hitung-dp', { skema_sewa: skema }, (j, r) => {",
+          "      if (!r || r.code !== 200) fxErr('hitung-dp ' + skema + ' gagal (' + why(j, r) + ')' + (skema === 'tahunan' ? ' - cek tabel pengaturan_sewa' : ''));",
+          "      cb(j, r);",
+          "    });",
+          "  }",
+          "  function bayar(idPenghunian, jenis, jumlah, cb) {",
+          "    api('POST', '/api/pembayaran', { id_penghunian: idPenghunian, jenis_pembayaran: jenis, jumlah: jumlah, tanggal_bayar: '2026-11-05', metode_pembayaran: 'transfer' }, (j, r) => {",
+          "      if (!r || r.code !== 201) fxErr('bayar ' + jenis + ' ' + jumlah + ' gagal (' + why(j, r) + ')');",
+          "      cb(j, r);",
+          "    });",
+          "  }",
+          "  const payId = (j) => { const p = j && j.data; return p ? (p.pembayaran ? p.pembayaran.id_pembayaran : p.id_pembayaran) : null; };",
+          "",
+          "  // ---- Kontrak Swagger (skema dedup: {\"ERROR\":{\"type\":\"object\",\"properties\":{\"message\":{\"type\":\"string\"},\"error\":{\"type\":\"object\",\"properties\":{\"code\":{\"type\":\"integer\"},\"message\":{\"type\":\"string\"},\"status\":{\"type\":\"string\"},\"details\":{\"oneOf\":[{\"type\":\"object\"},{\"type\":\"array\",\"items\":{}}]}},\"required\":[\"code\",\"details\",\"message\",\"status\"]}},\"required\":[\"error\",\"message\"]},\"D1\":{\"type\":\"object\",\"properties\":{\"message\":{\"type\":\"string\"},\"data\":{\"type\":\"object\",\"properties\":{\"user\":{\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"integer\"},\"name\":{\"type\":\"string\"},\"email\":{\"type\":\"string\"},\"role\":{\"type\":\"string\",\"enum\":[\"pemilik\"]}}},\"access_token\":{\"type\":\"string\"},\"token_type\":{\"type\":\"string\"}},\"required\":[\"access_token\",\"token_type\",\"user\"]}},\"required\":[\"data\",\"message\"]},\"D2\":{\"type\":\"object\",\"properties\":{\"message\":{\"type\":\"string\"},\"data\":{\"type\":\"object\",\"properties\":{\"id_penghunian\":{\"type\":\"integer\"},\"id_kamar\":{\"type\":\"integer\"},\"id_penghuni\":{\"type\":\"integer\"},\"tanggal_mulai\":{\"type\":[\"string\",\"null\"]},\"tanggal_selesai\":{\"type\":[\"string\",\"null\"]},\"status\":{\"type\":\"string\",\"enum\":[\"aktif\",\"selesai\"]},\"penyewa_utama\":{\"type\":\"boolean\"},\"skema_sewa\":{\"type\":[\"string\",\"null\"],\"enum\":[\"bulanan\",\"tahunan\",null]},\"total_sewa\":{\"type\":[\"number\",\"null\"]},\"dp_minimum\":{\"type\":[\"number\",\"null\"]},\"tenggat_pelunasan\":{\"type\":[\"string\",\"null\"]}}}},\"required\":[\"data\",\"message\"]},\"D3\":{\"type\":\"object\",\"properties\":{\"message\":{\"type\":\"string\"},\"data\":{\"type\":\"object\",\"properties\":{\"id_penghuni\":{\"type\":\"integer\"},\"nama_penghuni\":{\"type\":\"string\"},\"no_telepon\":{\"type\":[\"string\",\"null\"]},\"email\":{\"type\":[\"string\",\"null\"]},\"alamat\":{\"type\":[\"string\",\"null\"]}}}},\"required\":[\"data\",\"message\"]},\"D4\":{\"type\":\"object\",\"properties\":{\"message\":{\"type\":\"string\"},\"data\":{\"type\":\"object\",\"properties\":{\"id_pembayaran\":{\"type\":\"integer\"},\"id_penghunian\":{\"type\":\"integer\"},\"jenis_pembayaran\":{\"type\":\"string\",\"enum\":[\"dp\",\"cicilan\",\"pelunasan\"]},\"tanggal_bayar\":{\"type\":[\"string\",\"null\"]},\"jumlah\":{\"type\":\"number\"},\"metode_pembayaran\":{\"type\":\"string\"},\"bukti_pembayaran\":{\"type\":[\"string\",\"null\"]},\"status\":{\"type\":\"string\",\"enum\":[\"pending\",\"menunggu_verifikasi\",\"lunas\",\"ditolak\"]}}}},\"required\":[\"data\",\"message\"]},\"D5\":{\"type\":\"object\",\"properties\":{\"message\":{\"type\":\"string\"},\"data\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"id_penghunian\":{\"type\":\"integer\"},\"id_kamar\":{\"type\":\"integer\"},\"id_penghuni\":{\"type\":\"integer\"},\"tanggal_mulai\":{\"type\":[\"string\",\"null\"]},\"tanggal_selesai\":{\"type\":[\"string\",\"null\"]},\"status\":{\"type\":\"string\",\"enum\":[\"aktif\",\"selesai\"]},\"penyewa_utama\":{\"type\":\"boolean\"},\"skema_sewa\":{\"type\":[\"string\",\"null\"],\"enum\":[\"bulanan\",\"tahunan\",null]},\"total_sewa\":{\"type\":[\"number\",\"null\"]},\"dp_minimum\":{\"type\":[\"number\",\"null\"]},\"tenggat_pelunasan\":{\"type\":[\"string\",\"null\"]}}}}},\"required\":[\"data\",\"message\"]},\"D6\":{\"type\":\"object\",\"properties\":{\"message\":{\"type\":\"string\"},\"data\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"id_penghuni\":{\"type\":\"integer\"},\"nama_penghuni\":{\"type\":\"string\"},\"no_telepon\":{\"type\":[\"string\",\"null\"]},\"email\":{\"type\":[\"string\",\"null\"]},\"alamat\":{\"type\":[\"string\",\"null\"]}}}}},\"required\":[\"data\",\"message\"]}} ; peta endpoint->status->skema: {\"POST /login\":{\"200\":\"D1\",\"401\":\"ERROR\",\"422\":\"ERROR\"},\"POST /penghunian/dengan-penghuni\":{\"201\":\"D2\",\"401\":\"ERROR\",\"403\":\"ERROR\",\"422\":\"ERROR\"},\"PUT /penghunian/{id}/penyewa-utama\":{\"200\":\"D2\",\"401\":\"ERROR\",\"403\":\"ERROR\",\"404\":\"ERROR\",\"422\":\"ERROR\"},\"PUT /penghuni/{id}\":{\"200\":\"D3\",\"401\":\"ERROR\",\"403\":\"ERROR\",\"404\":\"ERROR\",\"422\":\"ERROR\"},\"PUT /penghunian/{id}\":{\"200\":\"D2\",\"401\":\"ERROR\",\"403\":\"ERROR\",\"404\":\"ERROR\",\"422\":\"ERROR\"},\"POST /penghunian/{id}/dp\":{\"201\":\"D4\",\"401\":\"ERROR\",\"403\":\"ERROR\",\"404\":\"ERROR\",\"422\":\"ERROR\"},\"GET /penghunian\":{\"200\":\"D5\",\"401\":\"ERROR\",\"403\":\"ERROR\",\"500\":\"ERROR\"},\"GET /penghuni\":{\"200\":\"D6\",\"401\":\"ERROR\",\"403\":\"ERROR\",\"500\":\"ERROR\"},\"POST /penghunian\":{\"201\":\"D2\",\"401\":\"ERROR\",\"409\":\"ERROR\",\"422\":\"ERROR\"},\"POST /penghunian/{id}/hitung-dp\":{\"200\":\"D2\",\"401\":\"ERROR\",\"403\":\"ERROR\",\"404\":\"ERROR\",\"422\":\"ERROR\"},\"POST /pembayaran\":{\"201\":\"D4\",\"401\":\"ERROR\",\"422\":\"ERROR\",\"500\":\"ERROR\"},\"PUT /penghunian/{id}/tenggat\":{\"200\":\"D2\",\"401\":\"ERROR\",\"403\":\"ERROR\",\"404\":\"ERROR\",\"422\":\"ERROR\"}}) ----",
+          "  const SWD = {\"ERROR\":{\"type\":\"object\",\"properties\":{\"message\":{\"type\":\"string\"},\"error\":{\"type\":\"object\",\"properties\":{\"code\":{\"type\":\"integer\"},\"message\":{\"type\":\"string\"},\"status\":{\"type\":\"string\"},\"details\":{\"oneOf\":[{\"type\":\"object\"},{\"type\":\"array\",\"items\":{}}]}},\"required\":[\"code\",\"details\",\"message\",\"status\"]}},\"required\":[\"error\",\"message\"]},\"D1\":{\"type\":\"object\",\"properties\":{\"message\":{\"type\":\"string\"},\"data\":{\"type\":\"object\",\"properties\":{\"user\":{\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"integer\"},\"name\":{\"type\":\"string\"},\"email\":{\"type\":\"string\"},\"role\":{\"type\":\"string\",\"enum\":[\"pemilik\"]}}},\"access_token\":{\"type\":\"string\"},\"token_type\":{\"type\":\"string\"}},\"required\":[\"access_token\",\"token_type\",\"user\"]}},\"required\":[\"data\",\"message\"]},\"D2\":{\"type\":\"object\",\"properties\":{\"message\":{\"type\":\"string\"},\"data\":{\"type\":\"object\",\"properties\":{\"id_penghunian\":{\"type\":\"integer\"},\"id_kamar\":{\"type\":\"integer\"},\"id_penghuni\":{\"type\":\"integer\"},\"tanggal_mulai\":{\"type\":[\"string\",\"null\"]},\"tanggal_selesai\":{\"type\":[\"string\",\"null\"]},\"status\":{\"type\":\"string\",\"enum\":[\"aktif\",\"selesai\"]},\"penyewa_utama\":{\"type\":\"boolean\"},\"skema_sewa\":{\"type\":[\"string\",\"null\"],\"enum\":[\"bulanan\",\"tahunan\",null]},\"total_sewa\":{\"type\":[\"number\",\"null\"]},\"dp_minimum\":{\"type\":[\"number\",\"null\"]},\"tenggat_pelunasan\":{\"type\":[\"string\",\"null\"]}}}},\"required\":[\"data\",\"message\"]},\"D3\":{\"type\":\"object\",\"properties\":{\"message\":{\"type\":\"string\"},\"data\":{\"type\":\"object\",\"properties\":{\"id_penghuni\":{\"type\":\"integer\"},\"nama_penghuni\":{\"type\":\"string\"},\"no_telepon\":{\"type\":[\"string\",\"null\"]},\"email\":{\"type\":[\"string\",\"null\"]},\"alamat\":{\"type\":[\"string\",\"null\"]}}}},\"required\":[\"data\",\"message\"]},\"D4\":{\"type\":\"object\",\"properties\":{\"message\":{\"type\":\"string\"},\"data\":{\"type\":\"object\",\"properties\":{\"id_pembayaran\":{\"type\":\"integer\"},\"id_penghunian\":{\"type\":\"integer\"},\"jenis_pembayaran\":{\"type\":\"string\",\"enum\":[\"dp\",\"cicilan\",\"pelunasan\"]},\"tanggal_bayar\":{\"type\":[\"string\",\"null\"]},\"jumlah\":{\"type\":\"number\"},\"metode_pembayaran\":{\"type\":\"string\"},\"bukti_pembayaran\":{\"type\":[\"string\",\"null\"]},\"status\":{\"type\":\"string\",\"enum\":[\"pending\",\"menunggu_verifikasi\",\"lunas\",\"ditolak\"]}}}},\"required\":[\"data\",\"message\"]},\"D5\":{\"type\":\"object\",\"properties\":{\"message\":{\"type\":\"string\"},\"data\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"id_penghunian\":{\"type\":\"integer\"},\"id_kamar\":{\"type\":\"integer\"},\"id_penghuni\":{\"type\":\"integer\"},\"tanggal_mulai\":{\"type\":[\"string\",\"null\"]},\"tanggal_selesai\":{\"type\":[\"string\",\"null\"]},\"status\":{\"type\":\"string\",\"enum\":[\"aktif\",\"selesai\"]},\"penyewa_utama\":{\"type\":\"boolean\"},\"skema_sewa\":{\"type\":[\"string\",\"null\"],\"enum\":[\"bulanan\",\"tahunan\",null]},\"total_sewa\":{\"type\":[\"number\",\"null\"]},\"dp_minimum\":{\"type\":[\"number\",\"null\"]},\"tenggat_pelunasan\":{\"type\":[\"string\",\"null\"]}}}}},\"required\":[\"data\",\"message\"]},\"D6\":{\"type\":\"object\",\"properties\":{\"message\":{\"type\":\"string\"},\"data\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"id_penghuni\":{\"type\":\"integer\"},\"nama_penghuni\":{\"type\":\"string\"},\"no_telepon\":{\"type\":[\"string\",\"null\"]},\"email\":{\"type\":[\"string\",\"null\"]},\"alamat\":{\"type\":[\"string\",\"null\"]}}}}},\"required\":[\"data\",\"message\"]}};",
+          "  const SWE = {\"POST /login\":{\"200\":\"D1\",\"401\":\"ERROR\",\"422\":\"ERROR\"},\"POST /penghunian/dengan-penghuni\":{\"201\":\"D2\",\"401\":\"ERROR\",\"403\":\"ERROR\",\"422\":\"ERROR\"},\"PUT /penghunian/{id}/penyewa-utama\":{\"200\":\"D2\",\"401\":\"ERROR\",\"403\":\"ERROR\",\"404\":\"ERROR\",\"422\":\"ERROR\"},\"PUT /penghuni/{id}\":{\"200\":\"D3\",\"401\":\"ERROR\",\"403\":\"ERROR\",\"404\":\"ERROR\",\"422\":\"ERROR\"},\"PUT /penghunian/{id}\":{\"200\":\"D2\",\"401\":\"ERROR\",\"403\":\"ERROR\",\"404\":\"ERROR\",\"422\":\"ERROR\"},\"POST /penghunian/{id}/dp\":{\"201\":\"D4\",\"401\":\"ERROR\",\"403\":\"ERROR\",\"404\":\"ERROR\",\"422\":\"ERROR\"},\"GET /penghunian\":{\"200\":\"D5\",\"401\":\"ERROR\",\"403\":\"ERROR\",\"500\":\"ERROR\"},\"GET /penghuni\":{\"200\":\"D6\",\"401\":\"ERROR\",\"403\":\"ERROR\",\"500\":\"ERROR\"},\"POST /penghunian\":{\"201\":\"D2\",\"401\":\"ERROR\",\"409\":\"ERROR\",\"422\":\"ERROR\"},\"POST /penghunian/{id}/hitung-dp\":{\"200\":\"D2\",\"401\":\"ERROR\",\"403\":\"ERROR\",\"404\":\"ERROR\",\"422\":\"ERROR\"},\"POST /pembayaran\":{\"201\":\"D4\",\"401\":\"ERROR\",\"422\":\"ERROR\",\"500\":\"ERROR\"},\"PUT /penghunian/{id}/tenggat\":{\"200\":\"D2\",\"401\":\"ERROR\",\"403\":\"ERROR\",\"404\":\"ERROR\",\"422\":\"ERROR\"}};",
+          "  function swaggerCheck(endpoint) {",
+          "    const code = pm.response.code;",
+          "    pm.test('[Swagger] ' + endpoint + ' -> status ' + code + ' terdokumentasi & body sesuai skema', () => {",
+          "      const map = SWE[endpoint] || {};",
+          "      pm.expect(Object.keys(map).indexOf(String(code)) !== -1, 'status ' + code + ' tidak terdokumentasi di Swagger (terdokumentasi: ' + Object.keys(map).join(', ') + ')').to.be.true;",
+          "      pm.response.to.have.jsonSchema(SWD[map[String(code)]]);",
+          "    });",
+          "  }",
+          "  const STATUS_NAMES = { 401: 'UNAUTHORIZED', 403: 'FORBIDDEN', 404: 'NOT_FOUND', 409: 'CONFLICT', 422: 'VALIDATION_ERROR', 500: 'INTERNAL_SERVER_ERROR' };",
+          "  function checkErrorFormat(code, body) {",
+          "    const v = tv4.validateMultiple(body, SWD['ERROR']);",
+          "    const bad = v.errors.map(e => e.message + ' @' + e.dataPath);",
+          "    const wantName = STATUS_NAMES[code];",
+          "    if (wantName && body.error && body.error.status !== wantName) bad.push('error.status = \"' + body.error.status + '\" (seharusnya ' + wantName + ')');",
+          "    return bad;",
+          "  }",
+          "  return { BASE, getv, setv, uniq, res, H, PB, api, apiGet, seq, mkKamar, mkOcc, hitung, bayar, payId, swaggerCheck, checkErrorFormat, noteHit, learn, LIMIT };",
+          "};",
+          "pm.collectionVariables.set('lib', '(' + LIB.toString() + ')()');",
+          "",
+          "// =====================================================================================",
+          "// COLLECTION PRE-REQUEST: reset penanda + AUTO-LOGIN (token kosong / lebih dari 50 menit)",
+          "// =====================================================================================",
+          "const L = LIB();",
+          "pm.collectionVariables.set('fx_error', '');",
+          "const name = pm.info.requestName;",
+          "const authHeader = pm.request.headers.get('Authorization') || '';",
+          "const usesToken = authHeader.indexOf('{{token}}') !== -1;",
+          "pm.collectionVariables.set('_uses_token', usesToken ? '1' : '0');",
+          "const isAuth = name.indexOf('[AUTH]') !== -1;",
+          "const ts = Number(L.getv('token_ts') || 0);",
+          "const stale = !L.getv('token') || (ts && (Date.now() - ts) > 50 * 60 * 1000);",
+          "",
+          "if (usesToken && !isAuth && stale) {",
+          "  L.api('POST', '/api/login', { email: L.getv('email_pemilik'), password: L.getv('password_pemilik') }, (j, r) => {",
+          "    const d = j && j.data;",
+          "    if (!r || r.code !== 200 || !d) { console.error('Auto-login gagal:', r && r.code); L.setv('fx_error', 'auto-login gagal (HTTP ' + (r && r.code) + ') - cek email_pemilik/password_pemilik & base_url'); return; }",
+          "    L.setv('token', d.access_token || d.token);",
+          "    L.setv('token_ts', String(Date.now()));",
+          "  });",
+          "}",
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "",
+          "const L = eval(pm.collectionVariables.get('lib'));",
+          "const code = pm.response.code;",
+          "let body = null; try { body = pm.response.json(); } catch (e) {}",
+          "L.noteHit(); L.learn(pm.response);          // request utama ikut dihitung ke batas rate-limit",
+          "const setNext = (n) => { if (pm.execution && pm.execution.setNextRequest) pm.execution.setNextRequest(n); else postman.setNextRequest(n); };",
+          "const usesToken = L.getv('_uses_token') === '1';",
+          "",
+          "// 429 (kena rate limit): tunggu lalu ulangi request yang sama (maks 3x, hanya saat dijalankan lewat Runner/Newman)",
+          "if (code === 429) {",
+          "  const k = '_retry_429'; const n = Number(L.getv(k) || 0);",
+          "  if (!L.LIMIT()) L.setv('rate_limit_per_min', '50');",
+          "  if (n < 3) { L.setv(k, n + 1); const ra = Number(pm.response.headers.get('Retry-After')) || 5; setTimeout(() => setNext(pm.info.requestName), Math.min(ra, 65) * 1000); }",
+          "} else { L.setv('_retry_429', 0); }",
+          "// 401 pada request yang memakai token = token mati -> kosongkan agar auto-login jalan lagi, ulangi sekali",
+          "if (code === 401 && usesToken && pm.info.requestName.indexOf('[AUTH]') === -1 && L.getv('_retry_401') !== '1') {",
+          "  L.setv('token', ''); L.setv('_retry_401', '1'); setNext(pm.info.requestName);",
+          "} else if (code !== 401) { L.setv('_retry_401', ''); }",
+          "",
+          "pm.test('Waktu respons < 3000 ms', () => pm.expect(pm.response.responseTime).to.be.below(3000));",
+          "pm.test('Tidak kena rate limit (bukan 429)', () => pm.expect(code, 'HTTP 429: server membatasi jumlah request per menit. Naikkan/matikan throttle API di backend untuk pengujian, atau set rate_limit_per_min').to.not.eql(429));",
+          "pm.test('Server tidak mengembalikan 5xx', () => pm.expect(code, 'status ' + code).to.be.below(500));",
+          "pm.test('Content-Type application/json', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+          "",
+          "const fx = L.getv('fx_error');",
+          "if (fx) pm.test('Setup data uji (fixture) berhasil', () => { throw new Error(fx); });",
+          "",
+          "if (code >= 400 && code !== 429 && body && typeof body === 'object') {",
+          "  pm.test('[Swagger] Format error = ErrorResponse (code integer, message, status, details) & error.status sesuai HTTP ' + code, () => {",
+          "    const bad = L.checkErrorFormat(code, body);",
+          "    pm.expect(bad.length, bad.join(' ; ')).to.eql(0);",
+          "  });",
+          "}",
+          ""
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Autentikasi",
+      "item": [
+        {
+          "name": "[AUTH] Login pemilik",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));",
+                  "swaggerCheck('POST /login');",
+                  "pm.test('Status 200 - login berhasil', () => pm.response.to.have.status(200));",
+                  "pm.test('[Swagger] data.access_token (bukan \"token\") + token_type Bearer', () => {",
+                  "  pm.expect(res.data).to.have.property('access_token');",
+                  "  pm.expect(res.data.access_token).to.be.a('string').and.not.empty;",
+                  "  pm.expect(res.data.token_type).to.eql('Bearer');",
+                  "});",
+                  "// rantai token: pakai access_token (kontrak); fallback ke token (implementasi saat ini) agar tes lain tetap jalan",
+                  "const tk = res.data && (res.data.access_token || res.data.token);",
+                  "if (tk) { pm.collectionVariables.set('token', tk); try { pm.environment.set('token', tk); } catch(e){} }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email_pemilik}}\",\n  \"password\": \"{{password_pemilik}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[PRA] API dapat dijangkau & token valid (GET /api/penghuni = 200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));",
+                  "pm.test('Status 200 - base_url benar & token diterima', () => pm.response.to.have.status(200));",
+                  "pm.test('data berupa array', () => pm.expect(res.data).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/penghuni",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "penghuni"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[PRA] Prasyarat data awal: pengaturan_sewa (DP minimum tahunan) sudah terisi",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { api, uniq, setv, getv, seq, mkKamar, mkOcc, hitung, bayar, payId } = eval(pm.collectionVariables.get('lib'));",
+                  "seq([",
+                  "  n => mkKamar({}, id => { setv('s_kamar', id); n(); }),",
+                  "  n => mkOcc(getv('s_kamar'), 'Rina', {tanggal_mulai:'2026-11-05'}, r => { r = r || {}; setv('s_rina', r.penghunian); n(); })",
+                  "]);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));",
+                  "pm.test('Status 200 - skema tahunan dapat dihitung', () => pm.expect(pm.response.code, 'Jika 422: jalankan INSERT INTO pengaturan_sewa (dp_minimum_tahunan, created_at, updated_at) VALUES (300000, NOW(), NOW());').to.eql(200));",
+                  "pm.test('DP minimum tahunan = 300.000', () => pm.expect(Number(res.data && res.data.dp_minimum)).to.eql(300000));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/penghunian/{{s_rina}}/hitung-dp",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "penghunian",
+                "{{s_rina}}",
+                "hitung-dp"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"skema_sewa\": \"tahunan\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Card 4.1a - Penyimpanan data calon penghuni sejak pembayaran DP",
+      "item": [
+        {
+          "name": "[4.1a-01][POSITIF][SMOKE] Simpan penghuni - data lengkap (nama + nomor HP) -> tersimpan",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { api, uniq, setv, getv, seq, mkKamar, mkOcc, hitung, bayar, payId } = eval(pm.collectionVariables.get('lib'));",
+                  "seq([",
+                  "  n => mkKamar({}, id => { setv('s_kamar', id); n(); })",
+                  "]);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));",
+                  "swaggerCheck('POST /penghunian/dengan-penghuni');",
+                  "pm.test('Status 201 - data lengkap tersimpan', () => pm.response.to.have.status(201));",
+                  "pm.test('Pesan sukses tampil', () => pm.expect(res.message).to.be.a('string').and.not.empty);",
+                  "pm.test('Data penghuni tersimpan (Rina, 081234567890)', () => {",
+                  "  const p = (res.data && res.data.penghuni) || res.data;",
+                  "  pm.expect(p.nama_penghuni).to.eql('Rina');",
+                  "  pm.expect(p.no_telepon).to.eql('081234567890');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/penghunian/dengan-penghuni",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "penghunian",
+                "dengan-penghuni"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_kamar\": {{s_kamar}},\n  \"nama_penghuni\": \"Rina\",\n  \"no_telepon\": \"081234567890\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[4.1a-02][POSITIF][REGRESSION] Simpan penghuni - nomor HP kosong -> tetap tersimpan",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { api, uniq, setv, getv, seq, mkKamar, mkOcc, hitung, bayar, payId } = eval(pm.collectionVariables.get('lib'));",
+                  "seq([",
+                  "  n => mkKamar({}, id => { setv('s_kamar', id); n(); })",
+                  "]);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));",
+                  "swaggerCheck('POST /penghunian/dengan-penghuni');",
+                  "pm.test('Status 201 - tanpa nomor HP tetap tersimpan', () => pm.response.to.have.status(201));",
+                  "pm.test('no_telepon tersimpan kosong', () => {",
+                  "  const p = (res.data && res.data.penghuni) || res.data;",
+                  "  pm.expect(p.no_telepon === null || p.no_telepon === undefined || p.no_telepon === '').to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/penghunian/dengan-penghuni",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "penghunian",
+                "dengan-penghuni"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_kamar\": {{s_kamar}},\n  \"nama_penghuni\": \"Rina\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[4.1a-03][NEGATIF][SMOKE] Simpan penghuni - nama kosong -> ditolak",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { api, uniq, setv, getv, seq, mkKamar, mkOcc, hitung, bayar, payId } = eval(pm.collectionVariables.get('lib'));",
+                  "seq([",
+                  "  n => mkKamar({}, id => { setv('s_kamar', id); n(); })",
+                  "]);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));",
+                  "swaggerCheck('POST /penghunian/dengan-penghuni');",
+                  "pm.test('Status 422 - nama kosong ditolak', () => pm.response.to.have.status(422));",
+                  "pm.test('error.details menyebut nama_penghuni', () => pm.expect(JSON.stringify(res.error.details || {})).to.include('nama_penghuni'));",
+                  "pm.test('Tidak ada data tersimpan', () => pm.expect(res.data === undefined || res.data === null).to.be.true);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/penghunian/dengan-penghuni",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "penghunian",
+                "dengan-penghuni"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_kamar\": {{s_kamar}},\n  \"no_telepon\": \"081234567890\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[4.1a-04][NEGATIF][SMOKE] Simpan penghuni - kamar tidak dipilih -> ditolak",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));",
+                  "swaggerCheck('POST /penghunian/dengan-penghuni');",
+                  "pm.test('Status 422 - kamar kosong ditolak', () => pm.response.to.have.status(422));",
+                  "pm.test('error.details menyebut id_kamar', () => pm.expect(JSON.stringify(res.error.details || {})).to.include('id_kamar'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/penghunian/dengan-penghuni",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "penghunian",
+                "dengan-penghuni"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nama_penghuni\": \"Rina\",\n  \"no_telepon\": \"081234567890\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[4.1a-05][POSITIF][SMOKE] Penghuni pertama menjadi penyewa utama",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { api, uniq, setv, getv, seq, mkKamar, mkOcc, hitung, bayar, payId } = eval(pm.collectionVariables.get('lib'));",
+                  "seq([",
+                  "  n => mkKamar({}, id => { setv('s_kamar', id); n(); })",
+                  "]);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));",
+                  "swaggerCheck('POST /penghunian/dengan-penghuni');",
+                  "pm.test('Status 201 - penghuni pertama tersimpan', () => pm.response.to.have.status(201));",
+                  "pm.test('Rina tercatat sebagai penyewa utama', () => pm.expect(H(res.data).penyewa_utama).to.be.oneOf([true, 1]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/penghunian/dengan-penghuni",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "penghunian",
+                "dengan-penghuni"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_kamar\": {{s_kamar}},\n  \"nama_penghuni\": \"Rina\",\n  \"alamat\": \"Kuningan\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[4.1a-06][POSITIF][REGRESSION] Tambah penghuni ke kamar yang sudah dihuni - penyewa utama tidak berubah",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { api, uniq, setv, getv, seq, mkKamar, mkOcc, hitung, bayar, payId } = eval(pm.collectionVariables.get('lib'));",
+                  "seq([",
+                  "  n => mkKamar({}, id => { setv('s_kamar', id); n(); }),",
+                  "  n => mkOcc(getv('s_kamar'), 'Rina', {}, r => { r = r || {}; setv('s_rina', r.penghunian); setv('s_rina_penghuni', r.penghuni); n(); })",
+                  "]);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));",
+                  "swaggerCheck('POST /penghunian/dengan-penghuni');",
+                  "pm.test('Status 201 - Sari tersimpan sebagai penghuni kamar', () => pm.response.to.have.status(201));",
+                  "pm.test('Sari bukan penyewa utama', () => pm.expect(H(res.data).penyewa_utama).to.be.oneOf([false, 0]));",
+                  "apiGet('/api/penghunian/' + getv('s_rina'), (err, j) => {",
+                  "  pm.test('Rina tetap menjadi penyewa utama', () => pm.expect(H(j.data).penyewa_utama).to.be.oneOf([true, 1]));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/penghunian/dengan-penghuni",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "penghunian",
+                "dengan-penghuni"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_kamar\": {{s_kamar}},\n  \"nama_penghuni\": \"Sari\",\n  \"alamat\": \"Kuningan\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[4.1a-07][POSITIF][REGRESSION] Menetapkan penyewa utama lewat form - hanya satu penyewa utama per kamar",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { api, uniq, setv, getv, seq, mkKamar, mkOcc, hitung, bayar, payId } = eval(pm.collectionVariables.get('lib'));",
+                  "seq([",
+                  "  n => mkKamar({}, id => { setv('s_kamar', id); n(); }),",
+                  "  n => mkOcc(getv('s_kamar'), 'Rina', {}, r => { r = r || {}; setv('s_rina', r.penghunian); setv('s_rina_penghuni', r.penghuni); n(); }),",
+                  "  n => mkOcc(getv('s_kamar'), 'Sari', {}, r => { r = r || {}; setv('s_sari', r.penghunian); setv('s_sari_penghuni', r.penghuni); n(); })",
+                  "]);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));",
+                  "swaggerCheck('PUT /penghunian/{id}/penyewa-utama');",
+                  "pm.test('Status 200 - penyewa utama diganti', () => pm.response.to.have.status(200));",
+                  "pm.test('Sari menjadi penyewa utama', () => pm.expect(res.data.penyewa_utama).to.be.oneOf([true, 1]));",
+                  "apiGet('/api/penghunian', (err, j) => {",
+                  "  const rows = (j.data || []).filter(x => String(x.id_kamar) === String(getv('s_kamar')) && x.status === 'aktif');",
+                  "  pm.test('Rina tidak lagi bertanda penyewa utama', () => {",
+                  "    pm.expect(rows.find(x => String(x.id_penghunian) === String(getv('s_rina'))).penyewa_utama).to.be.oneOf([false, 0]);",
+                  "  });",
+                  "  pm.test('Hanya ada satu penyewa utama di kamar', () => pm.expect(rows.filter(x => x.penyewa_utama === true || x.penyewa_utama === 1)).to.have.lengthOf(1));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/penghunian/{{s_sari}}/penyewa-utama",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "penghunian",
+                "{{s_sari}}",
+                "penyewa-utama"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_kamar\": {{s_kamar}},\n  \"id_penghunian\": {{s_sari}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[4.1a-08][POSITIF][SMOKE] Setelah penghuni tersimpan, kamar tampil terisi di denah",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { api, uniq, setv, getv, seq, mkKamar, mkOcc, hitung, bayar, payId } = eval(pm.collectionVariables.get('lib'));",
+                  "seq([",
+                  "  n => mkKamar({}, id => { setv('s_kamar', id); n(); })",
+                  "]);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));",
+                  "swaggerCheck('POST /penghunian/dengan-penghuni');",
+                  "pm.test('Status 201 - penghuni tersimpan', () => pm.response.to.have.status(201));",
+                  "apiGet('/api/kamar/' + getv('s_kamar'), (err, j) => {",
+                  "  pm.test('Status kamar menjadi terisi', () => pm.expect(j.data.status).to.eql('terisi'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/penghunian/dengan-penghuni",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "penghunian",
+                "dengan-penghuni"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_kamar\": {{s_kamar}},\n  \"nama_penghuni\": \"Rina\",\n  \"alamat\": \"Kuningan\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[4.1a-09][POSITIF][REGRESSION] Nomor HP dilengkapi kemudian - diperbarui tanpa entri baru",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { api, uniq, setv, getv, seq, mkKamar, mkOcc, hitung, bayar, payId } = eval(pm.collectionVariables.get('lib'));",
+                  "seq([",
+                  "  n => mkKamar({}, id => { setv('s_kamar', id); n(); }),",
+                  "  n => mkOcc(getv('s_kamar'), 'Rina', {}, r => { r = r || {}; setv('s_rina', r.penghunian); setv('s_rina_penghuni', r.penghuni); n(); }),",
+                  "  n => api('GET', '/api/penghuni', null, j => { setv('s_count_before', ((j && j.data) || []).length); n(); })",
+                  "]);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));",
+                  "swaggerCheck('PUT /penghuni/{id}');",
+                  "pm.test('Status 200 - data penghuni diperbarui', () => pm.response.to.have.status(200));",
+                  "pm.test('Nomor HP terisi & ID penghuni sama', () => {",
+                  "  pm.expect(res.data.no_telepon).to.eql('081234567890');",
+                  "  pm.expect(String(res.data.id_penghuni)).to.eql(String(getv('s_rina_penghuni')));",
+                  "});",
+                  "apiGet('/api/penghuni', (err, j) => {",
+                  "  pm.test('Jumlah penghuni tidak bertambah', () => pm.expect(j.data.length).to.eql(Number(getv('s_count_before'))));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/penghuni/{{s_rina_penghuni}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "penghuni",
+                "{{s_rina_penghuni}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nama_penghuni\": \"Rina\",\n  \"no_telepon\": \"081234567890\",\n  \"alamat\": \"Kuningan\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[4.1a-10][POSITIF][REGRESSION] Tanggal masuk dilengkapi kemudian - tersimpan tanpa entri baru",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { api, uniq, setv, getv, seq, mkKamar, mkOcc, hitung, bayar, payId } = eval(pm.collectionVariables.get('lib'));",
+                  "seq([",
+                  "  n => mkKamar({}, id => { setv('s_kamar', id); n(); }),",
+                  "  n => mkOcc(getv('s_kamar'), 'Rina', {}, r => { r = r || {}; setv('s_rina', r.penghunian); setv('s_rina_penghuni', r.penghuni); n(); }),",
+                  "  n => api('GET', '/api/penghunian', null, j => { setv('s_count_before', ((j && j.data) || []).length); n(); })",
+                  "]);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));",
+                  "swaggerCheck('PUT /penghunian/{id}');",
+                  "pm.test('Status 200 - tanggal masuk tersimpan', () => pm.response.to.have.status(200));",
+                  "pm.test('tanggal_mulai = 5 November 2026 & ID penghunian sama', () => {",
+                  "  pm.expect(JSON.stringify(H(res.data).tanggal_mulai)).to.include('2026-11-05');",
+                  "  pm.expect(String(H(res.data).id_penghunian)).to.eql(String(getv('s_rina')));",
+                  "});",
+                  "apiGet('/api/penghunian', (err, j) => {",
+                  "  pm.test('Jumlah penghunian tidak bertambah', () => pm.expect(j.data.length).to.eql(Number(getv('s_count_before'))));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/penghunian/{{s_rina}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "penghunian",
+                "{{s_rina}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_kamar\": {{s_kamar}},\n  \"id_penghuni\": {{s_rina_penghuni}},\n  \"tanggal_mulai\": \"2026-11-05\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[4.1a-11][POSITIF][SMOKE] Penyewa utama baru tersimpan -> \"Catat DP sekarang\" dapat mencatat DP",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { api, uniq, setv, getv, seq, mkKamar, mkOcc, hitung, bayar, payId } = eval(pm.collectionVariables.get('lib'));",
+                  "seq([",
+                  "  n => mkKamar({}, id => { setv('s_kamar', id); n(); }),",
+                  "  n => mkOcc(getv('s_kamar'), 'Rina', {tanggal_mulai:'2026-11-05'}, r => { r = r || {}; setv('s_rina', r.penghunian); setv('s_rina_penghuni', r.penghuni); n(); }),",
+                  "  n => hitung(getv('s_rina'), 'bulanan', () => n())",
+                  "]);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));",
+                  "swaggerCheck('POST /penghunian/{id}/dp');",
+                  "pm.test('Status 201 - DP penyewa utama tercatat', () => pm.response.to.have.status(201));",
+                  "pm.test('Pembayaran berjenis dp atas penghunian Rina', () => {",
+                  "  const p = PB(res.data);",
+                  "  pm.expect(p.jenis_pembayaran).to.eql('dp');",
+                  "  pm.expect(String(p.id_penghunian)).to.eql(String(getv('s_rina')));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/penghunian/{{s_rina}}/dp",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "penghunian",
+                "{{s_rina}}",
+                "dp"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tanggal_bayar\": \"2026-11-05\",\n  \"jumlah\": 300000,\n  \"metode_pembayaran\": \"transfer\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[4.1a-12][NEGATIF][REGRESSION] DP atas nama penghuni tambahan - tidak menempel pada penghuni tambahan",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { api, uniq, setv, getv, seq, mkKamar, mkOcc, hitung, bayar, payId } = eval(pm.collectionVariables.get('lib'));",
+                  "seq([",
+                  "  n => mkKamar({}, id => { setv('s_kamar', id); n(); }),",
+                  "  n => mkOcc(getv('s_kamar'), 'Rina', {tanggal_mulai:'2026-11-05'}, r => { r = r || {}; setv('s_rina', r.penghunian); setv('s_rina_penghuni', r.penghuni); n(); }),",
+                  "  n => mkOcc(getv('s_kamar'), 'Sari', {tanggal_mulai:'2026-11-05'}, r => { r = r || {}; setv('s_sari', r.penghunian); setv('s_sari_penghuni', r.penghuni); n(); }),",
+                  "  n => hitung(getv('s_rina'), 'bulanan', () => n())",
+                  "]);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));",
+                  "swaggerCheck('POST /penghunian/{id}/dp');",
+                  "",
+                  "pm.test('Ditolak (4xx) ATAU dicatat pada penyewa utama (Rina), tidak pada Sari', () => {",
+                  "  if (pm.response.code === 201) pm.expect(String(PB(res.data).id_penghunian)).to.eql(String(getv('s_rina')));",
+                  "  else pm.expect(pm.response.code).to.be.within(400, 499);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/penghunian/{{s_sari}}/dp",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "penghunian",
+                "{{s_sari}}",
+                "dp"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tanggal_bayar\": \"2026-11-05\",\n  \"jumlah\": 300000,\n  \"metode_pembayaran\": \"transfer\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[4.1a-13][NEGATIF][SMOKE] Kamar sudah punya pembayaran DP -> DP kedua ditolak (tombol tidak tampil)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { api, uniq, setv, getv, seq, mkKamar, mkOcc, hitung, bayar, payId } = eval(pm.collectionVariables.get('lib'));",
+                  "seq([",
+                  "  n => mkKamar({}, id => { setv('s_kamar', id); n(); }),",
+                  "  n => mkOcc(getv('s_kamar'), 'Rina', {tanggal_mulai:'2026-11-05'}, r => { r = r || {}; setv('s_rina', r.penghunian); setv('s_rina_penghuni', r.penghuni); n(); }),",
+                  "  n => hitung(getv('s_rina'), 'bulanan', () => n()),",
+                  "  n => bayar(getv('s_rina'), 'dp', 300000, () => n()),",
+                  "  n => api('GET', '/api/penghunian/' + getv('s_rina'), null, j => { const h = (j && j.data) || {}; setv('s_pay_count', (h.pembayaran || []).length); n(); })",
+                  "]);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));",
+                  "swaggerCheck('POST /penghunian/{id}/dp');",
+                  "pm.test('Status 422 - DP kedua ditolak', () => pm.response.to.have.status(422));",
+                  "pm.test('Pesan galat tampil', () => pm.expect(res.message).to.be.a('string').and.not.empty);",
+                  "apiGet('/api/penghunian/' + getv('s_rina'), (err, j) => {",
+                  "  pm.test('Pembayaran TIDAK tersimpan (jumlah pembayaran tidak bertambah)', () => {",
+                  "    pm.expect(((H(j.data).pembayaran) || []).length).to.eql(Number(getv('s_pay_count')));",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/penghunian/{{s_rina}}/dp",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "penghunian",
+                "{{s_rina}}",
+                "dp"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tanggal_bayar\": \"2026-11-05\",\n  \"jumlah\": 300000,\n  \"metode_pembayaran\": \"transfer\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[4.1a-14][POSITIF][SMOKE] Daftar penghuni - kedua nama tampil dengan kamar & penanda penyewa utama",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { api, uniq, setv, getv, seq, mkKamar, mkOcc, hitung, bayar, payId } = eval(pm.collectionVariables.get('lib'));",
+                  "seq([",
+                  "  n => mkKamar({}, id => { setv('s_kamar', id); n(); }),",
+                  "  n => mkOcc(getv('s_kamar'), 'Rina', {}, r => { r = r || {}; setv('s_rina', r.penghunian); setv('s_rina_penghuni', r.penghuni); n(); }),",
+                  "  n => mkOcc(getv('s_kamar'), 'Sari', {}, r => { r = r || {}; setv('s_sari', r.penghunian); setv('s_sari_penghuni', r.penghuni); n(); })",
+                  "]);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));",
+                  "swaggerCheck('GET /penghunian');",
+                  "pm.test('Status 200 - daftar penghunian', () => pm.response.to.have.status(200));",
+                  "pm.test('Rina & Sari tampil di kamar yang sama, Rina bertanda penyewa utama', () => {",
+                  "  const rows = res.data.filter(x => String(x.id_kamar) === String(getv('s_kamar')));",
+                  "  pm.expect(rows).to.have.lengthOf(2);",
+                  "  const rina = rows.find(x => String(x.id_penghunian) === String(getv('s_rina')));",
+                  "  const sari = rows.find(x => String(x.id_penghunian) === String(getv('s_sari')));",
+                  "  pm.expect(rina.penghuni.nama_penghuni).to.eql('Rina');",
+                  "  pm.expect(sari.penghuni.nama_penghuni).to.eql('Sari');",
+                  "  pm.expect(rina.penyewa_utama).to.be.oneOf([true, 1]);",
+                  "  pm.expect(sari.penyewa_utama).to.be.oneOf([false, 0]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/penghunian",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "penghunian"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[4.1a-15][EDGE][REGRESSION] Daftar penghuni masih kosong -> pesan \"Belum ada data penghuni\" (kondisional)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));",
+                  "swaggerCheck('GET /penghuni');",
+                  "pm.test('Status 200 - daftar penghuni', () => pm.response.to.have.status(200));",
+                  "pm.test('Jika daftar kosong, pesan \"Belum ada data penghuni\" tampil (hanya bermakna di DB kosong)', () => {",
+                  "  pm.expect(res.data).to.be.an('array');",
+                  "  if (res.data.length === 0) pm.expect(res.message).to.include('Belum ada data penghuni');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/penghuni",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "penghuni"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[4.1a-16][NEGATIF][REGRESSION] Kamar sudah berisi 2 penghuni -> tidak bisa dipilih lagi",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { api, uniq, setv, getv, seq, mkKamar, mkOcc, hitung, bayar, payId } = eval(pm.collectionVariables.get('lib'));",
+                  "seq([",
+                  "  n => mkKamar({}, id => { setv('s_kamar', id); n(); }),",
+                  "  n => mkOcc(getv('s_kamar'), 'Rina', {}, r => { r = r || {}; setv('s_rina', r.penghunian); setv('s_rina_penghuni', r.penghuni); n(); }),",
+                  "  n => mkOcc(getv('s_kamar'), 'Sari', {}, r => { r = r || {}; setv('s_sari', r.penghunian); setv('s_sari_penghuni', r.penghuni); n(); })",
+                  "]);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));",
+                  "swaggerCheck('POST /penghunian/dengan-penghuni');",
+                  "pm.test('Status 422 - penghuni ke-3 ditolak', () => pm.response.to.have.status(422));",
+                  "pm.test('Penghuni ke-3 tidak tersimpan', () => pm.expect(res.data === undefined || res.data === null).to.be.true);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/penghunian/dengan-penghuni",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "penghunian",
+                "dengan-penghuni"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_kamar\": {{s_kamar}},\n  \"nama_penghuni\": \"Dewi\",\n  \"alamat\": \"Kuningan\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[4.1a-17][NEGATIF][REGRESSION] Simpan ulang (klik berulang) penghuni yang sama di kamar yang sama -> tidak ada entri ganda",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { api, uniq, setv, getv, seq, mkKamar, mkOcc, hitung, bayar, payId } = eval(pm.collectionVariables.get('lib'));",
+                  "seq([",
+                  "  n => mkKamar({}, id => { setv('s_kamar', id); n(); }),",
+                  "  n => mkOcc(getv('s_kamar'), 'Rina', {tanggal_mulai:'2026-11-05'}, r => { r = r || {}; setv('s_rina', r.penghunian); setv('s_rina_penghuni', r.penghuni); n(); })",
+                  "]);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));",
+                  "swaggerCheck('POST /penghunian');",
+                  "pm.test('Status 409 - duplikat ditolak (Conflict)', () => pm.response.to.have.status(409));",
+                  "apiGet('/api/penghunian', (err, j) => {",
+                  "  pm.test('Hanya ada 1 penghunian aktif Rina di kamar tsb', () => {",
+                  "    const same = j.data.filter(x => String(x.id_kamar) === String(getv('s_kamar')) && String(x.id_penghuni) === String(getv('s_rina_penghuni')) && x.status === 'aktif');",
+                  "    pm.expect(same).to.have.lengthOf(1);",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/penghunian",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "penghunian"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_kamar\": {{s_kamar}},\n  \"id_penghuni\": {{s_rina_penghuni}},\n  \"tanggal_mulai\": \"2026-11-05\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[4.1a-18][NEGATIF][SMOKE] Akses tanpa login ditolak",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));",
+                  "swaggerCheck('POST /penghunian/dengan-penghuni');",
+                  "pm.test('Status 401 - tanpa token ditolak', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/penghunian/dengan-penghuni",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "penghunian",
+                "dengan-penghuni"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_kamar\": 1,\n  \"nama_penghuni\": \"Rina\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[4.1a-19][NEGATIF][REGRESSION] Akses dengan token palsu ditolak",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));",
+                  "swaggerCheck('POST /penghunian/dengan-penghuni');",
+                  "pm.test('Status 401 - token palsu ditolak', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer 999|tokenpalsutokenpalsutokenpalsu",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/penghunian/dengan-penghuni",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "penghunian",
+                "dengan-penghuni"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_kamar\": 1,\n  \"nama_penghuni\": \"Rina\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[4.1a-20][NEGATIF][REGRESSION] Akun penghuni tidak dapat masuk ke API pemilik",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));",
+                  "swaggerCheck('POST /login');",
+                  "pm.test('Status 401 - akun penghuni ditolak', () => pm.response.to.have.status(401));",
+                  "pm.test('Tidak ada token diterbitkan', () => pm.expect(JSON.stringify(res)).to.not.match(/access_token|\"token\"/));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"penghuni@gmail.com\",\n  \"password\": \"password123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[4.1a-21][EDGE][REGRESSION] Nama tepat 255 karakter -> tersimpan (batas atas)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { api, uniq, setv, getv, seq, mkKamar, mkOcc, hitung, bayar, payId } = eval(pm.collectionVariables.get('lib'));",
+                  "seq([",
+                  "  n => mkKamar({}, id => { setv('s_kamar', id); n(); })",
+                  "]);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));",
+                  "swaggerCheck('POST /penghunian/dengan-penghuni');",
+                  "pm.test('Status 201 - 255 karakter diterima', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/penghunian/dengan-penghuni",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "penghunian",
+                "dengan-penghuni"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_kamar\": {{s_kamar}},\n  \"nama_penghuni\": \"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[4.1a-22][NEGATIF][REGRESSION] Nama 256 karakter -> ditolak (melebihi batas)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { api, uniq, setv, getv, seq, mkKamar, mkOcc, hitung, bayar, payId } = eval(pm.collectionVariables.get('lib'));",
+                  "seq([",
+                  "  n => mkKamar({}, id => { setv('s_kamar', id); n(); })",
+                  "]);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));",
+                  "swaggerCheck('POST /penghunian/dengan-penghuni');",
+                  "pm.test('Status 422 - 256 karakter ditolak', () => pm.response.to.have.status(422));",
+                  "pm.test('error.details menyebut nama_penghuni', () => pm.expect(JSON.stringify(res.error.details || {})).to.include('nama_penghuni'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/penghunian/dengan-penghuni",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "penghunian",
+                "dengan-penghuni"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_kamar\": {{s_kamar}},\n  \"nama_penghuni\": \"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[4.1a-23][EDGE][REGRESSION] Nomor HP tepat 20 karakter -> tersimpan (batas atas)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { api, uniq, setv, getv, seq, mkKamar, mkOcc, hitung, bayar, payId } = eval(pm.collectionVariables.get('lib'));",
+                  "seq([",
+                  "  n => mkKamar({}, id => { setv('s_kamar', id); n(); })",
+                  "]);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));",
+                  "swaggerCheck('POST /penghunian/dengan-penghuni');",
+                  "pm.test('Status 201 - HP 20 karakter diterima', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/penghunian/dengan-penghuni",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "penghunian",
+                "dengan-penghuni"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_kamar\": {{s_kamar}},\n  \"nama_penghuni\": \"Rina\",\n  \"no_telepon\": \"00000000000000000000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[4.1a-24][NEGATIF][REGRESSION] Nomor HP 21 karakter -> ditolak",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { api, uniq, setv, getv, seq, mkKamar, mkOcc, hitung, bayar, payId } = eval(pm.collectionVariables.get('lib'));",
+                  "seq([",
+                  "  n => mkKamar({}, id => { setv('s_kamar', id); n(); })",
+                  "]);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));",
+                  "swaggerCheck('POST /penghunian/dengan-penghuni');",
+                  "pm.test('Status 422 - HP 21 karakter ditolak', () => pm.response.to.have.status(422));",
+                  "pm.test('error.details menyebut no_telepon', () => pm.expect(JSON.stringify(res.error.details || {})).to.include('no_telepon'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/penghunian/dengan-penghuni",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "penghunian",
+                "dengan-penghuni"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_kamar\": {{s_kamar}},\n  \"nama_penghuni\": \"Rina\",\n  \"no_telepon\": \"000000000000000000000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[4.1a-25][NEGATIF][REGRESSION] Kamar tidak ada (id 999999) -> ditolak",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));",
+                  "swaggerCheck('POST /penghunian/dengan-penghuni');",
+                  "pm.test('Status 422 - kamar tidak ada ditolak', () => pm.response.to.have.status(422));",
+                  "pm.test('error.details menyebut id_kamar', () => pm.expect(JSON.stringify(res.error.details || {})).to.include('id_kamar'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/penghunian/dengan-penghuni",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "penghunian",
+                "dengan-penghuni"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_kamar\": 999999,\n  \"nama_penghuni\": \"Rina\",\n  \"alamat\": \"Kuningan\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[4.1a-26][NEGATIF][REGRESSION] ID kamar bukan angka (\"abc\") -> ditolak",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));",
+                  "swaggerCheck('POST /penghunian/dengan-penghuni');",
+                  "pm.test('Status 422 - id_kamar non-angka ditolak', () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/penghunian/dengan-penghuni",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "penghunian",
+                "dengan-penghuni"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_kamar\": \"abc\",\n  \"nama_penghuni\": \"Rina\",\n  \"alamat\": \"Kuningan\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[4.1a-27][NEGATIF][REGRESSION] Tanggal masuk tidak valid -> ditolak",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { api, uniq, setv, getv, seq, mkKamar, mkOcc, hitung, bayar, payId } = eval(pm.collectionVariables.get('lib'));",
+                  "seq([",
+                  "  n => mkKamar({}, id => { setv('s_kamar', id); n(); })",
+                  "]);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));",
+                  "swaggerCheck('POST /penghunian/dengan-penghuni');",
+                  "pm.test('Status 422 - tanggal tidak valid ditolak', () => pm.response.to.have.status(422));",
+                  "pm.test('error.details menyebut tanggal_mulai', () => pm.expect(JSON.stringify(res.error.details || {})).to.include('tanggal_mulai'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/penghunian/dengan-penghuni",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "penghunian",
+                "dengan-penghuni"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_kamar\": {{s_kamar}},\n  \"nama_penghuni\": \"Rina\",\n  \"alamat\": \"Kuningan\",\n  \"tanggal_mulai\": \"bukan-tanggal\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[4.1a-28][NEGATIF][REGRESSION] Tanggal selesai sebelum tanggal masuk -> ditolak",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { api, uniq, setv, getv, seq, mkKamar, mkOcc, hitung, bayar, payId } = eval(pm.collectionVariables.get('lib'));",
+                  "seq([",
+                  "  n => mkKamar({}, id => { setv('s_kamar', id); n(); })",
+                  "]);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));",
+                  "swaggerCheck('POST /penghunian/dengan-penghuni');",
+                  "pm.test('Status 422 - tanggal selesai < mulai ditolak', () => pm.response.to.have.status(422));",
+                  "pm.test('error.details menyebut tanggal_selesai', () => pm.expect(JSON.stringify(res.error.details || {})).to.include('tanggal_selesai'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/penghunian/dengan-penghuni",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "penghunian",
+                "dengan-penghuni"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_kamar\": {{s_kamar}},\n  \"nama_penghuni\": \"Rina\",\n  \"alamat\": \"Kuningan\",\n  \"tanggal_mulai\": \"2026-11-05\",\n  \"tanggal_selesai\": \"2026-11-01\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[4.1a-29][POSITIF][REGRESSION] Tanggal masuk diisi saat menyimpan -> tersimpan",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { api, uniq, setv, getv, seq, mkKamar, mkOcc, hitung, bayar, payId } = eval(pm.collectionVariables.get('lib'));",
+                  "seq([",
+                  "  n => mkKamar({}, id => { setv('s_kamar', id); n(); })",
+                  "]);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));",
+                  "swaggerCheck('POST /penghunian/dengan-penghuni');",
+                  "pm.test('Status 201 - tersimpan dengan tanggal masuk', () => pm.response.to.have.status(201));",
+                  "pm.test('tanggal_mulai = 5 November 2026', () => pm.expect(JSON.stringify(H(res.data).tanggal_mulai)).to.include('2026-11-05'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/penghunian/dengan-penghuni",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "penghunian",
+                "dengan-penghuni"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_kamar\": {{s_kamar}},\n  \"nama_penghuni\": \"Rina\",\n  \"alamat\": \"Kuningan\",\n  \"tanggal_mulai\": \"2026-11-05\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[4.1a-30][EDGE][REGRESSION] Nama berisi tag HTML (XSS) -> tidak menyebabkan error server & respons tetap JSON",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { api, uniq, setv, getv, seq, mkKamar, mkOcc, hitung, bayar, payId } = eval(pm.collectionVariables.get('lib'));",
+                  "seq([",
+                  "  n => mkKamar({}, id => { setv('s_kamar', id); n(); })",
+                  "]);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));",
+                  "swaggerCheck('POST /penghunian/dengan-penghuni');",
+                  "",
+                  "pm.test('Diproses aman (201 atau 422)', () => pm.expect([201, 422]).to.include(pm.response.code));",
+                  "pm.test('Respons bukan HTML', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.not.include('text/html'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/penghunian/dengan-penghuni",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "penghunian",
+                "dengan-penghuni"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_kamar\": {{s_kamar}},\n  \"nama_penghuni\": \"<script>alert(1)</script>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[4.1a-31][NEGATIF][REGRESSION] Ubah data penghuni yang tidak ada -> 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));",
+                  "swaggerCheck('PUT /penghuni/{id}');",
+                  "pm.test('Status 404 - penghuni tidak ditemukan', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/penghuni/999999",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "penghuni",
+                "999999"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nama_penghuni\": \"Rina\",\n  \"no_telepon\": \"081234567890\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[4.1a-32][NEGATIF][REGRESSION] Ubah penghunian yang tidak ada -> 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));",
+                  "swaggerCheck('PUT /penghunian/{id}');",
+                  "pm.test('Status 404 - penghunian tidak ditemukan', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/penghunian/999999",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "penghunian",
+                "999999"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tanggal_mulai\": \"2026-11-05\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[4.1a-33][NEGATIF][REGRESSION] Jadikan penyewa utama dengan kamar yang tidak cocok -> 404",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { api, uniq, setv, getv, seq, mkKamar, mkOcc, hitung, bayar, payId } = eval(pm.collectionVariables.get('lib'));",
+                  "seq([",
+                  "  n => mkKamar({}, id => { setv('s_kamar', id); n(); }),",
+                  "  n => mkKamar({}, id => { setv('s_kamar2', id); n(); }),",
+                  "  n => mkOcc(getv('s_kamar'), 'Rina', {}, r => { r = r || {}; setv('s_rina', r.penghunian); setv('s_rina_penghuni', r.penghuni); n(); }),",
+                  "  n => mkOcc(getv('s_kamar'), 'Sari', {}, r => { r = r || {}; setv('s_sari', r.penghunian); setv('s_sari_penghuni', r.penghuni); n(); })",
+                  "]);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));",
+                  "swaggerCheck('PUT /penghunian/{id}/penyewa-utama');",
+                  "pm.test('Status 404 - penghunian bukan milik kamar tsb', () => pm.response.to.have.status(404));",
+                  "apiGet('/api/penghunian/' + getv('s_rina'), (err, j) => {",
+                  "  pm.test('Penyewa utama kamar semula tidak berubah (Rina tetap utama)', () => pm.expect(H(j.data).penyewa_utama).to.be.oneOf([true, 1]));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/penghunian/{{s_sari}}/penyewa-utama",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "penghunian",
+                "{{s_sari}}",
+                "penyewa-utama"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_kamar\": {{s_kamar2}},\n  \"id_penghunian\": {{s_sari}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[4.1a-34][NEGATIF][REGRESSION] Jadikan penyewa utama tanpa id_kamar -> ditolak",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { api, uniq, setv, getv, seq, mkKamar, mkOcc, hitung, bayar, payId } = eval(pm.collectionVariables.get('lib'));",
+                  "seq([",
+                  "  n => mkKamar({}, id => { setv('s_kamar', id); n(); }),",
+                  "  n => mkOcc(getv('s_kamar'), 'Rina', {}, r => { r = r || {}; setv('s_rina', r.penghunian); setv('s_rina_penghuni', r.penghuni); n(); }),",
+                  "  n => mkOcc(getv('s_kamar'), 'Sari', {}, r => { r = r || {}; setv('s_sari', r.penghunian); setv('s_sari_penghuni', r.penghuni); n(); })",
+                  "]);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const { res, apiGet, getv, H, PB, swaggerCheck } = eval(pm.collectionVariables.get('lib'));",
+                  "swaggerCheck('PUT /penghunian/{id}/penyewa-utama');",
+                  "pm.test('Status 422 - id_kamar wajib', () => pm.response.to.have.status(422));",
+                  "pm.test('error.details menyebut id_kamar', () => pm.expect(JSON.stringify(res.error.details || {})).to.include('id_kamar'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/penghunian/{{s_sari}}/penyewa-utama",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "penghunian",
+                "{{s_sari}}",
+                "penyewa-utama"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_penghunian\": {{s_sari}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

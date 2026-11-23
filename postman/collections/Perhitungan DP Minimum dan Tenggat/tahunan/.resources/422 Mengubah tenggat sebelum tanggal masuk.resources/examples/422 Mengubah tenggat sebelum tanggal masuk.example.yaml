@@ -1,0 +1,54 @@
+$kind: http-example
+request:
+  url: "{{base_url}}/penghunian/59/tenggat"
+  method: PUT
+  headers:
+    Accept: application/json
+    Authorization: Bearer 1|SGm785QgdMEnT3KPMYjM3R23IeYcfKBcRVclSGqG947e0637
+  body:
+    type: json
+    content: "{\r
+
+      \    \"id_penghunian\": 59,\r
+
+      \    \"id_kamar\": 3,\r
+
+      \    \"id_penghuni\": 30,\r
+
+      \    \"tanggal_mulai\": \"2026-11-05\",\r
+
+      \    \"tanggal_selesai\": \"2027-11-05\",\r
+
+      \    \"skema_sewa\": \"tahunan\",\r
+
+      \    \"total_sewa\": 5000000,\r
+
+      \    \"dp_minimum\": 300000,\r
+
+      \    \"tenggat_pelunasan\": \"2026-10-01\"\r
+
+      }"
+response:
+  statusCode: 422
+  statusText: Unprocessable Content
+  headers:
+    Host: 127.0.0.1:8000
+    Connection: close
+    X-Powered-By: PHP/8.2.12
+    Cache-Control: no-cache, private
+    Date: Thu, 05 Nov 2026 00:25:32 GMT
+    Content-Type: application/json; charset=utf-8
+    Access-Control-Allow-Origin: "*"
+  body:
+    type: json
+    content: |-
+      {
+        "message": "Tenggat tidak boleh sebelum tanggal mulai sewa.",
+        "error": {
+          "code": "INVALID_DUE_DATE",
+          "message": "Tenggat tidak boleh sebelum tanggal mulai sewa.",
+          "status": "INVALID_ARGUMENT",
+          "details": {}
+        }
+      }
+order: 1000

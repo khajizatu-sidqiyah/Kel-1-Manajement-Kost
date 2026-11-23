@@ -1,0 +1,90 @@
+$kind: http-request
+url: "{{base_url}}/penghunian/59/hitung-dp"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer 1|SGm785QgdMEnT3KPMYjM3R23IeYcfKBcRVclSGqG947e0637
+body:
+  type: json
+  content: "{\r
+
+    \    \"id_kamar\": 3,\r
+
+    \    \"id_penghuni\": 30,\r
+
+    \    \"tanggal_mulai\": \"2026-11-05\",\r
+
+    \    \"skema_sewa\": \"mingguan\",\r
+
+    \    \"harga\": 5000000,\r
+
+    \    \"dp_minimum\": 300000\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: 1|SGm785QgdMEnT3KPMYjM3R23IeYcfKBcRVclSGqG947e0637
+scripts:
+  - type: afterResponse
+    code: "pm.test(\"Status HTTP 422\", function () {\r
+
+      \    pm.response.to.have.status(422);\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Pesan parameter tidak valid\", function () {\r
+
+      \    const response = pm.response.json();\r
+
+      \r
+
+      \    pm.expect(response.message).to.equal(\r
+
+      \        \"Parameter permintaan tidak valid.\"\r
+
+      \    );\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Kode error 422\", function () {\r
+
+      \    const response = pm.response.json();\r
+
+      \r
+
+      \    pm.expect(response.error.code).to.equal(422);\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Status error INVALID_ARGUMENT\", function () {\r
+
+      \    const response = pm.response.json();\r
+
+      \r
+
+      \    pm.expect(response.error.status).to.equal(\"INVALID_ARGUMENT\");\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Detail skema sewa tidak valid\", function () {\r
+
+      \    const response = pm.response.json();\r
+
+      \r
+
+      \    pm.expect(response.error.details).to.have.property(\"skema_sewa\");\r
+
+      });"
+    language: text/javascript
+examples: .resources/422 Skema sewa tidak valid.resources/examples
+order: 7000

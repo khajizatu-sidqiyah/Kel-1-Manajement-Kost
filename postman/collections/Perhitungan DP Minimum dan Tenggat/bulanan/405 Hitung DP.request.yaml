@@ -1,0 +1,57 @@
+$kind: http-request
+url: "{{base_url}}/penghunian/58/hitung-dp"
+method: PUT
+headers:
+  Accept: application/json
+  Authorization: Bearer 1|SGm785QgdMEnT3KPMYjM3R23IeYcfKBcRVclSGqG947e0637
+body:
+  type: json
+  content: "{\r
+
+    \    \"skema_sewa\": \"bulanan\",\r
+
+    \    \"tanggal_mulai\": \"2026-11-05\",\r
+
+    \    \"tanggal_selesai\": null,\r
+
+    \    \"total_sewa\": 600000,\r
+
+    \    \"dp_minimum\": 300000,\r
+
+    \    \"tenggat_pelunasan\": \"2026-11-05\"\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: 1|SGm785QgdMEnT3KPMYjM3R23IeYcfKBcRVclSGqG947e0637
+scripts:
+  - type: afterResponse
+    code: "pm.test(\"Status HTTP 405\", function () {\r
+
+      \    pm.response.to.have.status(405);\r
+
+      });\r
+
+      \r
+
+      pm.test(\"PUT tidak didukung\", function () {\r
+
+      \    const body = pm.response.json();\r
+
+      \    pm.expect(body.message).to.include(\"PUT method is not supported\");\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Endpoint hanya mendukung POST\", function () {\r
+
+      \    const body = pm.response.json();\r
+
+      \    pm.expect(body.message).to.include(\"Supported methods: POST\");\r
+
+      });"
+    language: text/javascript
+examples: .resources/405 Hitung DP.resources/examples
+order: 1727

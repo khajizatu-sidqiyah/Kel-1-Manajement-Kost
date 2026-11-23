@@ -1,0 +1,58 @@
+$kind: http-request
+url: "{{base_url}}/penghunian/68/hitung-dp"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer 1|SGm785QgdMEnT3KPMYjM3R23IeYcfKBcRVclSGqG947e0637
+body:
+  type: json
+  content: "{\r
+
+    \    \"id_kamar\": 15,\r
+
+    \    \"id_penghuni\": 43,\r
+
+    \    \"tanggal_mulai\": \"2026-11-08\",\r
+
+    \    \"skema_sewa\": \"tahunan\"\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: 1|SGm785QgdMEnT3KPMYjM3R23IeYcfKBcRVclSGqG947e0637
+scripts:
+  - type: afterResponse
+    code: "pm.test(\"Status HTTP 422\", function () {\r
+
+      \    pm.response.to.have.status(422);\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Response berupa JSON\", function () {\r
+
+      \    pm.response.to.be.json;\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Pesan harga tahunan belum diisi\", function () {\r
+
+      \    const response = pm.response.json();\r
+
+      \r
+
+      \    pm.expect(response.message).to.include(\r
+
+      \        \"Harga sewa tahunan kamar belum diisi\"\r
+
+      \    );\r
+
+      });"
+    language: text/javascript
+examples: .resources/422 Harga sewa belum diisi.resources/examples
+order: 6000

@@ -1,0 +1,45 @@
+$kind: http-example
+request:
+  url: "{{base_url}}/penghunian/68/hitung-dp"
+  method: POST
+  headers:
+    Accept: application/json
+    Content-Type: application/json
+    Authorization: Bearer 1|SGm785QgdMEnT3KPMYjM3R23IeYcfKBcRVclSGqG947e0637
+  body:
+    type: json
+    content: "{\r
+
+      \    \"id_kamar\": 15,\r
+
+      \    \"id_penghuni\": 43,\r
+
+      \    \"tanggal_mulai\": \"2026-11-08\",\r
+
+      \    \"skema_sewa\": \"tahunan\"\r
+
+      }"
+response:
+  statusCode: 422
+  statusText: Unprocessable Content
+  headers:
+    Host: 127.0.0.1:8000
+    Connection: close
+    X-Powered-By: PHP/8.2.12
+    Cache-Control: no-cache, private
+    Date: Sun, 08 Nov 2026 07:09:14 GMT
+    Content-Type: application/json; charset=utf-8
+    Access-Control-Allow-Origin: "*"
+  body:
+    type: json
+    content: |-
+      {
+        "message": "Harga sewa tahunan kamar belum diisi.",
+        "error": {
+          "code": "INVALID_ANNUAL_RENT",
+          "message": "Harga sewa tahunan kamar belum diisi.",
+          "status": "INVALID_ARGUMENT",
+          "details": {}
+        }
+      }
+order: 1000

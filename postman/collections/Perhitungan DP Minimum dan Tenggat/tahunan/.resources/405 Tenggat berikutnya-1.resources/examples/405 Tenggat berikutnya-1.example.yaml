@@ -1,0 +1,33 @@
+$kind: http-example
+name: 405 Tenggat berikutnya
+request:
+  url: "{{base_url}}/penghunian/63/tenggat-berikutnya"
+  method: PUT
+  headers:
+    Accept: application/json
+    Content-Type: application/json
+    Authorization: "Bearer "
+response:
+  statusCode: 405
+  statusText: Method Not Allowed
+  headers:
+    Host: 127.0.0.1:8000
+    Connection: close
+    X-Powered-By: PHP/8.2.12
+    Cache-Control: no-cache, private
+    Date: Thu, 05 Nov 2026 02:52:48 GMT
+    Content-Type: application/json
+    Access-Control-Allow-Origin: "*"
+  body:
+    type: json
+    content: |-
+      {
+        "message": "The PUT method is not supported for route api/penghunian/63/tenggat-berikutnya. Supported methods: POST.",
+        "error": {
+          "code": 405,
+          "message": "The PUT method is not supported for route api/penghunian/63/tenggat-berikutnya. Supported methods: POST.",
+          "status": "ERROR",
+          "details": {}
+        }
+      }
+order: 2000

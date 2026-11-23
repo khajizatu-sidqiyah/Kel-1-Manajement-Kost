@@ -1,0 +1,53 @@
+$kind: http-example
+request:
+  url: "{{base_url}}/penghunian/58/dp"
+  method: POST
+  headers:
+    Accept: application/json
+    Content-Type: application/json
+    Authorization: Bearer 1|SGm785QgdMEnT3KPMYjM3R23IeYcfKBcRVclSGqG947e0637
+  body:
+    type: json
+    content: "{\r
+
+      \    \"id_penghunian\": 58,\r
+
+      \    \"jenis_pembayaran\": \"dp\",\r
+
+      \    \"tanggal_bayar\": \"2026-11-05\",\r
+
+      \    \"jumlah\": 700000,\r
+
+      \    \"metode_pembayaran\": \"Transfer Bank\",\r
+
+      \    \"bukti_pembayaran\": null,\r
+
+      \    \"skema_sewa\": \"bulanan\",\r
+
+      \    \"tenggat_pelunasan\": \"2026-11-05\"\r
+
+      }"
+response:
+  statusCode: 422
+  statusText: Unprocessable Content
+  headers:
+    Host: 127.0.0.1:8000
+    Connection: close
+    X-Powered-By: PHP/8.2.12
+    Cache-Control: no-cache, private
+    Date: Wed, 04 Nov 2026 23:07:10 GMT
+    Content-Type: application/json; charset=utf-8
+    Access-Control-Allow-Origin: "*"
+  body:
+    type: json
+    content: |-
+      {
+        "message": "DP untuk kamar ini sudah pernah dicatat.",
+        "error": {
+          "code": "DP_ALREADY_EXISTS",
+          "message": "DP untuk kamar ini sudah pernah dicatat.",
+          "status": "INVALID_ARGUMENT",
+          "details": {}
+        }
+      }
+order: 1000

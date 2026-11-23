@@ -1,0 +1,37 @@
+$kind: http-request
+url: "{{base_url}}/penghunian/59"
+method: GET
+headers:
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer 1|SGm785QgdMEnT3KPMYjM3R23IeYcfKBcRVclSGqG947e0637
+scripts:
+  - type: afterResponse
+    code: "pm.test(\"Data penghunian berhasil diambil\", function () {\r
+
+      \    pm.response.to.have.status(200);\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Hasil perhitungan DP tahunan sesuai\", function () {\r
+
+      \    const response = pm.response.json();\r
+
+      \    const data = response.data ?? response;\r
+
+      \r
+
+      \    pm.expect(data.skema_sewa).to.equal(\"tahunan\");\r
+
+      \    pm.expect(Number(data.total_sewa)).to.equal(5000000);\r
+
+      \    pm.expect(Number(data.dp_minimum)).to.equal(300000);\r
+
+      \    pm.expect(data.tenggat_pelunasan).to.equal(\"2027-02-05\");\r
+
+      });"
+    language: text/javascript
+examples: .resources/200 verifikasi hasil.resources/examples
+order: 3000

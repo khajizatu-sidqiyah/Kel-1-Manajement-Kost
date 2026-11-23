@@ -1,0 +1,48 @@
+$kind: http-example
+request:
+  url: "{{base_url}}/penghunian/63/dp"
+  method: POST
+  headers:
+    Accept: application/json
+    Authorization: Bearer 1|SGm785QgdMEnT3KPMYjM3R23IeYcfKBcRVclSGqG947e0637
+  body:
+    type: json
+    content: "{\r
+
+      \    \"id_penghunian\": 63,\r
+
+      \    \"jenis_pembayaran\": \"dp\",\r
+
+      \    \"tanggal_bayar\": \"2026-11-03\",\r
+
+      \    \"jumlah\": 100000,\r
+
+      \    \"metode_pembayaran\": \"Transfer Bank\",\r
+
+      \    \"bukti_pembayaran\": null\r
+
+      }"
+response:
+  statusCode: 422
+  statusText: Unprocessable Content
+  headers:
+    Host: 127.0.0.1:8000
+    Connection: close
+    X-Powered-By: PHP/8.2.12
+    Cache-Control: no-cache, private
+    Date: Tue, 03 Nov 2026 01:22:43 GMT
+    Content-Type: application/json; charset=utf-8
+    Access-Control-Allow-Origin: "*"
+  body:
+    type: json
+    content: |-
+      {
+        "message": "Pembayaran DP ditolak karena jumlahnya kurang dari DP minimum.",
+        "error": {
+          "code": "DP_BELOW_MINIMUM",
+          "message": "Pembayaran DP ditolak karena jumlahnya kurang dari DP minimum.",
+          "status": "INVALID_ARGUMENT",
+          "details": {}
+        }
+      }
+order: 1000
