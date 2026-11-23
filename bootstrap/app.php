@@ -1,9 +1,13 @@
+
 <?php
 
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Auth\AuthenticationException;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -13,34 +17,84 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->trustProxies(
-            at: '*',
-            headers: Request::HEADER_X_FORWARDED_FOR |
-                Request::HEADER_X_FORWARDED_HOST |
-                Request::HEADER_X_FORWARDED_PORT |
-                Request::HEADER_X_FORWARDED_PROTO
-        );
-    })
+    $middleware->alias([
+        'pemilik' => \App\Http\Middleware\PemilikMiddleware::class,
+        'api.contract' => \App\Http\Middleware\ApiContractMiddleware::class,
+    ]);
+
+    $middleware->trustProxies(
+        at: '*',
+        headers: Request::HEADER_X_FORWARDED_FOR |
+            Request::HEADER_X_FORWARDED_HOST |
+            Request::HEADER_X_FORWARDED_PORT |
+            Request::HEADER_X_FORWARDED_PROTO
+    );
+})
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->render(function (\Illuminate\Validation\ValidationException $e, \Illuminate\Http\Request $request) {
-            if (!$request->is('api/*')) return null;
-            return response()->json(['message' => 'Parameter permintaan tidak valid.', 'error' => [
-                'code' => 422, 'message' => 'Validasi gagal.', 'status' => 'VALIDATION_ERROR', 'details' => $e->errors(),
-            ]], 422);
+
+        $exceptions->render(function (ValidationException $e, Request $request) {
+            if (!$request->is('api/*')) {
+                return null;
+            }
+
+            return response()->json([
+                'message' => 'Parameter permintaan tidak valid.',
+                'error' => [
+                    'code' => 422,
+                    'message' => 'Validasi gagal.',
+                    'status' => 'VALIDATION_ERROR',
+                    'details' => $e->errors(),
+                ],
+            ], 422);
         });
-        $exceptions->render(function (\Illuminate\Auth\AuthenticationException $e, \Illuminate\Http\Request $request) {
-            if (!$request->is('api/*')) return null;
-            return response()->json(['message' => 'Autentikasi diperlukan.', 'error' => [
-                'code' => 401, 'message' => 'Token tidak ada atau tidak valid.', 'status' => 'UNAUTHORIZED', 'details' => (object) [],
-            ]], 401);
+
+        $exceptions->render(function (AuthenticationException $e, Request $request) {
+            if (!$request->is('api/*')) {
+                return null;
+            }
+
+            return response()->json([
+                'message' => 'Autentikasi diperlukan.',
+                'error' => [
+                    'code' => 401,
+                    'message' => 'Token tidak ada atau tidak valid.',
+                    'status' => 'UNAUTHORIZED',
+                    'details' => (object) [],
+                ],
+            ], 401);
         });
-        $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e, \Illuminate\Http\Request $request) {
-            if (!$request->is('api/*')) return null;
+
+        $exceptions->render(function (HttpExceptionInterface $e, Request $request) {
+            if (!$request->is('api/*')) {
+                return null;
+            }
+
             $status = $e->getStatusCode();
-            $name = match ($status) { 403 => 'FORBIDDEN', 404 => 'NOT_FOUND', 409 => 'CONFLICT', default => $status >= 500 ? 'INTERNAL_SERVER_ERROR' : 'ERROR' };
-            $message = $status === 403 ? 'Akses ditolak.' : ($status === 404 ? 'Endpoint atau data tidak ditemukan.' : ($e->getMessage() ?: 'Permintaan gagal.'));
-            return response()->json(['message' => $message, 'error' => [
-                'code' => $status, 'message' => $message, 'status' => $name, 'details' => (object) [],
-            ]], $status);
+
+            $name = match ($status) {
+                403 => 'FORBIDDEN',
+                404 => 'NOT_FOUND',
+                409 => 'CONFLICT',
+                default => $status >= 500
+                    ? 'INTERNAL_SERVER_ERROR'
+                    : 'ERROR',
+            };
+
+            $message = $status === 403
+                ? 'Akses ditolak.'
+                : ($status === 404
+                    ? 'Endpoint atau data tidak ditemukan.'
+                    : ($e->getMessage() ?: 'Permintaan gagal.'));
+
+            return response()->json([
+                'message' => $message,
+                'error' => [
+                    'code' => $status,
+                    'message' => $message,
+                    'status' => $name,
+                    'details' => (object) [],
+                ],
+            ], $status);
         });
-    })->create();
+    })
+    ->create();
