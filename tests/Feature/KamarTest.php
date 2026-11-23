@@ -2,18 +2,28 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class KamarTest extends TestCase
 {
     use RefreshDatabase;
 
-    /**
-     * Membuat data pemilik dan kos untuk kebutuhan testing.
-     */
-    private function buatKos()
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Sanctum::actingAs(
+            User::factory()->create([
+                'role' => 'pemilik',
+            ])
+        );
+    }
+
+    private function buatKos(): int
     {
         $idPemilik = DB::table('pemilik')->insertGetId([
             'nama_pemilik' => 'Pemilik Test',
@@ -35,25 +45,23 @@ class KamarTest extends TestCase
         ]);
     }
 
-    /**
-     * Test POST kamar berhasil jika data valid.
-     */
-    public function test_kamar_berhasil_dibuat_dengan_data_valid()
+    public function test_kamar_berhasil_dibuat_dengan_data_valid(): void
     {
         $idKost = $this->buatKos();
 
-        $response = $this->postJson('/api/kamar', [
+        $this->postJson('/api/kamar', [
             'id_kost' => $idKost,
             'no_kamar' => 'A01',
             'harga' => 750000,
             'status' => 'kosong',
-        ]);
-
-        $response
-            ->assertStatus(201)
-            ->assertJson([
-                'success' => true,
-            ]);
+        ])
+            ->assertCreated()
+            ->assertJsonPath(
+                'message',
+                'Data kamar berhasil ditambahkan.'
+            )
+            ->assertJsonPath('data.no_kamar', 'A01')
+            ->assertJsonPath('data.harga', 750000);
 
         $this->assertDatabaseHas('kamar', [
             'id_kost' => $idKost,
@@ -63,62 +71,63 @@ class KamarTest extends TestCase
         ]);
     }
 
-    /**
-     * Test field wajib tidak boleh kosong.
-     */
-    public function test_validasi_field_wajib_kamar()
+    public function test_nomor_kamar_dan_harga_wajib_diisi(): void
     {
-        $response = $this->postJson('/api/kamar', []);
+        $this->buatKos();
 
-        $response->assertStatus(422);
+        $this->postJson('/api/kamar', [])
+            ->assertUnprocessable()
+            ->assertJsonStructure([
+                'message',
+                'error' => [
+                    'code',
+                    'status',
+                    'details' => [
+                        'no_kamar',
+                        'harga',
+                    ],
+                ],
+            ]);
 
-        $response->assertJsonValidationErrors([
-            'id_kost',
-            'no_kamar',
-            'harga',
-            'status',
-        ]);
+        $this->assertDatabaseCount('kamar', 0);
     }
 
-    /**
-     * Test harga harus berupa angka.
-     */
-    public function test_harga_harus_numerik()
+    public function test_harga_kamar_harus_numerik(): void
     {
-        $idKost = $this->buatKos();
+        $this->buatKos();
 
-        $response = $this->postJson('/api/kamar', [
-            'id_kost' => $idKost,
+        $this->postJson('/api/kamar', [
             'no_kamar' => 'A01',
             'harga' => 'bukan angka',
             'status' => 'kosong',
-        ]);
+        ])
+            ->assertUnprocessable()
+            ->assertJsonStructure([
+                'error' => [
+                    'details' => ['harga'],
+                ],
+            ]);
 
-        $response->assertStatus(422);
-
-        $response->assertJsonValidationErrors([
-            'harga',
-        ]);
+        $this->assertDatabaseCount('kamar', 0);
     }
 
-    /**
-     * Test status hanya boleh kosong atau terisi.
-     */
-    public function test_status_hanya_boleh_kosong_atau_terisi()
+    public function test_status_kamar_hanya_boleh_kosong_atau_terisi(): void
     {
-        $idKost = $this->buatKos();
+        $this->buatKos();
 
-        $response = $this->postJson('/api/kamar', [
-            'id_kost' => $idKost,
+        $this->postJson('/api/kamar', [
             'no_kamar' => 'A01',
             'harga' => 750000,
             'status' => 'tersedia',
-        ]);
+        ])
+            ->assertUnprocessable()
+            ->assertJsonStructure([
+                'error' => [
+                    'details' => ['status'],
+                ],
+            ]);
 
-        $response->assertStatus(422);
-
-        $response->assertJsonValidationErrors([
-            'status',
-        ]);
+        $this->assertDatabaseCount('kamar', 0);
     }
 }
+
