@@ -13,6 +13,11 @@ RUN npm run build
 
 # Tahap 2: Menjalankan Laravel menggunakan PHP dan Apache
 FROM php:8.2-apache
+# Bersihkan konfigurasi MPM dan aktifkan hanya prefork
+RUN rm -f /etc/apache2/mods-enabled/mpm_*.load \
+    /etc/apache2/mods-enabled/mpm_*.conf \
+    && a2enmod mpm_prefork rewrite headers \
+    && apache2ctl -M
 
 # Instal kebutuhan sistem dan ekstensi PHP
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -34,8 +39,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         gd \
         zip \
         intl \
-    && (a2dismod mpm_event mpm_worker || true) \
-    && a2enmod mpm_prefork rewrite headers \
     && rm -rf /var/lib/apt/lists/*
 
 # Instal Composer

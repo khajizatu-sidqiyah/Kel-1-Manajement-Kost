@@ -44,7 +44,7 @@
             <h1 class="login-title">Login {{ $roleName }}</h1>
 
             <form id="login-form" class="login-form" method="POST"
-                action="{{ $isPemilik ? '/login' : '/login/penghuni' }}"
+                action="{{ $isPemilik ? '/login' : '/login/penghuni' }}">
                 @csrf
                 <input type="hidden" name="role" value="{{ $role ?? 'pemilik' }}">
 
