@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
+use Carbon\Carbon;
 
 class PembayaranPerKamarTest extends TestCase
 {
@@ -166,7 +167,7 @@ class PembayaranPerKamarTest extends TestCase
         $this->withoutMiddleware()
             ->getJson('/api/pembayaran/per-kamar')
             ->assertOk()
-            ->assertJsonPath('message', 'Belum ada pembayaran.')
+            ->assertJsonPath('message', 'Belum ada kamar berpenghuni.')
             ->assertJsonCount(0, 'data');
     }
 
@@ -189,17 +190,23 @@ class PembayaranPerKamarTest extends TestCase
 
         $this->assertDatabaseHas('penghunian', [
             'id_penghunian' => $id,
-            'tenggat_pelunasan' => '2026-12-05',
-            'status_pembayaran' => 'belum_lunas',
-        ]);
+            'tenggat_pelunasan' => '2026-12-05 00:00:00',
+            'status_pembayaran' => 'lunas',
+]);
 
-        // Tagihan Desember dihitung sebagai periode baru, tidak tercampur November.
-        $this->catatPembayaran($id, 'pelunasan', 600000)
-            ->assertCreated()
-            ->assertJsonPath('data.periode_tagihan', '2026-12-01')
-            ->assertJsonPath('data.tenggat_pelunasan_baru', '2027-01-05');
+        // Simulasikan waktu ketika jatuh tempo Desember sudah tiba.
+        Carbon::setTestNow('2026-12-05 00:00:00');
+
+        try {
+            // Tagihan Desember baru boleh dibayar setelah jatuh tempo tiba.
+            $this->catatPembayaran($id, 'pelunasan', 600000)
+                ->assertCreated()
+                ->assertJsonPath('data.periode_tagihan', '2026-12-01')
+                ->assertJsonPath('data.tenggat_pelunasan_baru', '2027-01-05');
+        } finally {
+            Carbon::setTestNow();
     }
-
+}
     public function test_verifikasi_pembayaran_bulanan_memajukan_tenggat_satu_kali(): void
     {
         $kamar = $this->buatKamarDenganPenghuni('09', ['Nina']);
@@ -218,14 +225,14 @@ class PembayaranPerKamarTest extends TestCase
         ]);
 
         $this->withoutMiddleware()
-            ->putJson("/api/pembayaran/{$idPembayaran}/status", [
+            ->patchJson("/api/pembayaran/{$idPembayaran}/status", [
                 'status' => 'terverifikasi',
             ])
             ->assertOk()
             ->assertJsonPath('data.tenggat_pelunasan_baru', '2026-12-05');
 
         $this->withoutMiddleware()
-            ->putJson("/api/pembayaran/{$idPembayaran}/status", [
+            ->patchJson("/api/pembayaran/{$idPembayaran}/status", [
                 'status' => 'terverifikasi',
             ])
             ->assertOk()
@@ -233,7 +240,8 @@ class PembayaranPerKamarTest extends TestCase
 
         $this->assertDatabaseHas('penghunian', [
             'id_penghunian' => $idPenghunian,
-            'tenggat_pelunasan' => '2026-12-05',
+            'tenggat_pelunasan' => '2026-12-05 00:00:00',
+            'status_pembayaran' => 'lunas',
         ]);
     }
 

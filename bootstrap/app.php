@@ -20,6 +20,12 @@ return Application::configure(basePath: dirname(__DIR__))
                 Request::HEADER_X_FORWARDED_PORT |
                 Request::HEADER_X_FORWARDED_PROTO
         );
+
+        $middleware->alias([
+        'api.contract' => \App\Http\Middleware\ApiContractMiddleware::class,
+        'pemilik' => \App\Http\Middleware\PemilikMiddleware::class,
+        'penghuni' => \App\Http\Middleware\PenghuniMiddleware::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (\Illuminate\Validation\ValidationException $e, \Illuminate\Http\Request $request) {

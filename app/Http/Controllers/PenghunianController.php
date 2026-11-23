@@ -592,14 +592,18 @@ $validated = $validator->validated();
                 !$utama ||
                 (int) $utama->id_penghunian !==
                 (int) $penghunian->id_penghunian
-            ) {
-                return response()->json([
-                    'message' => 'Skema sewa harus diatur melalui penghunian penyewa utama.',
-                    'error' => [
-                        'code' => 'NOT_PRIMARY_TENANT',
-                    ],
-                ], 422);
-            }
+        ) {
+            return $this->apiErrorResponse(
+                422,
+                'Skema sewa harus diatur melalui penghunian penyewa utama.',
+                'VALIDATION_ERROR',
+            [
+                'penyewa_utama' => [
+                    'Pengaturan skema sewa hanya dapat dilakukan melalui penyewa utama.',
+                ],
+            ]
+        );
+    }
 
             // Simpan harga saat skema masa sewa pertama kali dihitung.
             // Perubahan harga kamar berikutnya tidak boleh mengubah kontrak aktif.
@@ -748,77 +752,105 @@ $validated = $validator->validated();
         });
     }
 
-    /**
-     * Mengubah tenggat pembayaran tahunan.
-     */
-    public function ubahTenggat(Request $request, int $id)
-    {
-        $validated = $request->validate([
-            'tenggat_pelunasan' => [
-                'required',
-                'date',
-            ],
-        ]);
 
-        $penghunian = Penghunian::find($id);
+/**
+ * Mengubah tenggat pembayaran tahunan.
+ */
+public function ubahTenggat(Request $request, int $id)
+{
+    $validator = Validator::make($request->all(), [
+        'tenggat_pelunasan' => [
+            'required',
+            'date',
+        ],
+    ], [
+        'tenggat_pelunasan.required' => 'Tanggal tenggat wajib diisi.',
+        'tenggat_pelunasan.date' => 'Format tanggal tenggat tidak valid.',
+    ]);
 
-        if (!$penghunian) {
-            return response()->json([
-                'message' => 'Data penghunian tidak ditemukan.',
-                'error' => [
-                    'code' => 'OCCUPANCY_NOT_FOUND',
-                ],
-            ], 404);
-        }
-
-        if ($penghunian->skema_sewa !== 'tahunan') {
-            return response()->json([
-                'message' => 'Pengubahan tenggat hanya berlaku untuk sewa tahunan.',
-                'error' => [
-                    'code' => 'INVALID_RENT_SCHEME',
-                ],
-            ], 422);
-        }
-
-        if (!$penghunian->tanggal_mulai) {
-            return response()->json([
-                'message' => 'Isi tanggal masuk terlebih dahulu sebelum mengubah tenggat.',
-                'error' => [
-                    'code' => 'START_DATE_NOT_SET',
-                ],
-            ], 422);
-        }
-
-        $tanggalMulai = Carbon::parse(
-            $penghunian->tanggal_mulai
-        )->startOfDay();
-
-        $tanggalTenggat = Carbon::parse(
-            $validated['tenggat_pelunasan']
-        )->startOfDay();
-
-        if ($tanggalTenggat->lt($tanggalMulai)) {
-            return response()->json([
-                'message' => 'Tenggat tidak boleh sebelum tanggal mulai sewa.',
-                'error' => [
-                    'code' => 'INVALID_DUE_DATE',
-                ],
-            ], 422);
-        }
-
-        $penghunian->update([
-            'tenggat_pelunasan' => $tanggalTenggat->toDateString(),
-        ]);
-
-        return response()->json([
-            'message' => 'Tenggat pelunasan berhasil diubah.',
-            'data' => $penghunian->fresh()->load([
-                'kamar',
-                'penghuni',
-                'pembayaran',
-            ]),
-        ]);
+    if ($validator->fails()) {
+        return $this->apiErrorResponse(
+            422,
+            'Validasi request gagal.',
+            'VALIDATION_ERROR',
+            $validator->errors()->toArray()
+        );
     }
+
+    $validated = $validator->validated();
+
+    $penghunian = Penghunian::find($id);
+
+    if (!$penghunian) {
+        return $this->apiErrorResponse(
+            404,
+            'Data penghunian tidak ditemukan.',
+            'NOT_FOUND',
+            []
+        );
+    }
+
+    if ($penghunian->skema_sewa !== 'tahunan') {
+        return $this->apiErrorResponse(
+            422,
+            'Pengubahan tenggat hanya berlaku untuk sewa tahunan.',
+            'VALIDATION_ERROR',
+            [
+                'skema_sewa' => [
+                    'Skema sewa harus tahunan.',
+                ],
+            ]
+        );
+    }
+
+    if (!$penghunian->tanggal_mulai) {
+        return $this->apiErrorResponse(
+            422,
+            'Isi tanggal masuk terlebih dahulu sebelum mengubah tenggat.',
+            'VALIDATION_ERROR',
+            [
+                'tanggal_mulai' => [
+                    'Tanggal mulai sewa wajib tersedia.',
+                ],
+            ]
+        );
+    }
+
+    $tanggalMulai = Carbon::parse(
+        $penghunian->tanggal_mulai
+    )->startOfDay();
+
+    $tanggalTenggat = Carbon::parse(
+        $validated['tenggat_pelunasan']
+    )->startOfDay();
+
+    if ($tanggalTenggat->lt($tanggalMulai)) {
+        return $this->apiErrorResponse(
+            422,
+            'Tenggat tidak boleh sebelum tanggal mulai sewa.',
+            'VALIDATION_ERROR',
+            [
+                'tenggat_pelunasan' => [
+                    'Tenggat tidak boleh sebelum tanggal mulai sewa.',
+                ],
+            ]
+        );
+    }
+
+    $penghunian->update([
+        'tenggat_pelunasan' => $tanggalTenggat->toDateString(),
+    ]);
+
+    return response()->json([
+        'message' => 'Tenggat pelunasan berhasil diubah.',
+        'data' => $penghunian->fresh()->load([
+            'kamar',
+            'penghuni',
+            'pembayaran',
+        ]),
+    ], 200);
+}
+
 
     /**
      * Menghitung tenggat bulanan berikutnya.
@@ -831,30 +863,26 @@ $validated = $validator->validated();
             ->first();
 
         if (!$penghunian) {
-            return response()->json([
-                'message' => 'Data penghunian tidak ditemukan.',
-                'error' => [
-                    'code' => 404,
-                    'message' => 'Data penghunian tidak ditemukan.',
-                    'status' => 'NOT_FOUND',
-                    'details' => (object) [],
-                ],
-            ], 404);
+            return $this->apiErrorResponse(
+                404,
+                'Data penghunian tidak ditemukan.',
+                'NOT_FOUND',
+                []
+            );
         }
 
         if ($penghunian->status !== 'aktif') {
-            return response()->json([
-                'message' => 'Penghunian tidak aktif.',
-                'error' => [
-                    'code' => 422,
-                    'message' => 'Penghunian tidak aktif.',
-                    'status' => 'VALIDATION_ERROR',
-                    'details' => [
-                        'id' => ['Penghunian harus berstatus aktif.'],
-                    ],
-                ],
-            ], 422);
-        }
+            return $this->apiErrorResponse(
+                422,
+                'Skema sewa hanya dapat diatur untuk penghunian aktif.',
+                'VALIDATION_ERROR',
+                [
+                    'status' => [
+                'Penghunian harus berstatus aktif.',
+            ],
+        ]
+    );
+}
 
         // Hanya berlaku untuk skema bulanan.
         if ($penghunian->skema_sewa !== 'bulanan') {

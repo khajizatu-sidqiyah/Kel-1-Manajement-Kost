@@ -1,8 +1,0 @@
-name: Manajemen Kos - Lokal
-values:
-  - key: base_url
-    value: 'http://127.0.0.1:8000/api'
-  - key: email
-    value: pemilik@gmail.com
-  - key: password
-    value: password123
