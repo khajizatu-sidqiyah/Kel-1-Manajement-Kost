@@ -1,20 +1,32 @@
 <?php
 
-namespace tests\Feature;
+namespace Tests\Feature;
 
 use App\Models\PengaturanSewa;
 use App\Models\Penghunian;
+use App\Models\Pembayaran;
+use App\Models\Tagihan;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class PenghunianDpTenggatTest extends TestCase
 {
     use RefreshDatabase;
 
-    /**
-     * Membuat data penghunian untuk kebutuhan pengujian.
-     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Sanctum::actingAs(
+            User::factory()->create([
+                'role' => 'pemilik',
+            ])
+        );
+    }
+
     private function buatPenghunian(
         ?string $tanggalMulai = '2026-01-31',
         float $harga = 750000
@@ -72,15 +84,43 @@ class PenghunianDpTenggatTest extends TestCase
         ]);
     }
 
-    /**
-     * Helper untuk menjalankan perhitungan DP.
-     */
     private function hitung(int $id, string $skema)
     {
-        return $this->withoutMiddleware()
-            ->postJson("/penghunian/{$id}/hitung", [
-                'skema_sewa' => $skema,
-            ]);
+        return $this->postJson(
+            "/api/penghunian/{$id}/hitung-dp",
+            ['skema_sewa' => $skema]
+        );
+    }
+
+    private function buatTagihanLunas(
+        int $idPenghunian,
+        string $periode,
+        string $jatuhTempo
+    ): void {
+        Tagihan::create([
+            'id_penghunian' => $idPenghunian,
+            'jenis_tagihan' => 'bulanan',
+            'periode' => $periode,
+            'kode_periode' => substr($periode, 0, 7),
+            'jatuh_tempo' => $jatuhTempo,
+            'jumlah_tagihan' => 750000,
+            'jumlah_terbayar' => 750000,
+            'sisa_tagihan' => 0,
+            'status' => 'sudah_lunas',
+        ]);
+    }
+    private function buatPembayaranLunas(int $idPenghunian): void
+    {
+        Pembayaran::create([
+            'id_penghunian' => $idPenghunian,
+            'jenis_pembayaran' => 'pelunasan',
+            'tanggal_bayar' => '2026-01-15',
+            'periode_tagihan' => '2026-01-01',
+            'jumlah' => 750000,
+            'metode_pembayaran' => 'transfer',
+            'bukti_pembayaran' => null,
+            'status' => 'terverifikasi',
+        ]);
     }
 
     public function test_dp_bulanan_adalah_lima_puluh_persen_harga_kamar(): void
@@ -89,24 +129,32 @@ class PenghunianDpTenggatTest extends TestCase
 
         $this->hitung($id, 'bulanan')
             ->assertOk()
-            ->assertJsonPath('total_sewa', 750000)
-            ->assertJsonPath('dp_minimum', 375000)
-            ->assertJsonPath('tenggat_pelunasan', '2026-01-31');
+            ->assertJsonPath('data.total_sewa', 750000)
+            ->assertJsonPath('data.dp_minimum', 375000)
+            ->assertJsonPath(
+                'data.tenggat_pelunasan',
+                '2026-01-31T00:00:00.000000Z'
+            );
     }
 
     public function test_dp_tahunan_menggunakan_pengaturan_database(): void
     {
         $id = $this->buatPenghunian('2026-01-15');
 
-        PengaturanSewa::create([
-            'dp_minimum_tahunan' => 400000,
-        ]);
+        PengaturanSewa::query()
+            ->firstOrFail()
+            ->update([
+                'dp_minimum_tahunan' => 400000,
+            ]);
 
         $this->hitung($id, 'tahunan')
             ->assertOk()
-            ->assertJsonPath('total_sewa', 9000000)
-            ->assertJsonPath('dp_minimum', 400000)
-            ->assertJsonPath('tenggat_pelunasan', '2026-04-15');
+            ->assertJsonPath('data.total_sewa', 9000000)
+            ->assertJsonPath('data.dp_minimum', 400000)
+            ->assertJsonPath(
+                'data.tenggat_pelunasan',
+                '2026-04-15T00:00:00.000000Z'
+            );
     }
 
     public function test_dp_tetap_dihitung_jika_tanggal_masuk_kosong(): void
@@ -115,8 +163,8 @@ class PenghunianDpTenggatTest extends TestCase
 
         $this->hitung($id, 'bulanan')
             ->assertOk()
-            ->assertJsonPath('dp_minimum', 375000)
-            ->assertJsonPath('tenggat_pelunasan', null)
+            ->assertJsonPath('data.dp_minimum', 375000)
+            ->assertJsonPath('data.tenggat_pelunasan', null)
             ->assertJsonPath(
                 'message',
                 'DP berhasil dihitung. Isi tanggal masuk untuk menghitung tenggat.'
@@ -127,67 +175,86 @@ class PenghunianDpTenggatTest extends TestCase
     {
         $id = $this->buatPenghunian();
 
-        $this->withoutMiddleware()
-            ->postJson("/penghunian/{$id}/hitung", [])
+        $this->postJson("/api/penghunian/{$id}/hitung-dp", [])
             ->assertUnprocessable()
-            ->assertJsonValidationErrors(['skema_sewa']);
+            ->assertJsonPath('error.status', 'VALIDATION_ERROR')
+            ->assertJsonStructure([
+                'error' => [
+                    'details' => ['skema_sewa'],
+                ],
+            ]);
     }
 
     public function test_tenggat_bulanan_akhir_bulan_berpindah_dengan_benar(): void
     {
         $id = $this->buatPenghunian('2026-01-31');
 
-        $penghunian = Penghunian::findOrFail($id);
-
-        $penghunian->update([
+        Penghunian::findOrFail($id)->update([
             'skema_sewa' => 'bulanan',
+            'total_sewa' => 750000,
+            'dp_minimum' => 375000,
             'tenggat_pelunasan' => '2026-01-31',
         ]);
 
-        $this->withoutMiddleware()
-            ->putJson("/penghunian/{$id}/tenggat-berikutnya")
-            ->assertOk()
-            ->assertJsonPath('tenggat_berikutnya', '2026-02-28');
+        $this->buatPembayaranLunas($id);
+
+        $response = $this->postJson(
+    "/api/penghunian/{$id}/tenggat-berikutnya"
+);
+
+$response->dump();
+
+$response->assertOk()
+    ->assertJsonPath('data.tenggat_sekarang', '2026-01-31')
+    ->assertJsonPath('data.tenggat_berikutnya', '2026-02-28');
+
+        $this->assertDatabaseHas('penghunian', [
+            'id_penghunian' => $id,
+            'tenggat_pelunasan' => '2026-02-28',
+        ]);
     }
 
     public function test_tenggat_tahunan_bisa_diubah(): void
     {
         $id = $this->buatPenghunian('2026-01-15');
 
-        $penghunian = Penghunian::findOrFail($id);
-
-        $penghunian->update([
+        Penghunian::findOrFail($id)->update([
             'skema_sewa' => 'tahunan',
             'tenggat_pelunasan' => '2026-04-15',
         ]);
 
-        $this->withoutMiddleware()
-            ->putJson("/penghunian/{$id}/tenggat", [
-                'tenggat_pelunasan' => '2026-05-20',
-            ])
+        $this->putJson("/api/penghunian/{$id}/tenggat", [
+            'tenggat_pelunasan' => '2026-05-20 00:00:00',
+        ])
             ->assertOk()
-            ->assertJsonPath('tenggat_pelunasan', '2026-05-20');
+            ->assertJsonPath(
+                'data.tenggat_pelunasan',
+                '2026-05-20T00:00:00.000000Z'
+            );
+
+        $this->assertDatabaseHas('penghunian', [
+            'id_penghunian' => $id,
+            'tenggat_pelunasan' => '2026-05-20 00:00:00',
+        ]);
     }
 
     public function test_tenggat_tidak_boleh_sebelum_tanggal_masuk(): void
     {
         $id = $this->buatPenghunian('2026-04-15');
 
-        $penghunian = Penghunian::findOrFail($id);
-
-        $penghunian->update([
+        Penghunian::findOrFail($id)->update([
             'skema_sewa' => 'tahunan',
         ]);
 
-        $this->withoutMiddleware()
-            ->putJson("/penghunian/{$id}/tenggat", [
-                'tenggat_pelunasan' => '2026-04-14',
-            ])
+        $this->putJson("/api/penghunian/{$id}/tenggat", [
+            'tenggat_pelunasan' => '2026-04-14',
+        ])
             ->assertUnprocessable()
             ->assertJsonPath(
                 'message',
                 'Tenggat tidak boleh sebelum tanggal mulai sewa.'
-            );
+            )
+            ->assertJsonPath('error.status', 'VALIDATION_ERROR');
     }
 
     public function test_harga_kamar_nol_ditolak_saat_menghitung_dp(): void
@@ -206,20 +273,32 @@ class PenghunianDpTenggatTest extends TestCase
     {
         $id = $this->buatPenghunian('2028-01-31');
 
-        $penghunian = Penghunian::findOrFail($id);
-
-        $penghunian->update([
+        Penghunian::findOrFail($id)->update([
             'skema_sewa' => 'bulanan',
+            'total_sewa' => 750000,
+            'dp_minimum' => 375000,
             'tenggat_pelunasan' => '2028-01-31',
         ]);
 
-        $this->withoutMiddleware()
-            ->putJson("/penghunian/{$id}/tenggat-berikutnya")
+        Pembayaran::create([
+            'id_penghunian' => $id,
+            'jenis_pembayaran' => 'pelunasan',
+            'tanggal_bayar' => '2028-01-15',
+            'periode_tagihan' => '2028-01-01',
+            'jumlah' => 750000,
+            'metode_pembayaran' => 'transfer',
+            'bukti_pembayaran' => null,
+            'status' => 'terverifikasi',
+        ]);
+
+        $this->postJson("/api/penghunian/{$id}/tenggat-berikutnya")
             ->assertOk()
-            ->assertJsonPath(
-                'tenggat_berikutnya',
-                '2028-02-29'
-            );
+            ->assertJsonPath('data.tenggat_berikutnya', '2028-02-29');
+
+        $this->assertDatabaseHas('penghunian', [
+            'id_penghunian' => $id,
+            'tenggat_pelunasan' => '2028-02-29',
+        ]);
     }
 
     public function test_skema_sewa_yang_tidak_valid_ditolak(): void
@@ -228,11 +307,18 @@ class PenghunianDpTenggatTest extends TestCase
 
         $this->hitung($id, 'mingguan')
             ->assertUnprocessable()
-            ->assertJsonValidationErrors(['skema_sewa']);
+            ->assertJsonPath('error.status', 'VALIDATION_ERROR')
+            ->assertJsonStructure([
+                'error' => [
+                    'details' => ['skema_sewa'],
+                ],
+            ]);
     }
 
     public function test_pengaturan_dp_tahunan_yang_belum_tersedia_ditolak(): void
     {
+        PengaturanSewa::query()->delete();
+
         $id = $this->buatPenghunian();
 
         $this->hitung($id, 'tahunan')
@@ -247,16 +333,13 @@ class PenghunianDpTenggatTest extends TestCase
     {
         $id = $this->buatPenghunian(null);
 
-        $penghunian = Penghunian::findOrFail($id);
-
-        $penghunian->update([
+        Penghunian::findOrFail($id)->update([
             'skema_sewa' => 'tahunan',
         ]);
 
-        $this->withoutMiddleware()
-            ->putJson("/penghunian/{$id}/tenggat", [
-                'tenggat_pelunasan' => '2026-05-20',
-            ])
+        $this->putJson("/api/penghunian/{$id}/tenggat", [
+            'tenggat_pelunasan' => '2026-05-20 00:00:00',
+        ])
             ->assertUnprocessable()
             ->assertJsonPath(
                 'message',
@@ -268,12 +351,20 @@ class PenghunianDpTenggatTest extends TestCase
     {
         $id = $this->buatPenghunian('2026-01-31');
 
-        PengaturanSewa::create([
-            'dp_minimum_tahunan' => 400000,
-        ]);
+        PengaturanSewa::query()
+            ->firstOrFail()
+            ->update([
+                'dp_minimum_tahunan' => 400000,
+            ]);
 
         $this->hitung($id, 'tahunan')
             ->assertOk()
-            ->assertJsonPath('tenggat_pelunasan', '2026-04-30');
+            ->assertJsonPath(
+                'data.tenggat_pelunasan',
+                '2026-04-30T00:00:00.000000Z'
+            );
     }
 }
+
+
+
