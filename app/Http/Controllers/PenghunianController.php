@@ -7,6 +7,7 @@ use App\Models\Penghuni;
 use App\Models\Penghunian;
 use App\Models\Pembayaran;
 use App\Services\TagihanService;
+use App\Models\PengaturanSewa;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -646,44 +647,70 @@ class PenghunianController extends Controller
                     2
                 );
 
-                // Tenggat pertama: satu bulan setelah tanggal masuk.
+                // Tenggat pertama mengikuti tanggal masuk.
+
                 $tenggat = $penghunian->tanggal_mulai
-                    ? Carbon::parse($penghunian->tanggal_mulai)
-                        ->addMonthNoOverflow()
-                        ->toDateString()
+                    ? Carbon::parse($penghunian->tanggal_mulai)->toDateString()
                     : null;
 
                 } else {
-                    // Harga tahunan berdasarkan jumlah penghuni aktif
-                    $jumlahPenghuni = $penghuniAktif->count();
+        
+                // Harga tahunan berdasarkan jumlah penghuni aktif.
+$jumlahPenghuni = $penghuniAktif->count();
 
-                    if ($jumlahPenghuni < 1 || $jumlahPenghuni > 2) {
-                        return response()->json([
-                            'message' => 'Jumlah penghuni kamar tidak valid.',
-                            'error' => [
-                                'code' => 'INVALID_TENANT_COUNT',
-                            ],
-                        ], 422);
-                    }
+if ($jumlahPenghuni < 1 || $jumlahPenghuni > 2) {
+    return response()->json([
+        'message' => 'Jumlah penghuni kamar tidak valid.',
+        'error' => [
+            'code' => 'INVALID_TENANT_COUNT',
+        ],
+    ], 422);
+}
 
-                    // Harga tahunan:
-                    // 1 orang = Rp5.000.000
-                    // 2 orang = Rp6.900.000
-                    $totalSewa = $jumlahPenghuni === 1
-                        ? 5000000
-                        : 6900000;
+// Ambil harga tahunan dari data kamar.
+$totalSewa = $jumlahPenghuni === 1
+    ? $kamar->harga_tahunan_1_orang
+    : $kamar->harga_tahunan_2_orang;
 
-                    // DP minimum tahunan tetap Rp300.000
-                    $dpMinimum = 300000;
+if (!is_numeric($totalSewa) || (float) $totalSewa <= 0) {
+    return response()->json([
+        'message' => 'Harga sewa tahunan kamar belum diisi atau tidak valid.',
+        'error' => [
+            'code' => 'INVALID_ANNUAL_RENT',
+        ],
+    ], 422);
+}
 
-                    // Tenggat pelunasan 2 bulan setelah tanggal masuk
-                    $tenggat = $penghunian->tanggal_mulai
-                        ? Carbon::parse($penghunian->tanggal_mulai)
-                            ->addMonthsNoOverflow(2)
-                            ->toDateString()
-                        : null;
+// Ambil DP minimum dari pengaturan database.
+$pengaturan = PengaturanSewa::first();
+
+if (
+    !$pengaturan ||
+    !is_numeric($pengaturan->dp_minimum_tahunan) ||
+    (float) $pengaturan->dp_minimum_tahunan <= 0
+) {
+    return response()->json([
+        'message' => 'Pengaturan DP minimum tahunan belum tersedia atau tidak valid.',
+        'error' => [
+            'code' => 'INVALID_ANNUAL_DP_SETTING',
+        ],
+    ], 422);
+}
+
+$totalSewa = round((float) $totalSewa, 2);
+$dpMinimum = round(
+    (float) $pengaturan->dp_minimum_tahunan,
+    2
+);
+
+// Tenggat bulan ketiga, dengan bulan masuk sebagai bulan pertama.
+$tenggat = $penghunian->tanggal_mulai
+    ? Carbon::parse($penghunian->tanggal_mulai)
+        ->addMonthsNoOverflow(2)
+        ->toDateString()
+    : null;
+                
                 }
-
             $penghunian->update([
                 'skema_sewa' => $validated['skema_sewa'],
                 'total_sewa' => $totalSewa,
@@ -699,7 +726,9 @@ class PenghunianController extends Controller
                 ->terbitkanTagihan($penghunian);
 
             return response()->json([
-                'message' => 'Perhitungan sewa, DP minimum, dan tenggat berhasil disimpan.',
+                'message' => $tenggat === null
+    ? 'DP berhasil dihitung. Isi tanggal masuk untuk menghitung tenggat.'
+    : 'Perhitungan sewa, DP minimum, dan tenggat berhasil disimpan.',
                 'data' => $penghunian->fresh()->load([
                     'kamar',
                     'penghuni',

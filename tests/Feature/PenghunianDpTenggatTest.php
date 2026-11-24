@@ -153,7 +153,7 @@ class PenghunianDpTenggatTest extends TestCase
             ->assertJsonPath('data.dp_minimum', 400000)
             ->assertJsonPath(
                 'data.tenggat_pelunasan',
-                '2026-04-15T00:00:00.000000Z'
+                '2026-03-15T00:00:00.000000Z'
             );
     }
 
@@ -202,15 +202,13 @@ class PenghunianDpTenggatTest extends TestCase
     "/api/penghunian/{$id}/tenggat-berikutnya"
 );
 
-$response->dump();
-
 $response->assertOk()
     ->assertJsonPath('data.tenggat_sekarang', '2026-01-31')
     ->assertJsonPath('data.tenggat_berikutnya', '2026-02-28');
 
         $this->assertDatabaseHas('penghunian', [
             'id_penghunian' => $id,
-            'tenggat_pelunasan' => '2026-02-28',
+            'tenggat_pelunasan' => '2026-02-28 00:00:00',
         ]);
     }
 
@@ -220,7 +218,7 @@ $response->assertOk()
 
         Penghunian::findOrFail($id)->update([
             'skema_sewa' => 'tahunan',
-            'tenggat_pelunasan' => '2026-04-15',
+            'tenggat_pelunasan' => '2026-03-15',
         ]);
 
         $this->putJson("/api/penghunian/{$id}/tenggat", [
@@ -240,14 +238,14 @@ $response->assertOk()
 
     public function test_tenggat_tidak_boleh_sebelum_tanggal_masuk(): void
     {
-        $id = $this->buatPenghunian('2026-04-15');
+        $id = $this->buatPenghunian('2026-03-15');
 
         Penghunian::findOrFail($id)->update([
             'skema_sewa' => 'tahunan',
         ]);
 
         $this->putJson("/api/penghunian/{$id}/tenggat", [
-            'tenggat_pelunasan' => '2026-04-14',
+            'tenggat_pelunasan' => '2026-03-14',
         ])
             ->assertUnprocessable()
             ->assertJsonPath(
@@ -265,7 +263,7 @@ $response->assertOk()
             ->assertUnprocessable()
             ->assertJsonPath(
                 'message',
-                'Harga sewa kamar belum diisi'
+                'Harga sewa bulanan kamar belum diisi atau tidak valid.'
             );
     }
 
@@ -297,7 +295,7 @@ $response->assertOk()
 
         $this->assertDatabaseHas('penghunian', [
             'id_penghunian' => $id,
-            'tenggat_pelunasan' => '2028-02-29',
+            'tenggat_pelunasan' => '2028-02-29 00:00:00',
         ]);
     }
 
@@ -361,7 +359,7 @@ $response->assertOk()
             ->assertOk()
             ->assertJsonPath(
                 'data.tenggat_pelunasan',
-                '2026-04-30T00:00:00.000000Z'
+                '2026-03-31T00:00:00.000000Z'
             );
     }
 }

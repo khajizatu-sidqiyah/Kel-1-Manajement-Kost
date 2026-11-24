@@ -90,9 +90,11 @@ private function loginSebagaiPemilik(): void
     {
         $this->loginSebagaiPemilik();
 
-        PengaturanSewa::create([
-            'dp_minimum_tahunan' => 300000,
-        ]);
+        PengaturanSewa::query()
+            ->firstOrFail()
+            ->update([
+                'dp_minimum_tahunan' => 300000,
+            ]);
 
         $response = $this->put('/pengaturan-sewa', [
             'dp_minimum_tahunan' => 500000,

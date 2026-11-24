@@ -44,6 +44,8 @@ class PembayaranTest extends TestCase
             'tipe_kamar' => 'Standard',
             'harga' => $totalSewa,
             'harga_tahunan' => $totalSewa,
+            'harga_tahunan_1_orang' => $totalSewa,
+            'harga_tahunan_2_orang' => $totalSewa,
             'status' => 'terisi',
             'id_kost' => $idKost,
             'created_at' => now(),
@@ -437,14 +439,14 @@ class PembayaranTest extends TestCase
         ->assertJsonPath('data.dp_minimum', 300000);
 
     $this->assertStringStartsWith(
-        '2027-02-05',
+        '2027-01-05',
         $response->json('data.tenggat_pelunasan')
     );
 
     $this->assertDatabaseHas('penghunian', [
         'id_penghunian' => $id,
         'skema_sewa' => 'tahunan',
-        'tenggat_pelunasan' => '2027-02-05 00:00:00',
+        'tenggat_pelunasan' => '2027-01-05 00:00:00',
     ]);
 }
 
