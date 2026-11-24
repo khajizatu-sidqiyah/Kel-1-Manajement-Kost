@@ -14,10 +14,14 @@ RUN npm run build
 # Tahap 2: Menjalankan Laravel menggunakan PHP dan Apache
 FROM php:8.2-apache
 # Bersihkan konfigurasi MPM dan aktifkan hanya prefork
-RUN rm -f /etc/apache2/mods-enabled/mpm_*.load \
-    /etc/apache2/mods-enabled/mpm_*.conf \
+
+# Pastikan hanya satu MPM yang aktif, yaitu mpm_prefork
+RUN for module in mpm_event mpm_worker mpm_prefork; do \
+        a2dismod "$module" 2>/dev/null || true; \
+    done \
     && a2enmod mpm_prefork rewrite headers \
-    && apache2ctl -M
+    && apache2ctl -M \
+    && apache2ctl -t
 
 # Instal kebutuhan sistem dan ekstensi PHP
 RUN apt-get update && apt-get install -y --no-install-recommends \
