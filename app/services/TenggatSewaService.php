@@ -2,64 +2,120 @@
 
 namespace App\Services;
 
+use App\Models\Penghunian;
+use App\Models\Tagihan;
 use Carbon\Carbon;
 
 class TenggatSewaService
 {
     /**
-     * Menghitung tenggat bulan berikutnya.
-     * Tanggal 29, 30, dan 31 selalu menjadi hari terakhir
-     * pada bulan berikutnya sesuai keputusan pemilik kos.
+     * Menghitung tenggat berikutnya dengan mempertahankan
+     * tanggal patokan awal.
+     *
+     * Contoh:
+     * 31 Januari -> 28 Februari -> 31 Maret.
      */
     public function hitungBerikutnya($tanggalTenggat): string
     {
         $tanggal = Carbon::parse($tanggalTenggat);
+        $bulanBerikutnya = $tanggal->copy()
+            ->startOfMonth()
+            ->addMonthNoOverflow();
 
-        if ($tanggal->day >= 29) {
-            return $tanggal
-                ->copy()
-                ->startOfMonth()
-                ->addMonthNoOverflow()
-                ->endOfMonth()
-                ->toDateString();
-        }
+        $hari = min($tanggal->day, $bulanBerikutnya->daysInMonth);
 
-        return $tanggal
-            ->copy()
-            ->addMonthNoOverflow()
+        return $bulanBerikutnya
+            ->day($hari)
             ->toDateString();
     }
 
     /**
-     * Memajukan tenggat hanya jika periode tersebut sudah lunas
-     * dan tenggat saat ini masih berada pada bulan periode itu.
-     * Pengecekan bulan mencegah pemrosesan pembayaran yang sama
-     * memajukan tenggat lebih dari satu kali.
+     * Tenggat hanya maju jika tagihan bulanan pada periode
+     * tersebut benar-benar sudah lunas.
+     *
+     * Tanggal patokan diambil dari tagihan bulanan pertama,
+     * bukan dari tenggat yang sudah pernah disesuaikan.
      */
-    public function majukanJikaLunas($penghunian, string $periodeTagihan, float $totalTerverifikasi): ?string
-    {
-        if ($penghunian->skema_sewa !== 'bulanan' || !$penghunian->tenggat_pelunasan) {
+    public function majukanJikaLunas(
+        $penghunian,
+        string $periodeTagihan,
+        float $totalTerverifikasi = 0
+    ): ?string {
+        if (
+            $penghunian->skema_sewa !== 'bulanan' ||
+            !$penghunian->tenggat_pelunasan
+        ) {
             return null;
         }
 
-        $periode = Carbon::parse($periodeTagihan)->startOfMonth();
-        $tenggat = Carbon::parse($penghunian->tenggat_pelunasan);
+        $tagihanDibayar = Tagihan::where(
+            'id_penghunian',
+            $penghunian->id_penghunian
+        )
+            ->whereDate('periode', Carbon::parse($periodeTagihan)
+                ->startOfMonth()
+                ->toDateString())
+            ->where('jenis_tagihan', 'bulanan')
+            ->first();
 
-        if ($tenggat->format('Y-m') !== $periode->format('Y-m')) {
+        // Jangan memajukan tenggat hanya berdasarkan jumlah transaksi.
+        if (!$tagihanDibayar || $tagihanDibayar->status !== 'sudah_lunas') {
             return null;
         }
 
-        $totalTagihan = (float) ($penghunian->total_sewa ?? 0);
+        $tagihanPertama = Tagihan::where(
+            'id_penghunian',
+            $penghunian->id_penghunian
+        )
+            ->where('jenis_tagihan', 'bulanan')
+            ->orderBy('jatuh_tempo')
+            ->orderBy('id_tagihan')
+            ->first();
 
-        if ($totalTagihan <= 0 || $totalTerverifikasi < $totalTagihan) {
+        if (!$tagihanPertama || !$tagihanPertama->jatuh_tempo) {
             return null;
         }
 
-        $tenggatBaru = $this->hitungBerikutnya($tenggat);
+        $tanggalPatokan = Carbon::parse($tagihanPertama->jatuh_tempo);
+        $periodeAwal = $tanggalPatokan->copy()->startOfMonth();
+        $periodeDibayar = Carbon::parse($periodeTagihan)->startOfMonth();
+
+        // Hitung selisih bulan berdasarkan tahun dan bulan.
+        $indeksAwal = ($periodeAwal->year * 12) + $periodeAwal->month;
+        $indeksDibayar = ($periodeDibayar->year * 12) + $periodeDibayar->month;
+        $selisihBulan = $indeksDibayar - $indeksAwal;
+
+        if ($selisihBulan < 0) {
+            return null;
+        }
+
+        // Tenggat berikutnya dihitung dari tanggal patokan asli.
+        $bulanBerikutnya = $periodeAwal
+            ->copy()
+            ->addMonthsNoOverflow($selisihBulan + 1);
+
+        $hariPatokan = $tanggalPatokan->day;
+        $hariBerikutnya = min(
+            $hariPatokan,
+            $bulanBerikutnya->daysInMonth
+        );
+
+        $tenggatBaru = $bulanBerikutnya
+            ->day($hariBerikutnya)
+            ->toDateString();
+
+        $tenggatSekarang = Carbon::parse(
+            $penghunian->tenggat_pelunasan
+        )->toDateString();
+
+        // Mencegah tenggat mundur atau diperbarui berulang kali.
+        if ($tenggatBaru <= $tenggatSekarang) {
+            return null;
+        }
 
         $penghunian->update([
             'tenggat_pelunasan' => $tenggatBaru,
-            'status_pembayaran' => 'belum_lunas',
+            'status_pembayaran' => 'belum_bayar',
         ]);
 
         return $tenggatBaru;

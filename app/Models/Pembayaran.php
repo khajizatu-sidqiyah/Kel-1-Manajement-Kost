@@ -57,4 +57,13 @@ class Pembayaran extends Model
             'menunggu_verifikasi'
         );
     }
+
+    public function alokasiTagihan()
+{
+    return $this->hasMany(
+        AlokasiPembayaran::class,
+        'id_pembayaran',
+        'id_pembayaran'
+    );
+}
 }

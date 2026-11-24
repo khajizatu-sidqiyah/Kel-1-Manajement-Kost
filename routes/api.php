@@ -1,4 +1,3 @@
-
 <?php
 
 use Illuminate\Support\Facades\Route;
@@ -87,11 +86,21 @@ Route::middleware('api.contract')->group(function () {
 
         // Card 5.2b: daftar pembayaran per kamar dan riwayatnya
         Route::get('/pembayaran/per-kamar', [PembayaranController::class, 'perKamar']);
+
+        // Riwayat seluruh pembayaran dengan filter
+        Route::get('/pembayaran/riwayat', [PembayaranController::class, 'riwayat']);
+        
         Route::get('/pembayaran/kamar/{id_kamar}/riwayat', [PembayaranController::class, 'riwayatPerKamar'])
             ->whereNumber('id_kamar');
 
         // Mencatat pembayaran DP, cicilan, atau pelunasan
         Route::post('/pembayaran', [PembayaranController::class, 'store']);
+
+        // Riwayat pembayaran seluruh kamar
+        Route::get('/pembayaran/riwayat', [
+            PembayaranController::class,
+            'riwayat'
+        ]);
 
         // Melihat detail pembayaran
         Route::get('/pembayaran/{id}', [PembayaranController::class, 'show'])
@@ -102,7 +111,7 @@ Route::middleware('api.contract')->group(function () {
             ->whereNumber('id');
 
         // Verifikasi atau penolakan pembayaran
-        Route::put('/pembayaran/{id}/status', [PembayaranController::class, 'updateStatus'])
+        Route::patch('/pembayaran/{id}/status', [PembayaranController::class, 'updateStatus'])
             ->whereNumber('id');
     });
 });

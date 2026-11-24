@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
+use Carbon\Carbon;
 
 class PembayaranPerKamarTest extends TestCase
 {
@@ -158,7 +159,8 @@ class PembayaranPerKamarTest extends TestCase
             ->getJson("/api/pembayaran/kamar/{$kamar['id_kamar']}/riwayat")
             ->assertOk()
             ->assertJsonCount(2, 'data.pembayaran')
-            ->assertJsonPath('data.penyewa_utama', 'Rina');
+            ->assertJsonPath('data.penyewa_utama', 'Rina')
+            ->assertJsonPath('data.pembayaran.0.no_kamar', '05');
     }
 
     public function test_daftar_pembayaran_kosong_menampilkan_pesan(): void
@@ -166,7 +168,7 @@ class PembayaranPerKamarTest extends TestCase
         $this->withoutMiddleware()
             ->getJson('/api/pembayaran/per-kamar')
             ->assertOk()
-            ->assertJsonPath('message', 'Belum ada pembayaran.')
+            ->assertJsonPath('message', 'Belum ada kamar berpenghuni.')
             ->assertJsonCount(0, 'data');
     }
 
@@ -189,17 +191,23 @@ class PembayaranPerKamarTest extends TestCase
 
         $this->assertDatabaseHas('penghunian', [
             'id_penghunian' => $id,
-            'tenggat_pelunasan' => '2026-12-05',
-            'status_pembayaran' => 'belum_lunas',
-        ]);
+            'tenggat_pelunasan' => '2026-12-05 00:00:00',
+            'status_pembayaran' => 'lunas',
+]);
 
-        // Tagihan Desember dihitung sebagai periode baru, tidak tercampur November.
-        $this->catatPembayaran($id, 'pelunasan', 600000)
-            ->assertCreated()
-            ->assertJsonPath('data.periode_tagihan', '2026-12-01')
-            ->assertJsonPath('data.tenggat_pelunasan_baru', '2027-01-05');
+        // Simulasikan waktu ketika jatuh tempo Desember sudah tiba.
+        Carbon::setTestNow('2026-12-05 00:00:00');
+
+        try {
+            // Tagihan Desember baru boleh dibayar setelah jatuh tempo tiba.
+            $this->catatPembayaran($id, 'pelunasan', 600000)
+                ->assertCreated()
+                ->assertJsonPath('data.periode_tagihan', '2026-12-01')
+                ->assertJsonPath('data.tenggat_pelunasan_baru', '2027-01-05');
+        } finally {
+            Carbon::setTestNow();
     }
-
+}
     public function test_verifikasi_pembayaran_bulanan_memajukan_tenggat_satu_kali(): void
     {
         $kamar = $this->buatKamarDenganPenghuni('09', ['Nina']);
@@ -218,14 +226,14 @@ class PembayaranPerKamarTest extends TestCase
         ]);
 
         $this->withoutMiddleware()
-            ->putJson("/api/pembayaran/{$idPembayaran}/status", [
+            ->patchJson("/api/pembayaran/{$idPembayaran}/status", [
                 'status' => 'terverifikasi',
             ])
             ->assertOk()
             ->assertJsonPath('data.tenggat_pelunasan_baru', '2026-12-05');
 
         $this->withoutMiddleware()
-            ->putJson("/api/pembayaran/{$idPembayaran}/status", [
+            ->patchJson("/api/pembayaran/{$idPembayaran}/status", [
                 'status' => 'terverifikasi',
             ])
             ->assertOk()
@@ -233,7 +241,8 @@ class PembayaranPerKamarTest extends TestCase
 
         $this->assertDatabaseHas('penghunian', [
             'id_penghunian' => $idPenghunian,
-            'tenggat_pelunasan' => '2026-12-05',
+            'tenggat_pelunasan' => '2026-12-05 00:00:00',
+            'status_pembayaran' => 'lunas',
         ]);
     }
 
@@ -258,6 +267,14 @@ class PembayaranPerKamarTest extends TestCase
             ])
             ->assertOk()
             ->assertJsonPath('data.total_sewa', 5000000);
+
+        $this->assertDatabaseHas('tagihan', [
+            'id_penghunian' => $kamar['id_penghunian'][0],
+            'jenis_tagihan' => 'tahunan',
+            'kode_periode' => 'tahunan',
+            'jumlah_tagihan' => 5000000,
+            'status' => 'belum_bayar',
+]);
     }
 
     public function test_harga_tahunan_dua_penghuni_menggunakan_tarif_dua_orang(): void
@@ -291,4 +308,43 @@ class PembayaranPerKamarTest extends TestCase
             ->assertJsonPath('error.code', 404)
             ->assertJsonPath('error.status', 'NOT_FOUND');
     }
+
+    public function test_tagihan_bulanan_pertama_diterbitkan_setelah_skema_disimpan(): void
+{
+    $kamar = $this->buatKamarDenganPenghuni(
+        '10',
+        ['Dina']
+    );
+
+    $idPenghunian = $kamar['id_penghunian'][0];
+
+    // Sebelum skema disimpan, tagihan belum tersedia.
+    $this->assertDatabaseMissing('tagihan', [
+        'id_penghunian' => $idPenghunian,
+    ]);
+
+    // Simpan skema bulanan.
+    $this->withoutMiddleware()
+        ->postJson(
+            "/api/penghunian/{$idPenghunian}/hitung-dp",
+            [
+                'skema_sewa' => 'bulanan',
+            ]
+        )
+        ->assertOk()
+        ->assertJsonPath(
+            'data.skema_sewa',
+            'bulanan'
+        );
+
+    // Tagihan pertama harus langsung dibuat.
+    $this->assertDatabaseHas('tagihan', [
+        'id_penghunian' => $idPenghunian,
+        'jenis_tagihan' => 'bulanan',
+        'kode_periode' => '2026-12',
+        'jatuh_tempo' => '2026-12-05',
+        'jumlah_tagihan' => 600000,
+        'status' => 'belum_bayar',
+    ]);
+}
 }

@@ -6,6 +6,7 @@ use App\Models\Kamar;
 use App\Models\Penghuni;
 use App\Models\Penghunian;
 use App\Models\Pembayaran;
+use App\Services\TagihanService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -645,10 +646,11 @@ class PenghunianController extends Controller
                     2
                 );
 
+                // Tenggat pertama: satu bulan setelah tanggal masuk.
                 $tenggat = $penghunian->tanggal_mulai
-                    ? Carbon::parse(
-                        $penghunian->tanggal_mulai
-                    )->toDateString()
+                    ? Carbon::parse($penghunian->tanggal_mulai)
+                        ->addMonthNoOverflow()
+                        ->toDateString()
                     : null;
 
                 } else {
@@ -676,14 +678,11 @@ class PenghunianController extends Controller
 
                     // Tenggat pelunasan 2 bulan setelah tanggal masuk
                     $tenggat = $penghunian->tanggal_mulai
-                        ? Carbon::parse(
-                            $penghunian->tanggal_mulai
-                        )
+                        ? Carbon::parse($penghunian->tanggal_mulai)
                             ->addMonthsNoOverflow(2)
                             ->toDateString()
                         : null;
                 }
-
 
             $penghunian->update([
                 'skema_sewa' => $validated['skema_sewa'],
@@ -692,6 +691,12 @@ class PenghunianController extends Controller
                 'tenggat_pelunasan' => $tenggat,
                 'status_pembayaran' => 'belum_lunas',
             ]);
+
+            // Terbitkan tagihan pertama setelah skema dan tenggat disimpan.
+            $penghunian->refresh();
+            
+            app(TagihanService::class)
+                ->terbitkanTagihan($penghunian);
 
             return response()->json([
                 'message' => 'Perhitungan sewa, DP minimum, dan tenggat berhasil disimpan.',

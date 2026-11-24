@@ -5,10 +5,4 @@ workspace:
 
 cloudResources:
   collections:
-    ../postman/collections/Manajemen Kost API — Lengkap (Negatif + Edge Case + Keamanan)-1: 00b0f222-367c-4be7-adb7-3ef285cf47d0
-    ../postman/collections/Manajemen Kost API — Lengkap + QA Card 4.1a & 5.2a: f19ee7fd-4920-4c05-8a32-044c754c966e
-    ../postman/collections/Manajemen Kost - Card 4.1a (Penyimpanan Calon Penghuni & DP): 3ab5ec24-e5fb-4efb-9326-d91e1dd3d567
-  environments:
-    ../postman/environments/Manajemenkos.environment.yaml: 58907593-f60a1885-55a2-4266-896e-a28408ec5769
-  globals:
-    ../postman/globals/workspace.globals.yaml: 28792356-b270-49bb-8007-ec8641fce37c
+    ../postman/collections/Manajemen Kos - Card 5.2a Pencatatan Pembayaran per Kamar Copy: 73bf0c6e-1844-45d0-ab54-3ff6faaea091

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Waktu pembuatan: 29 Sep 2026 pada 10.20
+-- Waktu pembuatan: 13 Nov 2026 pada 00.24
 -- Versi server: 10.4.32-MariaDB
 -- Versi PHP: 8.2.12
 
@@ -24,201 +24,42 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `cache`
---
-
-CREATE TABLE `cache` (
-  `key` varchar(255) NOT NULL,
-  `value` mediumtext NOT NULL,
-  `expiration` int(11) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Struktur dari tabel `cache_locks`
---
-
-CREATE TABLE `cache_locks` (
-  `key` varchar(255) NOT NULL,
-  `owner` varchar(255) NOT NULL,
-  `expiration` int(11) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Struktur dari tabel `failed_jobs`
---
-
-CREATE TABLE `failed_jobs` (
-  `id` bigint(20) UNSIGNED NOT NULL,
-  `uuid` varchar(255) NOT NULL,
-  `connection` text NOT NULL,
-  `queue` text NOT NULL,
-  `payload` longtext NOT NULL,
-  `exception` longtext NOT NULL,
-  `failed_at` timestamp NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Struktur dari tabel `jobs`
---
-
-CREATE TABLE `jobs` (
-  `id` bigint(20) UNSIGNED NOT NULL,
-  `queue` varchar(255) NOT NULL,
-  `payload` longtext NOT NULL,
-  `attempts` tinyint(3) UNSIGNED NOT NULL,
-  `reserved_at` int(10) UNSIGNED DEFAULT NULL,
-  `available_at` int(10) UNSIGNED NOT NULL,
-  `created_at` int(10) UNSIGNED NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Struktur dari tabel `job_batches`
---
-
-CREATE TABLE `job_batches` (
-  `id` varchar(255) NOT NULL,
-  `name` varchar(255) NOT NULL,
-  `total_jobs` int(11) NOT NULL,
-  `pending_jobs` int(11) NOT NULL,
-  `failed_jobs` int(11) NOT NULL,
-  `failed_job_ids` longtext NOT NULL,
-  `options` mediumtext DEFAULT NULL,
-  `cancelled_at` int(11) DEFAULT NULL,
-  `created_at` int(11) NOT NULL,
-  `finished_at` int(11) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Struktur dari tabel `kamar`
---
-
-CREATE TABLE `kamar` (
-  `id_kamar` bigint(20) UNSIGNED NOT NULL,
-  `no_kamar` varchar(20) NOT NULL,
-  `tipe_kamar` varchar(50) DEFAULT NULL,
-  `harga` decimal(12,2) NOT NULL,
-  `status` varchar(20) NOT NULL DEFAULT 'kosong',
-  `id_kost` bigint(20) UNSIGNED NOT NULL,
-  `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Struktur dari tabel `kos`
---
-
-CREATE TABLE `kos` (
-  `id_kost` bigint(20) UNSIGNED NOT NULL,
-  `nama_kost` varchar(100) NOT NULL,
-  `alamat` text DEFAULT NULL,
-  `deskripsi` text DEFAULT NULL,
-  `fasilitas` text DEFAULT NULL,
-  `id_pemilik` bigint(20) UNSIGNED NOT NULL,
-  `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Struktur dari tabel `migrations`
---
-
-CREATE TABLE `migrations` (
-  `id` int(10) UNSIGNED NOT NULL,
-  `migration` varchar(255) NOT NULL,
-  `batch` int(11) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Dumping data untuk tabel `migrations`
---
-
-INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
-(1, '0001_01_01_000000_create_users_table', 1),
-(2, '0001_01_01_000001_create_cache_table', 1),
-(3, '0001_01_01_000002_create_jobs_table', 1),
-(4, '2026_09_28_075042_create_products_table', 1),
-(5, '2026_09_29_052828_create_pemilik_table', 1),
-(6, '2026_09_29_052845_create_kos_table', 1),
-(7, '2026_09_29_052857_create_kamar_table', 1),
-(8, '2026_09_29_052908_create_penghuni_table', 1),
-(9, '2026_09_29_052926_create_penghunian_table', 1),
-(10, '2026_09_29_052934_create_pembayaran_table', 1);
-
--- --------------------------------------------------------
-
---
--- Struktur dari tabel `password_reset_tokens`
---
-
-CREATE TABLE `password_reset_tokens` (
-  `email` varchar(255) NOT NULL,
-  `token` varchar(255) NOT NULL,
-  `created_at` timestamp NULL DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Struktur dari tabel `pembayaran`
---
-
-CREATE TABLE `pembayaran` (
-  `id_pembayaran` bigint(20) UNSIGNED NOT NULL,
-  `id_penghunian` bigint(20) UNSIGNED NOT NULL,
-  `tanggal_bayar` date NOT NULL,
-  `jumlah` decimal(12,2) NOT NULL,
-  `metode_pembayaran` varchar(30) NOT NULL,
-  `bukti_pembayaran` varchar(255) DEFAULT NULL,
-  `status` varchar(20) NOT NULL DEFAULT 'pending',
-  `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Struktur dari tabel `pemilik`
---
-
-CREATE TABLE `pemilik` (
-  `id_pemilik` bigint(20) UNSIGNED NOT NULL,
-  `nama_pemilik` varchar(100) NOT NULL,
-  `no_telepon` varchar(20) DEFAULT NULL,
-  `email` varchar(100) DEFAULT NULL,
-  `alamat` text DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
 -- Struktur dari tabel `penghuni`
 --
 
-CREATE TABLE `penghuni` (
-  `id_penghuni` bigint(20) UNSIGNED NOT NULL,
+CREATE TABLE IF NOT EXISTS `penghuni` (
+  `id_penghuni` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id` bigint(20) UNSIGNED DEFAULT NULL,
   `nama_penghuni` varchar(100) NOT NULL,
   `no_telepon` varchar(20) DEFAULT NULL,
   `email` varchar(100) DEFAULT NULL,
   `alamat` text DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id_penghuni`),
+  UNIQUE KEY `penghuni_user_id_unique` (`user_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data untuk tabel `penghuni`
+--
+
+INSERT INTO `penghuni` (`id_penghuni`, `user_id`, `nama_penghuni`, `no_telepon`, `email`, `alamat`, `created_at`, `updated_at`) VALUES
+(1, 2, 'Penghuni Uji', '081234567890', 'penghuni@gmail.com', 'Cirebon', '2026-11-05 02:21:22', '2026-11-05 02:21:22'),
+(2, NULL, 'Teh Erin', '+62 853-1852-8347', 'erin@gmail.com', 'Cirebon', NULL, NULL),
+(3, NULL, 'Teh Azizah', '+62 896-7788-3738', 'azizah@gmail.com', 'Cirebon', NULL, NULL),
+(4, NULL, 'Aca', '+62 838-3285-0093', 'aca@gmail.com', 'Cirebon', NULL, NULL),
+(5, NULL, 'Risma', '+62 822-4260-0038', 'risma@gmail.com', 'Cirebon', NULL, NULL),
+(6, NULL, 'Syifa', '+62 895-6350-08600', 'syifa@gmail.com', 'Cirebon', NULL, NULL),
+(7, NULL, 'Indah', '+62 831-2016-4396', 'indah@gmail.com', 'Cirebon', NULL, NULL),
+(8, NULL, 'Nunu', '+62 838-7955-5420', 'nunu@gmail.com', 'Kalibuntu', NULL, NULL),
+(9, NULL, 'Syahra', '+62 823-1656-0422', 'syahra@gmail.com', 'Cirebon', NULL, NULL),
+(10, NULL, 'Nunun', '+62 812-1414-5457', 'nunun@gmail.com', 'Cirebon', NULL, NULL),
+(11, NULL, 'Jijah', '+62 838-2524-8419', 'jijah@gmail.com', 'Kalibuntu', NULL, NULL),
+(12, NULL, 'Elza', '+62 838-4146-0957', 'elza@gmail.com', 'Losari', NULL, NULL),
+(13, NULL, 'Salsa', '+62 831-2919-9063', 'salsa@gmail.com', 'Cirebon', NULL, NULL),
+(14, NULL, 'Dyas', '+62 822-8678-2116', 'dyas@gmail.com', 'Cirebon', NULL, NULL),
+(16, NULL, 'cici', NULL, NULL, NULL, '2026-11-12 15:49:37', '2026-11-12 15:49:37');
 
 -- --------------------------------------------------------
 
@@ -226,264 +67,55 @@ CREATE TABLE `penghuni` (
 -- Struktur dari tabel `penghunian`
 --
 
-CREATE TABLE `penghunian` (
-  `id_penghunian` bigint(20) UNSIGNED NOT NULL,
+CREATE TABLE IF NOT EXISTS `penghunian` (
+  `id_penghunian` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
   `id_kamar` bigint(20) UNSIGNED NOT NULL,
   `id_penghuni` bigint(20) UNSIGNED NOT NULL,
-  `tanggal_mulai` date NOT NULL,
+  `tanggal_mulai` date DEFAULT NULL,
   `tanggal_selesai` date DEFAULT NULL,
   `status` varchar(20) NOT NULL DEFAULT 'aktif',
   `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Struktur dari tabel `products`
---
-
-CREATE TABLE `products` (
-  `id` bigint(20) UNSIGNED NOT NULL,
-  `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `penyewa_utama` tinyint(1) NOT NULL DEFAULT 0,
+  `skema_sewa` varchar(255) DEFAULT NULL,
+  `total_sewa` decimal(12,2) DEFAULT NULL,
+  `dp_minimum` decimal(12,2) DEFAULT NULL,
+  `tenggat_pelunasan` date DEFAULT NULL,
+  `status_pembayaran` varchar(20) NOT NULL DEFAULT 'belum_lunas',
+  PRIMARY KEY (`id_penghunian`),
+  KEY `penghunian_id_kamar_foreign` (`id_kamar`),
+  KEY `penghunian_id_penghuni_foreign` (`id_penghuni`)
+) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
--- Struktur dari tabel `sessions`
+-- Dumping data untuk tabel `penghunian`
 --
 
-CREATE TABLE `sessions` (
-  `id` varchar(255) NOT NULL,
-  `user_id` bigint(20) UNSIGNED DEFAULT NULL,
-  `ip_address` varchar(45) DEFAULT NULL,
-  `user_agent` text DEFAULT NULL,
-  `payload` longtext NOT NULL,
-  `last_activity` int(11) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Struktur dari tabel `users`
---
-
-CREATE TABLE `users` (
-  `id` bigint(20) UNSIGNED NOT NULL,
-  `name` varchar(255) NOT NULL,
-  `email` varchar(255) NOT NULL,
-  `email_verified_at` timestamp NULL DEFAULT NULL,
-  `password` varchar(255) NOT NULL,
-  `remember_token` varchar(100) DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Indexes for dumped tables
---
-
---
--- Indeks untuk tabel `cache`
---
-ALTER TABLE `cache`
-  ADD PRIMARY KEY (`key`),
-  ADD KEY `cache_expiration_index` (`expiration`);
-
---
--- Indeks untuk tabel `cache_locks`
---
-ALTER TABLE `cache_locks`
-  ADD PRIMARY KEY (`key`),
-  ADD KEY `cache_locks_expiration_index` (`expiration`);
-
---
--- Indeks untuk tabel `failed_jobs`
---
-ALTER TABLE `failed_jobs`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `failed_jobs_uuid_unique` (`uuid`);
-
---
--- Indeks untuk tabel `jobs`
---
-ALTER TABLE `jobs`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `jobs_queue_index` (`queue`);
-
---
--- Indeks untuk tabel `job_batches`
---
-ALTER TABLE `job_batches`
-  ADD PRIMARY KEY (`id`);
-
---
--- Indeks untuk tabel `kamar`
---
-ALTER TABLE `kamar`
-  ADD PRIMARY KEY (`id_kamar`),
-  ADD KEY `kamar_id_kost_foreign` (`id_kost`);
-
---
--- Indeks untuk tabel `kos`
---
-ALTER TABLE `kos`
-  ADD PRIMARY KEY (`id_kost`),
-  ADD KEY `kos_id_pemilik_foreign` (`id_pemilik`);
-
---
--- Indeks untuk tabel `migrations`
---
-ALTER TABLE `migrations`
-  ADD PRIMARY KEY (`id`);
-
---
--- Indeks untuk tabel `password_reset_tokens`
---
-ALTER TABLE `password_reset_tokens`
-  ADD PRIMARY KEY (`email`);
-
---
--- Indeks untuk tabel `pembayaran`
---
-ALTER TABLE `pembayaran`
-  ADD PRIMARY KEY (`id_pembayaran`),
-  ADD KEY `pembayaran_id_penghunian_foreign` (`id_penghunian`);
-
---
--- Indeks untuk tabel `pemilik`
---
-ALTER TABLE `pemilik`
-  ADD PRIMARY KEY (`id_pemilik`);
-
---
--- Indeks untuk tabel `penghuni`
---
-ALTER TABLE `penghuni`
-  ADD PRIMARY KEY (`id_penghuni`);
-
---
--- Indeks untuk tabel `penghunian`
---
-ALTER TABLE `penghunian`
-  ADD PRIMARY KEY (`id_penghunian`),
-  ADD KEY `penghunian_id_kamar_foreign` (`id_kamar`),
-  ADD KEY `penghunian_id_penghuni_foreign` (`id_penghuni`);
-
---
--- Indeks untuk tabel `products`
---
-ALTER TABLE `products`
-  ADD PRIMARY KEY (`id`);
-
---
--- Indeks untuk tabel `sessions`
---
-ALTER TABLE `sessions`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `sessions_user_id_index` (`user_id`),
-  ADD KEY `sessions_last_activity_index` (`last_activity`);
-
---
--- Indeks untuk tabel `users`
---
-ALTER TABLE `users`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `users_email_unique` (`email`);
-
---
--- AUTO_INCREMENT untuk tabel yang dibuang
---
-
---
--- AUTO_INCREMENT untuk tabel `failed_jobs`
---
-ALTER TABLE `failed_jobs`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT untuk tabel `jobs`
---
-ALTER TABLE `jobs`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT untuk tabel `kamar`
---
-ALTER TABLE `kamar`
-  MODIFY `id_kamar` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT untuk tabel `kos`
---
-ALTER TABLE `kos`
-  MODIFY `id_kost` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT untuk tabel `migrations`
---
-ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
-
---
--- AUTO_INCREMENT untuk tabel `pembayaran`
---
-ALTER TABLE `pembayaran`
-  MODIFY `id_pembayaran` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT untuk tabel `pemilik`
---
-ALTER TABLE `pemilik`
-  MODIFY `id_pemilik` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT untuk tabel `penghuni`
---
-ALTER TABLE `penghuni`
-  MODIFY `id_penghuni` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT untuk tabel `penghunian`
---
-ALTER TABLE `penghunian`
-  MODIFY `id_penghunian` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT untuk tabel `products`
---
-ALTER TABLE `products`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT untuk tabel `users`
---
-ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+INSERT INTO `penghunian` (`id_penghunian`, `id_kamar`, `id_penghuni`, `tanggal_mulai`, `tanggal_selesai`, `status`, `created_at`, `updated_at`, `penyewa_utama`, `skema_sewa`, `total_sewa`, `dp_minimum`, `tenggat_pelunasan`, `status_pembayaran`) VALUES
+(1, 2, 2, '2020-07-13', NULL, 'aktif', '2026-11-05 02:21:22', '2026-11-11 19:41:32', 1, NULL, NULL, NULL, NULL, 'belum_lunas'),
+(2, 4, 3, '2024-08-25', NULL, 'aktif', '2026-11-05 02:21:22', '2026-11-05 02:21:22', 0, NULL, NULL, NULL, NULL, 'belum_lunas'),
+(3, 5, 4, '2026-08-22', NULL, 'aktif', '2026-11-05 02:21:22', '2026-11-05 02:21:22', 0, NULL, NULL, NULL, NULL, 'belum_lunas'),
+(4, 5, 5, '2026-08-22', NULL, 'aktif', '2026-11-05 02:21:22', '2026-11-05 02:21:22', 0, NULL, NULL, NULL, NULL, 'belum_lunas'),
+(5, 6, 6, '2026-08-17', NULL, 'aktif', '2026-11-05 02:21:22', '2026-11-05 02:21:22', 0, NULL, NULL, NULL, NULL, 'belum_lunas'),
+(6, 8, 7, '2026-08-15', NULL, 'aktif', '2026-11-05 02:21:22', '2026-11-05 02:21:22', 0, NULL, NULL, NULL, NULL, 'belum_lunas'),
+(7, 8, 8, '2026-08-15', NULL, 'aktif', '2026-11-05 02:21:22', '2026-11-05 02:21:22', 0, NULL, NULL, NULL, NULL, 'belum_lunas'),
+(8, 12, 9, '2025-08-20', NULL, 'aktif', '2026-11-05 02:21:22', '2026-11-05 02:21:22', 0, NULL, NULL, NULL, NULL, 'belum_lunas'),
+(9, 12, 10, '2025-08-20', NULL, 'aktif', '2026-11-05 02:21:22', '2026-11-05 02:21:22', 0, NULL, NULL, NULL, NULL, 'belum_lunas'),
+(10, 13, 11, '2024-08-25', NULL, 'aktif', '2026-11-05 02:21:22', '2026-11-05 02:21:22', 0, NULL, NULL, NULL, NULL, 'belum_lunas'),
+(11, 13, 12, '2024-08-25', NULL, 'aktif', '2026-11-05 02:21:22', '2026-11-05 02:21:22', 0, NULL, NULL, NULL, NULL, 'belum_lunas'),
+(12, 22, 13, '2026-09-30', NULL, 'aktif', '2026-11-05 02:21:22', '2026-11-05 02:21:22', 0, NULL, NULL, NULL, NULL, 'belum_lunas'),
+(13, 23, 14, '2025-08-20', NULL, 'aktif', '2026-11-05 02:21:22', '2026-11-05 02:21:22', 0, NULL, NULL, NULL, NULL, 'belum_lunas'),
+(15, 1, 16, NULL, NULL, 'aktif', '2026-11-12 15:49:37', '2026-11-12 15:49:47', 1, 'tahunan', 5000000.00, 300000.00, NULL, 'belum_lunas');
 
 --
 -- Ketidakleluasaan untuk tabel pelimpahan (Dumped Tables)
 --
 
 --
--- Ketidakleluasaan untuk tabel `kamar`
+-- Ketidakleluasaan untuk tabel `penghuni`
 --
-ALTER TABLE `kamar`
-  ADD CONSTRAINT `kamar_id_kost_foreign` FOREIGN KEY (`id_kost`) REFERENCES `kos` (`id_kost`) ON DELETE CASCADE;
-
---
--- Ketidakleluasaan untuk tabel `kos`
---
-ALTER TABLE `kos`
-  ADD CONSTRAINT `kos_id_pemilik_foreign` FOREIGN KEY (`id_pemilik`) REFERENCES `pemilik` (`id_pemilik`) ON DELETE CASCADE;
-
---
--- Ketidakleluasaan untuk tabel `pembayaran`
---
-ALTER TABLE `pembayaran`
-  ADD CONSTRAINT `pembayaran_id_penghunian_foreign` FOREIGN KEY (`id_penghunian`) REFERENCES `penghunian` (`id_penghunian`) ON DELETE CASCADE;
+ALTER TABLE `penghuni`
+  ADD CONSTRAINT `penghuni_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL;
 
 --
 -- Ketidakleluasaan untuk tabel `penghunian`
