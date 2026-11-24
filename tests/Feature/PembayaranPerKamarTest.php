@@ -6,6 +6,8 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 use Carbon\Carbon;
+use App\Models\Penghunian;
+use App\Services\TenggatSewaService;
 
 class PembayaranPerKamarTest extends TestCase
 {
@@ -341,10 +343,294 @@ class PembayaranPerKamarTest extends TestCase
     $this->assertDatabaseHas('tagihan', [
         'id_penghunian' => $idPenghunian,
         'jenis_tagihan' => 'bulanan',
-        'kode_periode' => '2026-12',
-        'jatuh_tempo' => '2026-12-05',
+        'kode_periode' => '2026-11',
+        'jatuh_tempo' => '2026-11-05 00:00:00',
         'jumlah_tagihan' => 600000,
         'status' => 'belum_bayar',
     ]);
+}
+
+
+public function test_status_tagihan_belum_bayar_belum_lunas_dan_sudah_lunas(): void
+{
+    Carbon::setTestNow('2026-11-23 12:00:00');
+
+    try {
+        $kamar = $this->buatKamarDenganPenghuni(
+            '52B-STATUS',
+            ['Alya']
+        );
+
+        $idPenghunian = $kamar['id_penghunian'][0];
+
+        // 1. Belum bayar.
+        $this->withoutMiddleware()
+            ->getJson('/api/pembayaran/per-kamar')
+            ->assertOk()
+            ->assertJsonPath('data.0.status_tagihan', 'belum_bayar')
+            ->assertJsonPath('data.0.jumlah_terbayar', 0);
+
+        // 2. Pembayaran sebagian.
+        $this->catatPembayaran(
+            $idPenghunian,
+            'dp',
+            300000
+        )->assertCreated();
+
+        $this->withoutMiddleware()
+            ->getJson('/api/pembayaran/per-kamar')
+            ->assertOk()
+            ->assertJsonPath('data.0.status_tagihan', 'belum_lunas')
+            ->assertJsonPath('data.0.jumlah_terbayar', 300000)
+            ->assertJsonPath('data.0.sisa_tagihan', 300000);
+
+        // 3. Pelunasan sisa.
+        $this->catatPembayaran(
+            $idPenghunian,
+            'pelunasan',
+            300000
+        )->assertCreated();
+
+        $this->withoutMiddleware()
+            ->getJson('/api/pembayaran/per-kamar')
+            ->assertOk()
+            ->assertJsonPath('data.0.status_tagihan', 'sudah_lunas')
+            ->assertJsonPath('data.0.sisa_tagihan', 0);
+    } finally {
+        Carbon::setTestNow();
+    }
+}
+
+
+public function test_pembayaran_dialokasikan_ke_tagihan_tertua(): void
+{
+    Carbon::setTestNow('2026-11-23 12:00:00');
+
+    try {
+        $kamar = $this->buatKamarDenganPenghuni(
+            '52B-TERTUA',
+            ['Citra'],
+            'bulanan',
+            600000,
+            '2026-10-05'
+        );
+
+        $idPenghunian = $kamar['id_penghunian'][0];
+
+        $response = $this->catatPembayaran(
+            $idPenghunian,
+            'dp',
+            300000
+        )->assertCreated();
+
+        $idPembayaran = $response->json(
+            'data.pembayaran.id_pembayaran'
+        );
+
+        $tagihanTertua = DB::table('tagihan')
+            ->where('id_penghunian', $idPenghunian)
+            ->orderBy('jatuh_tempo')
+            ->orderBy('id_tagihan')
+            ->first();
+
+        $alokasi = DB::table('alokasi_pembayaran')
+            ->where('id_pembayaran', $idPembayaran)
+            ->first();
+
+        $this->assertNotNull($tagihanTertua);
+        $this->assertNotNull($alokasi);
+
+        $this->assertEquals(
+            $tagihanTertua->id_tagihan,
+            $alokasi->id_tagihan
+        );
+
+        $this->assertEquals(
+            300000,
+            (float) $alokasi->jumlah_dialokasikan
+        );
+    } finally {
+        Carbon::setTestNow();
+    }
+}
+
+
+public function test_tenggat_tanggal_29_30_dan_31_tetap_mempertahankan_tanggal_patokan(): void
+{
+    $service = app(TenggatSewaService::class);
+
+    foreach ([29, 30, 31] as $hari) {
+        $tanggalAwal = '2026-01-' . $hari;
+
+        $kamar = $this->buatKamarDenganPenghuni(
+            '52B-TANGGAL-' . $hari,
+            ['Penghuni ' . $hari],
+            'bulanan',
+            600000,
+            $tanggalAwal
+        );
+
+        $idPenghunian = $kamar['id_penghunian'][0];
+
+        // Buat tagihan Januari yang sudah lunas.
+        DB::table('tagihan')->insert([
+            'id_penghunian' => $idPenghunian,
+            'jenis_tagihan' => 'bulanan',
+            'periode' => '2026-01-01',
+            'kode_periode' => '2026-01',
+            'jatuh_tempo' => $tanggalAwal,
+            'jumlah_tagihan' => 600000,
+            'jumlah_terbayar' => 600000,
+            'sisa_tagihan' => 0,
+            'status' => 'sudah_lunas',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $penghunian = Penghunian::findOrFail($idPenghunian);
+
+        // Januari menuju Februari.
+        $hasilFebruari = $service->majukanJikaLunas(
+            $penghunian,
+            '2026-01-01',
+            600000
+        );
+
+        $this->assertSame('2026-02-28', $hasilFebruari);
+
+        // Buat tagihan Februari yang sudah lunas.
+        DB::table('tagihan')->insert([
+            'id_penghunian' => $idPenghunian,
+            'jenis_tagihan' => 'bulanan',
+            'periode' => '2026-02-01',
+            'kode_periode' => '2026-02',
+            'jatuh_tempo' => '2026-02-28',
+            'jumlah_tagihan' => 600000,
+            'jumlah_terbayar' => 600000,
+            'sisa_tagihan' => 0,
+            'status' => 'sudah_lunas',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $penghunian->refresh();
+
+        // Februari menuju Maret berdasarkan tanggal patokan Januari.
+        $hasilMaret = $service->majukanJikaLunas(
+            $penghunian,
+            '2026-02-01',
+            600000
+        );
+
+        $this->assertSame(
+            '2026-03-' . str_pad((string) $hari, 2, '0', STR_PAD_LEFT),
+            $hasilMaret
+        );
+    }
+}
+
+
+public function test_id_kamar_nol_menghasilkan_422(): void
+{
+    $this->withoutMiddleware()
+        ->getJson('/api/pembayaran/kamar/0/riwayat')
+        ->assertUnprocessable()
+        ->assertJsonPath('error.code', 422)
+        ->assertJsonPath('error.status', 'VALIDATION_ERROR');
+}
+
+public function test_id_kamar_negatif_menghasilkan_422(): void
+{
+    $this->withoutMiddleware()
+        ->getJson('/api/pembayaran/kamar/-1/riwayat')
+        ->assertUnprocessable()
+        ->assertJsonPath('error.code', 422)
+        ->assertJsonPath('error.status', 'VALIDATION_ERROR');
+}
+
+
+public function test_daftar_per_kamar_menolak_beberapa_penghuni_tanpa_penyewa_utama(): void
+{
+    $kamar = $this->buatKamarDenganPenghuni(
+        '52B-TANPA-UTAMA',
+        ['Rina', 'Sari']
+    );
+
+    DB::table('penghunian')
+        ->whereIn('id_penghunian', $kamar['id_penghunian'])
+        ->update(['penyewa_utama' => false]);
+
+    $this->withoutMiddleware()
+        ->getJson('/api/pembayaran/per-kamar')
+        ->assertUnprocessable()
+        ->assertJsonPath(
+            'error.status',
+            'PRIMARY_TENANT_NOT_FOUND'
+        );
+}
+
+public function test_daftar_per_kamar_menolak_skema_sewa_kosong(): void
+{
+    $kamar = $this->buatKamarDenganPenghuni(
+        '52B-TANPA-SKEMA',
+        ['Zahra']
+    );
+
+    DB::table('penghunian')
+        ->where('id_penghunian', $kamar['id_penghunian'][0])
+        ->update(['skema_sewa' => null]);
+
+    $this->withoutMiddleware()
+        ->getJson('/api/pembayaran/per-kamar')
+        ->assertUnprocessable()
+        ->assertJsonPath(
+            'error.status',
+            'RENT_SCHEME_NOT_SET'
+        );
+}
+
+
+public function test_riwayat_per_kamar_memiliki_field_sesuai_kontrak(): void
+{
+    $kamar = $this->buatKamarDenganPenghuni(
+        '52B-RIWAYAT',
+        ['Dewi']
+    );
+
+    DB::table('pembayaran')->insert([
+        'id_penghunian' => $kamar['id_penghunian'][0],
+        'jenis_pembayaran' => 'dp',
+        'tanggal_bayar' => '2026-11-05',
+        'jumlah' => 300000,
+        'metode_pembayaran' => 'transfer',
+        'status' => 'terverifikasi',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $response = $this->withoutMiddleware()
+        ->getJson(
+            "/api/pembayaran/kamar/{$kamar['id_kamar']}/riwayat"
+        )
+        ->assertOk()
+        ->assertJsonPath(
+            'data.no_kamar',
+            '52B-RIWAYAT'
+        )
+        ->assertJsonCount(1, 'data.pembayaran');
+
+    $item = $response->json('data.pembayaran.0');
+
+    $this->assertArrayHasKey('id_pembayaran', $item);
+    $this->assertArrayHasKey('nama_penghuni', $item);
+    $this->assertArrayHasKey('no_kamar', $item);
+    $this->assertArrayHasKey('periode', $item);
+    $this->assertArrayHasKey('jumlah_dibayar', $item);
+    $this->assertArrayHasKey('tanggal_bayar', $item);
+    $this->assertArrayHasKey('metode_pembayaran', $item);
+    $this->assertArrayHasKey('alokasi_tagihan', $item);
+
+    $this->assertArrayNotHasKey('jenis_tagihan', $item);
+    $this->assertArrayNotHasKey('status', $item);
 }
 }

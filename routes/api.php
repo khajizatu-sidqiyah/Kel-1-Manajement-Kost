@@ -91,7 +91,7 @@ Route::middleware('api.contract')->group(function () {
         Route::get('/pembayaran/riwayat', [PembayaranController::class, 'riwayat']);
         
         Route::get('/pembayaran/kamar/{id_kamar}/riwayat', [PembayaranController::class, 'riwayatPerKamar'])
-            ->whereNumber('id_kamar');
+            ->where('id_kamar', '-?[0-9]+');
 
         // Mencatat pembayaran DP, cicilan, atau pelunasan
         Route::post('/pembayaran', [PembayaranController::class, 'store']);

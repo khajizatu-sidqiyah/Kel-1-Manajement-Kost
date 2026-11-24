@@ -16,42 +16,49 @@ class TagihanService
      * Membuat tagihan secara idempoten.
      * Tagihan yang sudah ada tidak dibuat ulang.
      */
-    public function terbitkanTagihan(Penghunian $penghunian): void
-    {
-        // Ambil tanggal asli dari database sebelum diproses Carbon.
-        $rawTenggat = $penghunian->getRawOriginal('tenggat_pelunasan');
 
-        // Lewati data yang tanggal tenggatnya kosong atau tidak valid.
-        if (
-            empty($rawTenggat) ||
-            str_starts_with((string) $rawTenggat, '0000-00-00') ||
-            $penghunian->status !== 'aktif' ||
-            !$penghunian->skema_sewa ||
-            (float) $penghunian->total_sewa <= 0
-        ) {
-            return;
-        }
-
-        // Pastikan tanggal benar-benar bisa diproses.
-        try {
-            $tanggalValid = Carbon::parse($rawTenggat);
-
-            if ($tanggalValid->year < 1000) {
-                return;
-            }
-        } catch (\Throwable $e) {
-            return;
-        }
-
-        if ($penghunian->skema_sewa === 'tahunan') {
-            $this->terbitkanTagihanTahunan($penghunian);
-            return;
-        }
-
-        if ($penghunian->skema_sewa === 'bulanan') {
-            $this->terbitkanTagihanBulanan($penghunian);
-        }
+public function terbitkanTagihan(Penghunian $penghunian): void
+{
+    if (
+        $penghunian->status !== 'aktif' ||
+        !$penghunian->skema_sewa ||
+        (float) $penghunian->total_sewa <= 0
+    ) {
+        return;
     }
+
+    // Tagihan tahunan tidak mewajibkan tenggat tersedia.
+    if ($penghunian->skema_sewa === 'tahunan') {
+        $this->terbitkanTagihanTahunan($penghunian);
+        return;
+    }
+
+    // Tagihan bulanan wajib memiliki tenggat.
+    if ($penghunian->skema_sewa !== 'bulanan') {
+        return;
+    }
+
+    $rawTenggat = $penghunian->getRawOriginal('tenggat_pelunasan');
+
+    if (
+        empty($rawTenggat) ||
+        str_starts_with((string) $rawTenggat, '0000-00-00')
+    ) {
+        return;
+    }
+
+    try {
+        $tanggalValid = Carbon::parse($rawTenggat);
+
+        if ($tanggalValid->year < 1000) {
+            return;
+        }
+    } catch (\Throwable $e) {
+        return;
+    }
+
+    $this->terbitkanTagihanBulanan($penghunian);
+}
 
     /**
      * Menerbitkan satu tagihan untuk skema sewa tahunan.

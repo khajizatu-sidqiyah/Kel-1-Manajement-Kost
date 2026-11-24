@@ -6,6 +6,7 @@ use App\Models\Kamar;
 use App\Models\Pembayaran;
 use App\Models\Penghunian;
 use App\Services\TenggatSewaService;
+use App\Models\AlokasiPembayaran;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -676,11 +677,8 @@ class PembayaranController extends Controller
 
             // 13. Memperbarui status pembayaran penghunian.
             $penghunian->update([
-                'status_pembayaran' => $tenggatBaruOtomatis
-                    ? 'belum_lunas'
-                    : $statusPembayaran,
-            ]);
-
+                'status_pembayaran' => $statusPembayaran,
+        ]);
             return response()->json([
                 'message' => $jenis === 'dp'
                     ? 'DP berhasil dicatat.'
@@ -1143,11 +1141,8 @@ class PembayaranController extends Controller
 
             // Memperbarui status pembayaran penghunian.
             $penghunian->update([
-                'status_pembayaran' => $tenggatBaruOtomatis
-                    ? 'belum_lunas'
-                    : $statusPembayaran,
-            ]);
-
+                'status_pembayaran' => $statusPembayaran,
+        ]);
             return response()->json([
                 'message' => 'Status pembayaran berhasil diperbarui.',
                 'data' => [
@@ -1210,6 +1205,73 @@ class PembayaranController extends Controller
     ])
         ->where('status', 'aktif')
         ->get();
+
+    
+// Pastikan setiap kamar memiliki penyewa utama dan skema sewa.
+$kelompokPenghunian = $penghunianAktif->groupBy('id_kamar');
+
+foreach ($kelompokPenghunian as $daftar) {
+    $daftarUtama = $daftar->filter(
+        fn ($item) => (bool) $item->penyewa_utama
+    );
+
+    if ($daftarUtama->count() > 1) {
+        return $this->errorResponse(
+            422,
+            'Terdapat lebih dari satu penyewa utama pada kamar.',
+            'MULTIPLE_PRIMARY_TENANTS',
+            [
+                'id_kamar' => $daftar->first()->id_kamar,
+            ]
+        );
+    }
+
+    // Jika hanya ada satu penghuni, gunakan penghuni tersebut.
+    $utama = $daftarUtama->first();
+
+    if (!$utama && $daftar->count() === 1) {
+        $utama = $daftar->first();
+    }
+
+    // Kamar dengan beberapa penghuni harus memiliki penyewa utama.
+    if (!$utama) {
+        return $this->errorResponse(
+            422,
+            'Penyewa utama belum ditentukan pada salah satu kamar.',
+            'PRIMARY_TENANT_NOT_FOUND',
+            [
+                'id_kamar' => $daftar->first()->id_kamar,
+            ]
+        );
+    }
+
+    if (!in_array($utama->skema_sewa, ['bulanan', 'tahunan'], true)) {
+        return $this->errorResponse(
+            422,
+            'Skema sewa penyewa utama belum ditentukan.',
+            'RENT_SCHEME_NOT_SET',
+            [
+                'id_kamar' => $daftar->first()->id_kamar,
+                'id_penghunian' => $utama->id_penghunian,
+            ]
+        );
+    }
+
+    if (
+        $utama->skema_sewa === 'bulanan' &&
+        !$utama->tenggat_pelunasan
+    ) {
+        return $this->errorResponse(
+            422,
+            'Tenggat pembayaran bulanan belum tersedia.',
+            'DUE_DATE_NOT_SET',
+            [
+                'id_kamar' => $daftar->first()->id_kamar,
+            ]
+        );
+    }
+}
+
 
     $rows = $penghunianAktif
         ->groupBy('id_kamar')
@@ -1319,19 +1381,14 @@ class PembayaranController extends Controller
             return [
                 'id_kamar' => $kamar->id_kamar,
                 'no_kamar' => $kamar->no_kamar,
-
                 'penyewa_utama' => [
                     'id_penghuni' => $utama->id_penghuni,
                     'nama_penghuni' =>
                         $utama->penghuni->nama_penghuni ?? '-',
                 ],
-
                 'id_penghunian' => $utama->id_penghunian,
-
                 'jumlah_penghuni_aktif' => $daftar->count(),
-
                 'jenis_tagihan' => $utama->skema_sewa,
-
                 'periode' => (
                     $tagihan &&
                     $tagihan->jenis_tagihan === 'bulanan' &&
@@ -1340,19 +1397,15 @@ class PembayaranController extends Controller
                     ? Carbon::parse($tagihan->periode)
                         ->translatedFormat('F Y')
                     : '-',
-
                 'jatuh_tempo' => $jatuhTempo
                     ? Carbon::parse($jatuhTempo)->toDateString()
                     : null,
-
                 'jumlah_tagihan' => $jumlahTagihan,
                 'jumlah_terbayar' => $jumlahTerbayar,
                 'sisa_tagihan' => $sisaTagihan,
-
                 'status_pembayaran' => $status,
-
+                'status_tagihan' => $status,
                 'id_tagihan' => $tagihan->id_tagihan ?? null,
-
                 'aksi_pembayaran' => $aksi,
 
                 'riwayat_url' =>
@@ -1608,10 +1661,23 @@ private function formatRiwayatPembayaran(Collection$pembayaran)
      * Riwayat pembayaran satu kamar.
      * Termasuk penghunian lama dan seluruh penghuni kamar.
      */
-    public function riwayatPerKamar(
-    Request $request,
-    int $id_kamar
-) {
+    
+public function riwayatPerKamar(int $id_kamar)
+{
+    // Validasi ID kamar.
+    if ($id_kamar < 1) {
+        return $this->errorResponse(
+            422,
+            'ID kamar minimal 1.',
+            'VALIDATION_ERROR',
+            [
+                'id_kamar' => [
+                    'ID kamar harus berupa bilangan bulat minimal 1.',
+                ],
+            ]
+        );
+    }
+
     $kamar = Kamar::find($id_kamar);
 
     if (!$kamar) {
@@ -1622,52 +1688,132 @@ private function formatRiwayatPembayaran(Collection$pembayaran)
         );
     }
 
+    // Ambil seluruh masa penghunian kamar.
     $penghunianKamar = Penghunian::with('penghuni')
         ->where('id_kamar', $id_kamar)
         ->get();
 
+    $idPenghunian = $penghunianKamar
+        ->pluck('id_penghunian')
+        ->all();
+
+    // Tentukan penyewa utama yang masih aktif.
     $utama = $penghunianKamar
         ->where('status', 'aktif')
         ->firstWhere('penyewa_utama', true);
 
+    // Jika tidak ada penanda utama, gunakan penghuni aktif
+    // apabila hanya ada satu orang.
     if (!$utama) {
-        $utama = $penghunianKamar
-            ->where('status', 'aktif')
-            ->first();
+        $penghuniAktif = $penghunianKamar
+            ->where('status', 'aktif');
+
+        if ($penghuniAktif->count() === 1) {
+            $utama = $penghuniAktif->first();
+        }
     }
 
-    if (!$utama) {
-        $utama = $penghunianKamar
-            ->sortByDesc('id_penghunian')
-            ->first();
-    }
-
-    $query = $this->riwayatPembayaranQuery(
-        $request,
-        $id_kamar
-    );
-
-    $pembayaran = $query
+    // Ambil seluruh transaksi dari seluruh masa penghunian kamar.
+    $pembayaran = Pembayaran::with([
+        'penghunian.penghuni',
+    ])
+        ->whereIn('id_penghunian', $idPenghunian)
         ->orderByDesc('tanggal_bayar')
         ->orderByDesc('id_pembayaran')
         ->get();
 
-    $data = $this->formatRiwayatPembayaran($pembayaran);
+    // Ambil semua alokasi sekaligus untuk menghindari N+1 query.
+    $idPembayaran = $pembayaran
+        ->pluck('id_pembayaran')
+        ->all();
+
+    $alokasiPerPembayaran = AlokasiPembayaran::with('tagihan')
+        ->whereIn('id_pembayaran', $idPembayaran)
+        ->get()
+        ->groupBy('id_pembayaran');
+
+    $dataPembayaran = $pembayaran->map(function ($item) use (
+        $alokasiPerPembayaran,
+        $kamar
+    ) {
+        $alokasi = $alokasiPerPembayaran->get(
+            $item->id_pembayaran,
+            collect()
+        );
+
+        $daftarAlokasi = $alokasi->map(function ($itemAlokasi) {
+            $tagihan = $itemAlokasi->tagihan;
+
+            return [
+                'id_tagihan' => $tagihan?->id_tagihan,
+
+                'periode' => $tagihan?->periode
+                    ? Carbon::parse($tagihan->periode)->toDateString()
+                    : 'Tahunan',
+
+                'jumlah_dialokasikan' =>
+                    (float) $itemAlokasi->jumlah_dialokasikan,
+            ];
+        })->values();
+
+        // Periode transaksi hanya diisi jika tepat satu
+        // alokasi tagihan memiliki periode yang jelas.
+        $periodeAlokasi = $alokasi
+            ->map(function ($itemAlokasi) {
+                return $itemAlokasi->tagihan?->periode
+                    ? Carbon::parse(
+                        $itemAlokasi->tagihan->periode
+                    )->toDateString()
+                    : null;
+            })
+            ->filter()
+            ->unique()
+            ->values();
+
+        $periode = $alokasi->count() === 1 &&
+            $periodeAlokasi->count() === 1
+                ? $periodeAlokasi->first()
+                : null;
+
+        $penghunian = $item->penghunian;
+
+        return [
+            'id_pembayaran' => $item->id_pembayaran,
+            'id_penghunian' => $item->id_penghunian,
+
+            'nama_penghuni' =>
+                $penghunian?->penghuni?->nama_penghuni ?? '-',
+
+            'no_kamar' => $kamar->no_kamar,
+
+            'periode' => $periode,
+
+            'jumlah_dibayar' => (float) $item->jumlah,
+
+            'tanggal_bayar' => $item->tanggal_bayar
+                ? Carbon::parse($item->tanggal_bayar)->toDateString()
+                : $item->created_at?->toDateString(),
+
+            'metode_pembayaran' =>
+                $item->metode_pembayaran ?? '-',
+
+            'alokasi_tagihan' => $daftarAlokasi,
+        ];
+    })->values();
 
     return response()->json([
-        'message' => $data->isEmpty()
+        'message' => $dataPembayaran->isEmpty()
             ? 'Belum ada pembayaran.'
             : 'Riwayat pembayaran kamar berhasil diambil.',
 
         'data' => [
             'id_kamar' => $kamar->id_kamar,
-
             'no_kamar' => $kamar->no_kamar,
 
             'penyewa_utama' =>
-                $utama->penghuni->nama_penghuni ?? null,
+                $utama?->penghuni?->nama_penghuni,
 
-            'pembayaran' => $data,
+            'pembayaran' => $dataPembayaran,
         ],
     ]);
 }
