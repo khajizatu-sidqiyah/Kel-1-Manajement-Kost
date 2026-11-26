@@ -1,26 +1,36 @@
 // Halaman Pembayaran & Tagihan  (resources/views/pembayaran.blade.php)
 // User story 5.2a: pencatatan pembayaran DP, cicilan, dan pelunasan.
+// User story 5.2b: daftar pembayaran per kamar dan tenggat bulan berikutnya.
+//
+// FE MENGIKUTI BE. Semua aturan tagihan (penerbitan, alokasi pembayaran, status, jatuh tempo, periode)
+// dihitung di backend; FE hanya menampilkan.
 //
 // Endpoint yang dipakai:
-//   GET   /api/penghunian                 -> penghunian + relasi kamar, penghuni, pembayaran     (SUDAH ADA)
+//   GET   /api/pembayaran/per-kamar   -> tab Tagihan (satu baris per kamar). Query: status_tagihan, skema_sewa, lantai, page, per_page (maks 100)
+//   GET   /api/pembayaran/riwayat     -> tab Riwayat Pembayaran. Query: periode, skema_sewa, lantai
+//   GET   /api/penghunian             -> penghunian + relasi kamar, penghuni, pembayaran (hanya untuk form Catat Pembayaran)
 //   POST  /api/penghunian/{id}/hitung-dp  -> hitung & simpan skema/total sewa/DP minimum/tenggat
-//   POST  /api/pembayaran                 -> catat DP, cicilan (tahunan), dan pelunasan (jenis_pembayaran: dp | cicilan | pelunasan)
-//   PATCH /api/pembayaran/{id}/status     -> (tidak dipakai di 5.2b)
+//   POST  /api/pembayaran             -> catat DP, cicilan (tahunan), dan pelunasan (jenis_pembayaran: dp | cicilan | pelunasan)
 // Semua request API membawa token Bearer dari localStorage (disimpan login.js), karena route API memakai auth:sanctum.
 //
-// "Tagihan" belum punya tabel/endpoint sendiri, jadi daftar tagihan (tab Tagihan) dan riwayat (tab Riwayat Pembayaran)
-// DIHITUNG di sini dari data penghunian + pembayaran, mengikuti aturan tagihan card 5.2b.
-// Ganti hitungTagihan() bila backend sudah menyediakan data tagihan.
+// Catatan:
+//   - BE belum mendukung pencarian (q), jadi kolom cari menyaring di browser dari data yang sudah dimuat.
+//   - per-kamar dibatasi 100 baris per halaman; FE memuat semua halaman lalu membuat pagination 10 baris sendiri.
+//   - Kartu ringkasan dijumlahkan dari seluruh baris per-kamar (tanpa filter).
 (function () {
   "use strict";
 
   const AUTH = { Authorization: `Bearer ${localStorage.getItem("token") || ""}` };
 
   const PER_PAGE = 10; // desain: 10 baris per halaman, tombol "Lihat semua data" menampilkan semuanya
-  const state = { rows: [], tab: "tagihan", page: 1, loading: true, error: "", all: false, view: [] };
+  const BE_MAX = 100;  // batas per_page di BE
+  const state = { rows: [], tab: "tagihan", page: 1, loading: true, listLoading: false, error: "", all: false, view: [] };
+  // Data dari BE. stat = seluruh baris per-kamar tanpa filter (untuk kartu ringkasan & sisa tagihan form).
+  // tagihan / riwayat = daftar yang tampil di tab (sudah disaring BE); key = filter yang dipakai saat memuatnya.
+  const data = { stat: [], riw: [], tagihan: [], riwayat: [], nBayar: 0, key: {} };
   // Filter yang sedang diterapkan (dropdown di panel Filter). Satu nilai per filter; "" = semua.
   //   Tab Tagihan : Status Tagihan, Skema Sewa, Lantai
-  //   Tab Riwayat : Periode (tanggal pembayaran), Skema Sewa, Lantai
+  //   Tab Riwayat : Periode (periode tagihan yang dilunasi), Skema Sewa, Lantai
   const FILTER_KEYS = ["status", "periode", "skema", "lantai"];
   const FILTER_TAB = { tagihan: ["status", "skema", "lantai"], riwayat: ["periode", "skema", "lantai"] };
   const applied = { status: "", periode: "", skema: "", lantai: "" };
@@ -42,20 +52,19 @@
   const rpRapat = (n) => "Rp" + Math.round(n).toLocaleString("id-ID"); // penulisan di user story: "Rp300.000"
   const BULAN = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
   const BLN = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+  const EN_BULAN = { January: "Januari", February: "Februari", March: "Maret", April: "April", May: "Mei", June: "Juni", July: "Juli", August: "Agustus", September: "September", October: "Oktober", November: "November", December: "Desember" };
   const tglPendek = (s) => { const [y, m, d] = iso(s).split("-"); return y && BLN[m - 1] ? `${Number(d)} ${BLN[m - 1]} ${y}` : ""; };
   const pad = (n) => String(n).padStart(2, "0");
   const todayIso = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
-  const periodeLabel = (key) => { const [y, m] = key.split("-"); return BULAN[m - 1] ? `${BULAN[m - 1]} ${y}` : key; };
+  // Periode dari BE berupa teks ("November 2026" / "-"). Bila locale BE masih Inggris, nama bulan diterjemahkan di sini.
+  const periodeId = (s) => (!s || s === "-" ? "-" : String(s).replace(/[A-Za-z]+/g, (m) => EN_BULAN[m] || m));
   const fmtNo = (no) => (/^\d+$/.test(String(no)) ? String(no).padStart(2, "0") : String(no));
   const lantaiDariNomor = (no) => { const n = Number(no); return (n >= 1 && n <= 9) || n === 21 ? 1 : 2; }; // sama dengan rooms-api.js skrng menjadi kamar-api
+  let lantaiNo = new Map(); // no kamar -> lantai (dari data penghunian); respons per-kamar/riwayat tidak memuat lantai
+  const lantaiOf = (no) => lantaiNo.get(String(no)) || lantaiDariNomor(no);
   const JENIS = { dp: "DP", pelunasan_pertama: "Pelunasan Bulan Pertama", bulanan: "Tagihan Bulanan", cicilan: "Cicilan", pelunasan: "Pelunasan" };
-  const jenisLabel = (b) => (b.jenis === "cicilan" || b.jenis === "pelunasan") && b.periode ? `${JENIS[b.jenis]} ${b.periode}/${CICILAN_N}` : JENIS[b.jenis] || "-";
   const tglPanjang = (s) => { const [y, m, d] = iso(s).split("-"); return y && BULAN[m - 1] ? `${pad(d)} ${BULAN[m - 1]} ${y}` : ""; };
   const parseRp = (v) => Number(String(v || "").replace(/\D/g, "")) || 0;
-  function tambahBulan(s, n) { // setara addMonthsNoOverflow
-    const [y, m, d] = iso(s).split("-").map(Number), t = new Date(y, m - 1 + n, 1), last = new Date(t.getFullYear(), t.getMonth() + 1, 0).getDate();
-    return `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(Math.min(d, last))}`;
-  }
 
   let toastTimer;
   function toast(msg, err) {
@@ -95,7 +104,7 @@
   }
 
   /* ---------------------------------------------------------
-     Data: normalisasi, kamar, tagihan, riwayat
+     Data dari BE: ambil & normalisasi
   --------------------------------------------------------- */
   // Jenis pembayaran. Saat ini BE menyimpan 'dp' di kolom status; kontrak OpenAPI memakai jenis_pembayaran.
   function jenisOf(p) {
@@ -111,6 +120,7 @@
   }
   const flagUtama = (x) => x === true || Number(x) === 1;
 
+  // Penghunian: hanya dipakai form Catat Pembayaran (kamar aktif, penyewa utama, DP, skema)
   function normalize(p) {
     const k = p.kamar || {}, no = k.no_kamar ?? "";
     return {
@@ -125,26 +135,91 @@
     };
   }
 
-  // Status tagihan -> kunci tampilan: belum_bayar / belum_lunas / lunas ("Terlambat" menyusul di card 5.5)
-  const jenisTagihanLabel = (s) => (s === "bulanan" ? "Bulanan" : s === "tahunan" ? "Tahunan" : "-");
-  const periodeBulan = (d) => (d ? periodeLabel(iso(d).slice(0, 7)) : "-"); // "November 2026"; "-" bila tahunan
-
-  async function muatData() {
-    // per_page=all wajib: tanpa itu BE hanya mengirim 10 data pertama
-    // Timeout panjang (60 dtk) hanya sebagai pengaman bila koneksi benar-benar menggantung.
-    // Server yang sekadar lambat TIDAK dianggap galat: tampilan tetap "Memuat data…" sampai data tampil.
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 60000);
-    try {
-      const res = await fetch("/api/penghunian?per_page=all", { headers: { Accept: "application/json", ...AUTH }, signal: ctrl.signal });
-      if (res.status === 401) { localStorage.removeItem("token"); location.href = "/login"; return null; }
-      if (!res.ok) throw new Error("HTTP " + res.status);
-      const data = (await res.json()).data;
-      if (!Array.isArray(data)) throw new Error("Format data tidak dikenali");
-      return data.map(normalize);
-    } finally { clearTimeout(timer); }
+  // Satu baris GET /api/pembayaran/per-kamar -> baris tab Tagihan.
+  // Status dari BE: belum_bayar / belum_lunas / sudah_lunas ("Terlambat" menyusul di card 5.5).
+  function normTagihan(r) {
+    const u = r.penyewa_utama; // null bila kamar punya >1 penghuni tanpa penyewa utama tunggal
+    return {
+      tipe: "tagihan", key: "t" + r.id_kamar, id_kamar: r.id_kamar, id_penghunian: r.id_penghunian || null,
+      no: r.no_kamar, nama: u ? u.nama_penghuni || "-" : "-",
+      skema: String(r.jenis_tagihan || "").toLowerCase(), periode: periodeId(r.periode), tempo: iso(r.jatuh_tempo),
+      jumlah: r.jumlah_tagihan == null ? null : num(r.jumlah_tagihan),
+      terbayar: num(r.jumlah_terbayar), sisa: r.sisa_tagihan == null ? null : num(r.sisa_tagihan),
+      status: r.status_tagihan || r.status_pembayaran || "belum_bayar", aksi: r.aksi_pembayaran || "tidak_ada",
+    };
   }
 
+  // Satu baris GET /api/pembayaran/riwayat -> baris tab Riwayat Pembayaran
+  function normRiwayat(p) {
+    return {
+      tipe: "riwayat", key: "p" + p.id_pembayaran, id: p.id_pembayaran, no: p.no_kamar, nama: p.nama_penghuni || "-",
+      skema: String(p.jenis_tagihan || "").toLowerCase(), periode: periodeId(p.periode), tanggal: iso(p.tanggal_bayar),
+      jumlah: num(p.jumlah_dibayar), metode: String(p.metode_pembayaran || "").replace(/^DP\s*-\s*/i, "") || "-", status: String(p.status || "").toLowerCase(),
+    };
+  }
+  const sudahBayar = (r) => !["ditolak", "menunggu_verifikasi", "pending"].includes(r.status);
+
+  const qs = (o) => {
+    const p = new URLSearchParams();
+    Object.entries(o).forEach(([k, v]) => { if (v !== "" && v != null) p.set(k, v); });
+    const s = p.toString(); return s ? "?" + s : "";
+  };
+
+  async function getJson(url, signal) {
+    const res = await fetch(url, { headers: { Accept: "application/json", ...AUTH }, signal });
+    if (res.status === 401) { localStorage.removeItem("token"); location.href = "/login"; const e = new Error("unauth"); e.unauth = true; throw e; }
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    return res.json();
+  }
+
+  // per_page=all wajib: tanpa itu BE hanya mengirim 10 data pertama
+  async function muatPenghunian(signal) {
+    const d = (await getJson("/api/penghunian?per_page=all", signal)).data;
+    if (!Array.isArray(d)) throw new Error("Format data tidak dikenali");
+    return d.map(normalize);
+  }
+
+  // per-kamar maksimal 100 baris per halaman: ambil semua halaman
+  async function ambilPerKamar(filter, signal) {
+    const hasil = []; let page = 1, last = 1;
+    do {
+      const json = await getJson("/api/pembayaran/per-kamar" + qs({ ...filter, page, per_page: BE_MAX }), signal);
+      if (!Array.isArray(json.data)) throw new Error("Format data tidak dikenali");
+      hasil.push(...json.data.map(normTagihan));
+      last = (json.meta && json.meta.last_page) || 1; page++;
+    } while (page <= last);
+    // BE tidak mengurutkan baris per-kamar (mengikuti urutan data penghunian), jadi diurutkan di sini menurut nomor kamar.
+    return hasil.sort((a, b) => String(a.no).localeCompare(String(b.no), undefined, { numeric: true }));
+  }
+
+  async function ambilRiwayat(filter, signal) {
+    const json = await getJson("/api/pembayaran/riwayat" + qs(filter), signal);
+    if (!Array.isArray(json.data)) throw new Error("Format data tidak dikenali");
+    return json.data.map(normRiwayat);
+  }
+
+  // Nilai dropdown di panel Filter -> nilai yang diterima BE
+  const STATUS_BE = { lunas: "sudah_lunas" };
+  const PERIODE_BE = { "6_bulan": "6_bulan_lalu" };
+  function filterBE(tab) {
+    return tab === "tagihan"
+      ? { status_tagihan: STATUS_BE[applied.status] || applied.status, skema_sewa: applied.skema, lantai: applied.lantai }
+      : { periode: PERIODE_BE[applied.periode] || applied.periode, skema_sewa: applied.skema, lantai: applied.lantai };
+  }
+
+  // Muat daftar tab aktif dari BE sesuai filter. Tanpa filter, pakai data lengkap yang sudah ada.
+  async function ambilDaftar(tab, signal) {
+    const f = filterBE(tab), key = JSON.stringify(f);
+    if (data.key[tab] === key) return null; // sudah termuat dengan filter yang sama
+    const ada = Object.values(f).some(Boolean);
+    const list = ada ? (tab === "tagihan" ? await ambilPerKamar(f, signal) : await ambilRiwayat(f, signal)) : (tab === "tagihan" ? data.stat : data.riw);
+    return { tab, key, list };
+  }
+  const simpanDaftar = (h) => { if (h) { data[h.tab] = h.list; data.key[h.tab] = h.key; } };
+
+  /* ---------------------------------------------------------
+     Kamar (hanya untuk form Catat Pembayaran)
+  --------------------------------------------------------- */
   // Kelompokkan per kamar. Pembayaran dicatat atas nama penyewa utama; kamar 1 orang -> orang itu.
   function hitungKamar() {
     const map = new Map();
@@ -166,9 +241,7 @@
     return list.sort((a, b) => String(a.no).localeCompare(String(b.no), undefined, { numeric: true }));
   }
 
-  // Posisi pembayaran satu kamar (hanya pembayaran berstatus sudah dibayar).
-  //   Tahunan : sisa = total - dibayar; cicilan = berapa kali cicilan sudah tercatat (maks 2; periode ke-3 = pelunasan).
-  //   Bulanan : dihitung berjalan (ledger). Periode ke-N lunas bila total dibayar >= N x tarif.
+  // Posisi pembayaran satu kamar (hanya pembayaran berstatus sudah dibayar). Dipakai form untuk jumlah cicilan & periode cicilan.
   const dpRows = (k) => k.aktif.flatMap((r) => r.bayar).filter((b) => b.jenis === "dp" && b.status !== "ditolak");
   const dpDate = (k) => dpRows(k).map((b) => b.tanggal).filter(Boolean).sort()[0] || "";
   function ringkas(k) {
@@ -180,58 +253,8 @@
     return { tahunan: false, T, H, sisa: H > 0 ? H - (T % H) : 0, paidPeriods: H > 0 ? Math.floor(T / H) : 0, pertamaLunas: H > 0 && T >= H, n: sudah.length };
   }
 
-  // Tenggat berikutnya: tanggal 29-31 menjadi hari terakhir bulan berikutnya (sama dengan BE / card 5.1)
-  function tenggatBerikutnya(s) {
-    const [y, m, d] = iso(s).split("-").map(Number), last = new Date(y, m + 1, 0).getDate();
-    return `${new Date(y, m, 1).getFullYear()}-${pad(new Date(y, m, 1).getMonth() + 1)}-${pad(d >= 29 ? last : Math.min(d, last))}`;
-  }
-  const awalBulan = (s) => iso(s).slice(0, 7) + "-01";
-  const bulanSebelum = (s) => { const [y, m] = iso(s).split("-").map(Number), t = new Date(y, m - 2, 1); return `${t.getFullYear()}-${pad(t.getMonth() + 1)}-01`; };
-
-  // Satu baris tagihan per kamar berpenghuni: tagihan yang sudah terbit, belum lunas, dan paling lama.
-  // Bila semua lunas: status "lunas" dengan Jatuh Tempo = tenggat tagihan berikutnya ("-" untuk tahunan).
-  //   Tahunan : satu tagihan untuk seluruh masa sewa.
-  //   Bulanan : satu tagihan per bulan; tagihan pertama terbit saat penyewa utama tersimpan, berikutnya pada tanggal tenggatnya.
-  //             tenggat_pelunasan selalu menunjuk tagihan belum lunas terlama (baru maju setelah periodenya lunas),
-  //             jadi pembayaran otomatis dihitung untuk tagihan terlama lebih dulu.
-  function hitungTagihan(k) {
-    const u = k.utama; if (!u) return null;
-    const sudah = u.bayar.filter((b) => b.status === "sudah"), jumlahOf = (arr) => Math.round(arr.reduce((s, b) => s + b.jumlah, 0));
-    const T = jumlahOf(sudah), today = todayIso();
-    const dasar = { tipe: "tagihan", key: "t" + k.id, id_kamar: k.id, no: k.no, lantai: k.lantai, nama: u.nama, skema: k.skema, nBayar: k.bayarAktif.length };
-    const hasil = (periode, tempo, jumlah, paid, status) => ({ ...dasar, periode, tempo, jumlah, paid: Math.min(paid, jumlah), sisa: Math.max(0, jumlah - paid), status });
-    const statusDari = (paid, jml) => (paid >= jml ? "lunas" : paid > 0 ? "belum_lunas" : "belum_bayar");
-
-    // Skema / total sewa belum dihitung: kamar tetap tampil dengan tarif bulanan kamar, status Belum Bayar
-    if (!["bulanan", "tahunan"].includes(k.skema) || !k.total) return hasil("", "", k.harga, 0, "belum_bayar");
-
-    if (k.skema === "tahunan") {
-      const lunas = T >= k.total;
-      return hasil("", lunas ? "" : iso(k.tenggat), k.total, T, statusDari(T, k.total));
-    }
-
-    const H = k.total;
-    if (!k.tenggat) return hasil("", "", H, 0, "belum_bayar");
-    const P = awalBulan(k.tenggat), paidP = jumlahOf(sudah.filter((b) => b.periodeTagihan === P));
-    if (paidP >= H) return hasil(P, tenggatBerikutnya(k.tenggat), H, H, "lunas"); // kondisi tepi: tenggat belum dimajukan
-    const adaSebelumnya = sudah.some((b) => b.periodeTagihan && b.periodeTagihan < P);
-    if (!adaSebelumnya || iso(k.tenggat) <= today) return hasil(P, iso(k.tenggat), H, paidP, statusDari(paidP, H)); // sudah terbit, belum lunas
-    return hasil(bulanSebelum(P), iso(k.tenggat), H, H, "lunas"); // tagihan terakhir lunas, tagihan berikutnya belum terbit
-  }
-
-  function hitungRiwayat() {
-    return state.rows.flatMap((r) => r.bayar.map((b) => ({
-      tipe: "riwayat", key: "p" + b.id, id: b.id, no: r.no_kamar, lantai: r.lantai, nama: r.nama, skema: r.skema,
-      periode: b.periodeTagihan, tanggal: b.tanggal, jumlah: b.jumlah, metode: b.metode || "-",
-    }))).sort((a, b) => (b.tanggal || "").localeCompare(a.tanggal || "") || b.id - a.id);
-  }
-
-  function semuaItem() {
-    return { tagihan: hitungKamar().map(hitungTagihan).filter(Boolean), riwayat: hitungRiwayat() };
-  }
-
   /* ---------------------------------------------------------
-     Render: ringkasan, filter, tabel
+     Render: ringkasan, tabel
   --------------------------------------------------------- */
   // tagihan === null saat memuat / galat: tampilkan "-" supaya tidak ada angka kosong (Rp 0, 0%)
   function renderStats(tagihan) {
@@ -243,32 +266,31 @@
         kartu("clock", "Tagihan Belum Dibayar", "-", kosong) + kartu("trend", "Tingkat Pembayaran", "-", kosong);
       return;
     }
-    const total = tagihan.reduce((s, t) => s + t.jumlah, 0);
-    const masuk = tagihan.reduce((s, t) => s + Math.min(t.paid, t.jumlah), 0);
-    const nMasuk = tagihan.reduce((s, t) => s + t.nBayar, 0);
-    const belum = tagihan.filter((t) => t.status !== "lunas");
+    const total = tagihan.reduce((s, t) => s + num(t.jumlah), 0);
+    const masuk = tagihan.reduce((s, t) => s + Math.min(num(t.terbayar), num(t.jumlah)), 0);
+    const belum = tagihan.filter((t) => t.status !== "sudah_lunas" && t.jumlah != null);
     const rate = total ? Math.round((masuk / total) * 100) : 0;
     $("pb-stats").innerHTML =
       kartu("doc", "Total Tagihan Bulan Ini", rp(total), `<span class="sub">${tagihan.length} tagihan</span>`) +
-      kartu("bag", "Total Pembayaran Masuk", rp(masuk), `<span class="sub">${nMasuk} pembayaran</span>`) +
-      kartu("clock", "Tagihan Belum Dibayar", rp(belum.reduce((s, t) => s + t.sisa, 0)), `<span class="sub">${belum.length} tagihan</span>`) +
+      kartu("bag", "Total Pembayaran Masuk", rp(masuk), `<span class="sub">${data.nBayar} pembayaran</span>`) +
+      kartu("clock", "Tagihan Belum Dibayar", rp(belum.reduce((s, t) => s + num(t.sisa), 0)), `<span class="sub">${belum.length} tagihan</span>`) +
       kartu("trend", "Tingkat Pembayaran", rate + "%", `<div class="pb-bar" role="progressbar" aria-valuenow="${rate}" aria-valuemin="0" aria-valuemax="100"><i style="width:${rate}%"></i></div>`);
   }
 
-  // Kunci status = status dari BE: belum_bayar / belum_lunas / lunas ("Terlambat" menyusul di card 5.5)
-  const statusKey = (it) => it.status;
+  const jenisTagihanLabel = (s) => (s === "bulanan" ? "Bulanan" : s === "tahunan" ? "Tahunan" : "-");
 
   const pill = (st) => ({
     belum_bayar: '<span class="pb-pill pb-pill--belum">Belum Bayar</span>',
     belum_lunas: '<span class="pb-pill pb-pill--lunas">Belum Lunas</span>',
-    lunas: '<span class="pb-pill pb-pill--sudah">Sudah Lunas</span>',
+    sudah_lunas: '<span class="pb-pill pb-pill--sudah">Sudah Lunas</span>',
   }[st] || `<span class="pb-pill pb-pill--ditolak">${esc(st)}</span>`);
 
-  // Tab Tagihan: tombol Bayar (nonaktif bila lunas). Tab Riwayat: tombol Detail.
+  // Tab Tagihan: hanya tombol Bayar (nonaktif bila Sudah Lunas atau kamar belum punya penyewa utama tunggal). Tab Riwayat: tombol Detail.
   function aksiHtml(it) {
     if (it.tipe === "riwayat") return '<div class="pb-aksi"><button type="button" class="pb-act pb-act--main" data-act="detail">Detail</button></div>';
-    const lunas = it.status === "lunas";
-    return `<div class="pb-aksi"><button type="button" class="pb-act pb-act--main" data-act="bayar"${lunas ? ' disabled aria-disabled="true" title="Tagihan sudah lunas"' : ""}>Bayar</button></div>`;
+    const lunas = it.status === "sudah_lunas", tanpaUtama = !it.id_penghunian;
+    const off = lunas ? "Tagihan sudah lunas" : tanpaUtama ? "Tentukan penyewa utama kamar ini terlebih dahulu" : "";
+    return `<div class="pb-aksi"><button type="button" class="pb-act pb-act--main" data-act="bayar"${off ? ` disabled aria-disabled="true" title="${off}"` : ""}>Bayar</button></div>`;
   }
 
   const HEAD = {
@@ -279,84 +301,40 @@
   function rowHtml(it, no) {
     const tg = it.tipe === "tagihan";
     const awal = `<tr data-key="${esc(it.key)}"><td class="no">${no}</td><td class="nama">${esc(it.nama)}</td>
-      <td class="kamar">${esc(fmtNo(it.no))} (Lt. ${esc(it.lantai)})</td><td class="jenis">${esc(jenisTagihanLabel(it.skema))}</td>
-      <td class="per">${esc(periodeBulan(it.periode))}</td>`;
+      <td class="kamar">${esc(fmtNo(it.no))} (Lt. ${esc(lantaiOf(it.no))})</td><td class="jenis">${esc(jenisTagihanLabel(it.skema))}</td>
+      <td class="per">${esc(it.periode || "-")}</td>`;
     const akhir = `<td class="aksi">${aksiHtml(it)}</td></tr>`;
     return tg
-      ? `${awal}<td class="tempo">${esc(it.tempo ? tglPendek(it.tempo) : "-")}</td><td class="jml">${rp(it.jumlah)}</td><td class="status">${pill(statusKey(it))}</td>${akhir}`
+      ? `${awal}<td class="tempo">${esc(it.tempo ? tglPendek(it.tempo) : "-")}</td><td class="jml">${it.jumlah == null ? "-" : rp(it.jumlah)}</td><td class="status">${pill(it.status)}</td>${akhir}`
       : `${awal}<td class="tempo">${esc(it.tanggal ? tglPendek(it.tanggal) : "-")}</td><td class="jml">${rp(it.jumlah)}</td><td class="status">${esc(it.metode)}</td>${akhir}`;
   }
 
-  /* ---------------------------------------------------------
-     FILTER  ->  logika penyaringan idealnya ada di BACKEND.
-     Front-end mengirim parameter di bawah ini (query string):
-       GET /api/tagihan?status=belum_bayar|belum_lunas|lunas
-                       &skema=bulanan|tahunan&lantai=1|2
-                       &q=<kata kunci>&page=1&per_page=10        (atau per_page=all)
-       GET /api/pembayaran?periode=bulan_ini|bulan_lalu|6_bulan|tahun_ini|tahun_lalu|2_tahun_lalu
-                          &skema=...&lantai=...&q=...
-     Selama endpoint tersebut belum ada, filtered() di bawah menyaring di browser
-     agar tampilan tetap berfungsi. Setelah BE siap: panggil paramFilter() lalu
-     hapus penyaringan lokal di filtered().
-  --------------------------------------------------------- */
-  function paramFilter() {
-    const p = new URLSearchParams();
-    keysAktif().forEach((k) => { if (applied[k]) p.set(k, applied[k]); });
-    const q = $("pb-q").value.trim(); if (q) p.set("q", q);
-    p.set("page", state.all ? 1 : state.page); p.set("per_page", state.all ? "all" : PER_PAGE);
-    return p;
-  }
-
-  // Rentang tanggal [awal, akhir] untuk filter Periode (berdasarkan tanggal pembayaran).
-  // "6 Bulan Lalu" = 6 bulan kalender terakhir termasuk bulan ini.
-  function rentangPeriode(p) {
-    const d = new Date(), y = d.getFullYear(), m = d.getMonth();
-    const f = (t) => `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`;
-    switch (p) {
-      case "bulan_ini": return [f(new Date(y, m, 1)), f(new Date(y, m + 1, 0))];
-      case "bulan_lalu": return [f(new Date(y, m - 1, 1)), f(new Date(y, m, 0))];
-      case "6_bulan": return [f(new Date(y, m - 5, 1)), f(new Date(y, m + 1, 0))];
-      case "tahun_ini": return [`${y}-01-01`, `${y}-12-31`];
-      case "tahun_lalu": return [`${y - 1}-01-01`, `${y - 1}-12-31`];
-      case "2_tahun_lalu": return [`${y - 2}-01-01`, `${y - 2}-12-31`];
-      default: return null;
-    }
-  }
-
-  // Pencarian & filter dilakukan di browser (seluruh kamar dimuat sekaligus).
-  function filtered(items) {
+  // Status, skema, lantai, dan periode disaring BE (lihat filterBE). Pencarian belum ada di BE: disaring di browser.
+  function filtered() {
     const q = $("pb-q").value.trim().toLowerCase();
-    return (state.tab === "tagihan" ? items.tagihan : items.riwayat).filter((i) => {
-      if (q && !(i.nama.toLowerCase().includes(q) || String(i.no).toLowerCase().includes(q) || fmtNo(i.no).includes(q))) return false;
-      if (state.tab === "tagihan" && applied.status && i.status !== applied.status) return false;
-      if (state.tab === "riwayat" && applied.periode) {
-        const r = rentangPeriode(applied.periode);
-        if (r && (!i.tanggal || i.tanggal < r[0] || i.tanggal > r[1])) return false;
-      }
-      if (applied.skema && i.skema !== applied.skema) return false;
-      if (applied.lantai && String(i.lantai) !== applied.lantai) return false;
-      return true;
-    });
+    const list = state.tab === "tagihan" ? data.tagihan : data.riwayat;
+    if (!q) return list;
+    return list.filter((i) => i.nama.toLowerCase().includes(q) || String(i.no).toLowerCase().includes(q) || fmtNo(i.no).includes(q));
   }
 
   function render() {
-    const box = $("pb-state"), items = semuaItem();
-    const gagal = state.loading || !!state.error;
-    renderStats(gagal ? null : items.tagihan);
+    const box = $("pb-state");
+    const memuat = state.loading || state.listLoading;
+    renderStats(state.loading || state.error ? null : data.stat);
     $("pb-head").innerHTML = HEAD[state.tab];
-    const list = filtered(items); state.view = list;
+    const gagal = memuat || !!state.error;
+    const list = gagal ? [] : filtered(); state.view = list;
     const pages = state.all ? 1 : Math.max(1, Math.ceil(list.length / PER_PAGE));
     state.page = Math.min(state.page, pages);
     const start = state.all ? 0 : (state.page - 1) * PER_PAGE, slice = state.all ? list : list.slice(start, start + PER_PAGE);
 
-    if (state.loading) { $("pb-rows").innerHTML = ""; box.hidden = false; box.innerHTML = "<b>Memuat data…</b>Mohon tunggu sebentar."; }
+    if (memuat) { $("pb-rows").innerHTML = ""; box.hidden = false; box.innerHTML = "<b>Memuat data…</b>Mohon tunggu sebentar."; }
     else if (state.error) {
       $("pb-rows").innerHTML = ""; box.hidden = false;
       box.innerHTML = `<b>Data pembayaran gagal dimuat</b>${esc(state.error)}<br><button type="button" id="pb-retry">Coba lagi</button>`;
     } else if (!slice.length) {
       $("pb-rows").innerHTML = ""; box.hidden = false;
-      const adaData = state.tab === "tagihan" ? items.tagihan.length : items.riwayat.length;
-      box.innerHTML = adaData
+      box.innerHTML = adaFilter()
         ? "<b>Tidak ada data yang cocok</b>Coba ubah kata kunci atau filter yang dipakai."
         : state.tab === "tagihan" ? "<b>Belum ada kamar berpenghuni</b>Tagihan akan tampil di sini setelah ada kamar yang dihuni." : "<b>Belum ada pembayaran</b>Pembayaran yang dicatat akan tampil di sini.";
     } else { box.hidden = true; $("pb-rows").innerHTML = slice.map((it, i) => rowHtml(it, start + i + 1)).join(""); }
@@ -371,28 +349,52 @@
   }
 
   const PESAN_OFFLINE = "Koneksi terputus. Periksa jaringan Anda, lalu coba lagi.";
-  let muatSeq = 0; // hanya hasil pemuatan terbaru yang dipakai
+  const pesanGalat = (e) => (navigator.onLine === false ? PESAN_OFFLINE : e.name === "AbortError" ? "Server terlalu lama merespons. Coba lagi." : "Periksa koneksi atau coba lagi.");
+  let muatSeq = 0;   // hanya hasil pemuatan lengkap terbaru yang dipakai
+  let daftarSeq = 0; // hanya hasil pemuatan daftar (filter / ganti tab) terbaru yang dipakai
 
+  // Pemuatan lengkap: penghunian (form), seluruh per-kamar & riwayat (ringkasan), lalu daftar tab aktif sesuai filter.
+  // Timeout panjang (60 dtk) hanya sebagai pengaman bila koneksi benar-benar menggantung.
+  // Server yang sekadar lambat TIDAK dianggap galat: tampilan tetap "Memuat data…" sampai data tampil.
   async function refresh() {
-    const seq = ++muatSeq;
-    state.error = ""; state.rows = [];
+    const seq = ++muatSeq; daftarSeq++;
+    state.error = ""; state.rows = []; state.listLoading = false; data.key = {};
     if (navigator.onLine === false) { // offline: langsung tampilkan error, tidak perlu menunggu fetch
       state.loading = false; state.error = PESAN_OFFLINE; render(); return;
     }
     state.loading = true; render();
+    const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), 60000);
     try {
-      const rows = await muatData();
-      if (!rows) return;
+      const [rows, stat, riw] = await Promise.all([muatPenghunian(ctrl.signal), ambilPerKamar({}, ctrl.signal), ambilRiwayat({}, ctrl.signal)]);
       if (seq !== muatSeq) return;
-      state.rows = rows;
+      state.rows = rows; lantaiNo = new Map(rows.map((r) => [String(r.no_kamar), r.lantai]));
+      data.stat = stat; data.riw = riw; data.nBayar = riw.filter(sudahBayar).length;
+      data.tagihan = stat; data.riwayat = riw; data.key = {}; // key kosong: ambilDaftar menimbang filter yang sedang berlaku
+      simpanDaftar(await ambilDaftar(state.tab, ctrl.signal));
+      if (seq !== muatSeq) return;
     } catch (e) {
-      if (seq !== muatSeq) return;
-      state.rows = [];
-      state.error = navigator.onLine === false ? PESAN_OFFLINE
-        : e.name === "AbortError" ? "Server terlalu lama merespons. Coba lagi."
-        : "Periksa koneksi atau coba lagi.";
-    }
+      if (seq !== muatSeq || e.unauth) return;
+      state.rows = []; data.stat = []; data.riw = []; data.tagihan = []; data.riwayat = []; data.key = {};
+      state.error = pesanGalat(e);
+    } finally { clearTimeout(timer); }
     state.loading = false; render();
+  }
+
+  // Ganti tab / terapkan filter: muat ulang hanya daftar tab aktif dari BE (ringkasan tidak berubah).
+  async function muatDaftar() {
+    if (state.loading) { render(); return; } // pemuatan lengkap sedang jalan; ia memakai tab & filter terbaru
+    const seq = ++daftarSeq; state.error = "";
+    const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), 60000);
+    try {
+      if (data.key[state.tab] !== JSON.stringify(filterBE(state.tab))) { state.listLoading = true; render(); }
+      const h = await ambilDaftar(state.tab, ctrl.signal);
+      if (seq !== daftarSeq) return;
+      simpanDaftar(h);
+    } catch (e) {
+      if (seq !== daftarSeq || e.unauth) return;
+      state.error = pesanGalat(e);
+    } finally { clearTimeout(timer); }
+    state.listLoading = false; render();
   }
 
   /* ---------------------------------------------------------
@@ -406,10 +408,10 @@
   const modeOf = (k) => (!k.adaDp ? "dp" : k.skema === "tahunan" ? "tahunan" : "bulanan");
   const show = (id, on) => { $(id).hidden = !on; };
   const skemaDp = () => $("f-skema").value; // "", "bulanan", "tahunan"
-  // Sisa tagihan, sama seperti BE: bulanan dihitung per periode tagihan yang sedang berjalan,
-  // tahunan dari total sewa dikurangi seluruh pembayaran terverifikasi.
+  // Sisa tagihan diambil dari BE (per-kamar: tagihan belum lunas terlama). Bila baris kamar belum ada, jatuh ke total sewa dikurangi pembayaran.
   const sisaBE = (k) => {
-    if (k.skema === "bulanan") { const t = hitungTagihan(k); return t ? t.sisa : 0; }
+    const t = data.stat.find((x) => x.id_kamar === k.id);
+    if (t && t.sisa != null) return t.sisa;
     return Math.max(0, k.total - ringkas(k).T);
   };
   const phSync = () => { // warna abu-abu bila masih placeholder
@@ -484,8 +486,6 @@
     $("f-simpan").disabled = true;
 
     try {
-      // Backend menghitung total sewa, DP minimum, dan tenggat.
-      // Frontend hanya mengirim skema sewa.
       const res = await kirim(
         `/api/penghunian/${k.utama.id}/hitung-dp`,
         "POST",
@@ -542,7 +542,6 @@
       $("f-tenggat").disabled = !tahunan;
 
       hitungRingkas();
-
 
     } catch (e) {
       if (seq !== F.seq) return;
@@ -689,9 +688,9 @@
     const u = v.k.utama, sisaSebelum = v.dp ? v.total : sisaBE(v.k);
     F.saving = true; $("f-simpan").disabled = true; $("f-simpan").textContent = "Menyimpan…";
     try {
-      const data = { id_penghunian: u.id, jenis_pembayaran: v.jenis, tanggal_bayar: v.tanggal, jumlah: v.jumlah, metode_pembayaran: v.metode };
-      if (v.dp && v.skema === "tahunan" && v.tenggat) data.tenggat_pelunasan = v.tenggat;
-      await kirim("/api/pembayaran", "POST", data);
+      const body = { id_penghunian: u.id, jenis_pembayaran: v.jenis, tanggal_bayar: v.tanggal, jumlah: v.jumlah, metode_pembayaran: v.metode };
+      if (v.dp && v.skema === "tahunan" && v.tenggat) body.tenggat_pelunasan = v.tenggat;
+      await kirim("/api/pembayaran", "POST", body);
       tutupForm(); state.tab = "tagihan"; syncTabs(); syncFilterUI();
       const lunas = sisaSebelum - v.jumlah <= 0;
       toast(v.dp ? `DP kamar ${fmtNo(v.k.no)} berhasil dicatat atas nama ${u.nama}.` + (lunas ? "" : " Menunggu pelunasan.")
@@ -716,9 +715,10 @@
   function syncTabs() { document.querySelectorAll(".pb-tab").forEach((b) => b.setAttribute("aria-selected", b.dataset.tab === state.tab)); }
   const tutupMenu = () => document.querySelectorAll(".pb-menu").forEach((m) => m.remove());
 
-  document.querySelectorAll(".pb-tab").forEach((b) => b.addEventListener("click", () => { state.tab = b.dataset.tab; state.page = 1; syncTabs(); syncFilterUI(); render(); }));
+  document.querySelectorAll(".pb-tab").forEach((b) => b.addEventListener("click", () => { state.tab = b.dataset.tab; state.page = 1; syncTabs(); syncFilterUI(); muatDaftar(); }));
   // Panel Filter berisi dropdown (default tertutup; badge muncul bila ada filter yang diterapkan).
   // Isi panel mengikuti tab: Tagihan = Status/Skema/Lantai, Riwayat = Periode/Skema/Lantai.
+  // Filter dikirim ke BE (lihat filterBE); daftar dimuat ulang saat Terapkan / Reset.
   (function initFilterPanel() {
     const panel = $("fp-panel"), btn = $("fp-toggle"), wrap = $("fp-wrap");
     const sel = (k) => $("fp-" + k);
@@ -741,11 +741,11 @@
     };
     const apply = () => {
       keysAktif().forEach((k) => { applied[k] = sel(k).value; });
-      syncBadge(); setOpen(false); state.page = 1; render();
+      syncBadge(); setOpen(false); state.page = 1; muatDaftar();
     };
     const reset = () => {
       FILTER_KEYS.forEach((k) => { applied[k] = ""; sel(k).value = ""; });
-      syncBadge(); setOpen(false); state.page = 1; render();
+      syncBadge(); setOpen(false); state.page = 1; muatDaftar();
     };
     btn.addEventListener("click", (e) => { e.stopPropagation(); const buka = panel.hidden; syncSelects(); setOpen(buka); });
     $("fp-close").addEventListener("click", () => { syncSelects(); setOpen(false); });
@@ -773,7 +773,7 @@
   $("pb-rows").addEventListener("click", (e) => {
     const b = e.target.closest("button[data-act]");
     if (!b) return;
-    if (b.disabled) return; // tagihan lunas: tombol Bayar nonaktif
+    if (b.disabled) return; // tagihan lunas / tanpa penyewa utama: tombol Bayar nonaktif
     const it = state.view.find((x) => x.key === b.closest("tr").dataset.key);
     if (!it) return;
     const act = b.dataset.act;
@@ -804,14 +804,14 @@
     });
     $(id).addEventListener("click", (e) => { try { e.target.showPicker(); } catch (_) {} });
   });
-  $("f-simpan").addEventListener("click", () => simpan(false));
+  $("f-simpan").addEventListener("click", () => simpan());
   $("f-x").addEventListener("click", tutupForm);
   $("f-batal").addEventListener("click", tutupForm);
   $("pb-form").addEventListener("mousedown", (e) => { if (e.target === $("pb-form")) tutupForm(); });
 
   // Dialog peringatan DP
   $("w-ubah").addEventListener("click", () => { $("pb-peringatan").hidden = true; $("f-jumlah").focus(); });
-  $("w-lanjut").addEventListener("click", () => { $("pb-peringatan").hidden = true; simpan(true); });
+  $("w-lanjut").addEventListener("click", () => { $("pb-peringatan").hidden = true; simpan(); });
 
   // Detail
   $("d-x").addEventListener("click", tutupDetail); $("d-tutup").addEventListener("click", tutupDetail);
@@ -827,8 +827,8 @@
   // Kondisi koneksi
   window.addEventListener("offline", () => {
     toast("Koneksi terputus. Perubahan belum bisa disimpan.", true);
-    if (state.loading) { // putus di tengah loading -> langsung jadi error state
-      muatSeq++; state.loading = false; state.rows = []; state.error = PESAN_OFFLINE; render();
+    if (state.loading || state.listLoading) { // putus di tengah loading -> langsung jadi error state
+      muatSeq++; daftarSeq++; state.loading = false; state.listLoading = false; state.rows = []; state.error = PESAN_OFFLINE; render();
     }
   });
   window.addEventListener("online", () => { toast("Koneksi tersambung kembali."); if (state.error) refresh(); });
@@ -844,7 +844,6 @@
     if (!k) return toast("Tambahkan penghuni terlebih dahulu.", true); // kamar tanpa penghuni aktif: form tidak dibuka
     bukaForm({ kamarId: k.id });
   }
-
 
   refresh().then(dariParameter);
 })();
