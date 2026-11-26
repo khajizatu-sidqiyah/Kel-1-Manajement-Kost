@@ -654,61 +654,35 @@ class PenghunianController extends Controller
                     : null;
 
                 } else {
-        
-                // Harga tahunan berdasarkan jumlah penghuni aktif.
-$jumlahPenghuni = $penghuniAktif->count();
 
-if ($jumlahPenghuni < 1 || $jumlahPenghuni > 2) {
-    return response()->json([
-        'message' => 'Jumlah penghuni kamar tidak valid.',
-        'error' => [
-            'code' => 'INVALID_TENANT_COUNT',
-        ],
-    ], 422);
-}
+                // Harga tahunan berdasarkan jumlah penghuni aktif
+                    $jumlahPenghuni = $penghuniAktif->count();
 
-// Ambil harga tahunan dari data kamar.
-$totalSewa = $jumlahPenghuni === 1
-    ? $kamar->harga_tahunan_1_orang
-    : $kamar->harga_tahunan_2_orang;
+                    if ($jumlahPenghuni < 1 || $jumlahPenghuni > 2) {
+                        return response()->json([
+                            'message' => 'Jumlah penghuni kamar tidak valid.',
+                            'error' => [
+                                'code' => 'INVALID_TENANT_COUNT',
+                            ],
+                        ], 422);
+                    }
 
-if (!is_numeric($totalSewa) || (float) $totalSewa <= 0) {
-    return response()->json([
-        'message' => 'Harga sewa tahunan kamar belum diisi atau tidak valid.',
-        'error' => [
-            'code' => 'INVALID_ANNUAL_RENT',
-        ],
-    ], 422);
-}
+                    // Harga tahunan:
+                    // 1 orang = Rp5.000.000
+                    // 2 orang = Rp6.900.000
+                    $totalSewa = $jumlahPenghuni === 1
+                        ? 5000000
+                        : 6900000;
 
-// Ambil DP minimum dari pengaturan database.
-$pengaturan = PengaturanSewa::first();
+                    // DP minimum tahunan tetap Rp300.000
+                    $dpMinimum = 300000;
 
-if (
-    !$pengaturan ||
-    !is_numeric($pengaturan->dp_minimum_tahunan) ||
-    (float) $pengaturan->dp_minimum_tahunan <= 0
-) {
-    return response()->json([
-        'message' => 'Pengaturan DP minimum tahunan belum tersedia atau tidak valid.',
-        'error' => [
-            'code' => 'INVALID_ANNUAL_DP_SETTING',
-        ],
-    ], 422);
-}
-
-$totalSewa = round((float) $totalSewa, 2);
-$dpMinimum = round(
-    (float) $pengaturan->dp_minimum_tahunan,
-    2
-);
-
-// Tenggat bulan ketiga, dengan bulan masuk sebagai bulan pertama.
-$tenggat = $penghunian->tanggal_mulai
-    ? Carbon::parse($penghunian->tanggal_mulai)
-        ->addMonthsNoOverflow(2)
-        ->toDateString()
-    : null;
+                    // Tenggat pelunasan bulan setelah tanggal masuk
+                    $tenggat = $penghunian->tanggal_mulai
+                        ? Carbon::parse($penghunian->tanggal_mulai)
+                            ->addMonthsNoOverflow(2)
+                            ->toDateString()
+                        : null;
                 
                 }
             $penghunian->update([
