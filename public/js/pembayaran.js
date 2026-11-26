@@ -131,12 +131,18 @@
 
   async function muatData() {
     // per_page=all wajib: tanpa itu BE hanya mengirim 10 data pertama
-    const res = await fetch("/api/penghunian?per_page=all", { headers: { Accept: "application/json", ...AUTH } });
-    if (res.status === 401) { localStorage.removeItem("token"); location.href = "/login"; return null; }
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    const data = (await res.json()).data;
-    if (!Array.isArray(data)) throw new Error("Format data tidak dikenali");
-    return data.map(normalize);
+    // Timeout panjang (60 dtk) hanya sebagai pengaman bila koneksi benar-benar menggantung.
+    // Server yang sekadar lambat TIDAK dianggap galat: tampilan tetap "Memuat data…" sampai data tampil.
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 60000);
+    try {
+      const res = await fetch("/api/penghunian?per_page=all", { headers: { Accept: "application/json", ...AUTH }, signal: ctrl.signal });
+      if (res.status === 401) { localStorage.removeItem("token"); location.href = "/login"; return null; }
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const data = (await res.json()).data;
+      if (!Array.isArray(data)) throw new Error("Format data tidak dikenali");
+      return data.map(normalize);
+    } finally { clearTimeout(timer); }
   }
 
   // Kelompokkan per kamar. Pembayaran dicatat atas nama penyewa utama; kamar 1 orang -> orang itu.
@@ -364,15 +370,27 @@
     $("pb-pager").innerHTML = gagal ? "" : nav;
   }
 
+  const PESAN_OFFLINE = "Koneksi terputus. Periksa jaringan Anda, lalu coba lagi.";
+  let muatSeq = 0; // hanya hasil pemuatan terbaru yang dipakai
+
   async function refresh() {
-    state.loading = true; state.error = ""; render();
+    const seq = ++muatSeq;
+    state.error = ""; state.rows = [];
+    if (navigator.onLine === false) { // offline: langsung tampilkan error, tidak perlu menunggu fetch
+      state.loading = false; state.error = PESAN_OFFLINE; render(); return;
+    }
+    state.loading = true; render();
     try {
       const rows = await muatData();
       if (!rows) return;
+      if (seq !== muatSeq) return;
       state.rows = rows;
     } catch (e) {
+      if (seq !== muatSeq) return;
       state.rows = [];
-      state.error = navigator.onLine === false ? "Koneksi terputus. Periksa jaringan Anda, lalu coba lagi." : "Periksa koneksi atau coba lagi.";
+      state.error = navigator.onLine === false ? PESAN_OFFLINE
+        : e.name === "AbortError" ? "Server terlalu lama merespons. Coba lagi."
+        : "Periksa koneksi atau coba lagi.";
     }
     state.loading = false; render();
   }
@@ -807,7 +825,12 @@
   });
 
   // Kondisi koneksi
-  window.addEventListener("offline", () => toast("Koneksi terputus. Perubahan belum bisa disimpan.", true));
+  window.addEventListener("offline", () => {
+    toast("Koneksi terputus. Perubahan belum bisa disimpan.", true);
+    if (state.loading) { // putus di tengah loading -> langsung jadi error state
+      muatSeq++; state.loading = false; state.rows = []; state.error = PESAN_OFFLINE; render();
+    }
+  });
   window.addEventListener("online", () => { toast("Koneksi tersambung kembali."); if (state.error) refresh(); });
 
   // Dibuka dari tombol "Catat DP sekarang" (halaman penghuni): /pembayaran?kamar=..&penghunian=..&jenis=DP
