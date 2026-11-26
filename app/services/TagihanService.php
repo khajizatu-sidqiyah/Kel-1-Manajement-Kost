@@ -84,15 +84,21 @@ public function terbitkanTagihan(Penghunian $penghunian): void
     }
 
     /**
-     * Menerbitkan tagihan bulanan.
-     *
-     * Tagihan berikutnya diterbitkan apabila:
-     * 1. Tanggal jatuh tempo tagihan berikutnya sudah tercapai; atau
-     * 2. Tagihan sebelumnya sudah lunas.
-     *
-     * Dengan demikian, tagihan bulan berikutnya dapat tersedia
-     * segera setelah tagihan bulan berjalan dilunasi.
-     */
+ * Menerbitkan tagihan bulanan.
+ *
+ * Tagihan pertama dibuat ketika skema sewa bulanan
+ * dan tenggat pembayaran sudah tersedia.
+ *
+ * Tagihan bulan berikutnya hanya diterbitkan ketika
+ * tanggal jatuh temponya sudah tercapai.
+ *
+ * Pelunasan tagihan sebelumnya tidak secara otomatis
+ * menerbitkan tagihan bulan berikutnya.
+ *
+ * Tanggal jatuh tempo tetap mengikuti tanggal patokan
+ * awal, termasuk untuk bulan yang memiliki jumlah hari
+ * lebih sedikit.
+ */
     private function terbitkanTagihanBulanan(
         Penghunian $penghunian
     ): void {
@@ -156,20 +162,15 @@ public function terbitkanTagihan(Penghunian $penghunian): void
                 ->copy()
                 ->day($hariBerikutnya);
 
-            // Periksa apakah tenggat bulan berikutnya sudah tercapai.
+            // Tagihan berikutnya hanya diterbitkan ketika tanggal
+            // jatuh tempo periode berikutnya sudah tercapai.
             $jatuhTempoSudahTercapai = $tanggalBerikutnya->lte(
                 $tanggalHariIni
-            );
+        );
 
-            // Periksa apakah tagihan sebelumnya sudah lunas.
-
-            $jatuhTempoSudahTercapai = $tanggalBerikutnya->lte($tanggalHariIni);
-
-            // Tagihan berikutnya hanya boleh diterbitkan ketika tanggal jatuh
-            // temponya sudah tercapai, bukan langsung setelah tagihan sebelumnya lunas.
-            if (!$jatuhTempoSudahTercapai) {
-                break;
-            }
+        if (!$jatuhTempoSudahTercapai) {
+            break;  
+        }
 
             // Terbitkan tagihan bulan berikutnya.
             $this->buatTagihanBulanan(

@@ -90,17 +90,14 @@ Route::middleware('api.contract')->group(function () {
         // Riwayat seluruh pembayaran dengan filter
         Route::get('/pembayaran/riwayat', [PembayaranController::class, 'riwayat']);
         
-        Route::get('/pembayaran/kamar/{id_kamar}/riwayat', [PembayaranController::class, 'riwayatPerKamar'])
-            ->where('id_kamar', '-?[0-9]+');
+        // Riwayat pembayaran per kamar
+        Route::get(
+            '/pembayaran/kamar/{id_kamar}/riwayat',
+            [PembayaranController::class, 'riwayatPerKamar']
+        )->where('id_kamar', '-?[0-9]+');
 
         // Mencatat pembayaran DP, cicilan, atau pelunasan
         Route::post('/pembayaran', [PembayaranController::class, 'store']);
-
-        // Riwayat pembayaran seluruh kamar
-        Route::get('/pembayaran/riwayat', [
-            PembayaranController::class,
-            'riwayat'
-        ]);
 
         // Melihat detail pembayaran
         Route::get('/pembayaran/{id}', [PembayaranController::class, 'show'])
