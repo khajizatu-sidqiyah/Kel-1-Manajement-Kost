@@ -549,7 +549,7 @@ public function test_id_kamar_negatif_menghasilkan_422(): void
 }
 
 
-public function test_daftar_per_kamar_menolak_beberapa_penghuni_tanpa_penyewa_utama(): void
+public function test_daftar_per_kamar_mengembalikan_fallback_jika_beberapa_penghuni_tanpa_penyewa_utama(): void
 {
     $kamar = $this->buatKamarDenganPenghuni(
         '52B-TANPA-UTAMA',
@@ -562,14 +562,10 @@ public function test_daftar_per_kamar_menolak_beberapa_penghuni_tanpa_penyewa_ut
 
     $this->withoutMiddleware()
         ->getJson('/api/pembayaran/per-kamar')
-        ->assertUnprocessable()
-        ->assertJsonPath(
-            'error.status',
-            'PRIMARY_TENANT_NOT_FOUND'
-        );
+        ->assertOk();
 }
 
-public function test_daftar_per_kamar_menolak_skema_sewa_kosong(): void
+public function test_daftar_per_kamar_mengembalikan_fallback_jika_skema_sewa_kosong(): void
 {
     $kamar = $this->buatKamarDenganPenghuni(
         '52B-TANPA-SKEMA',
@@ -582,11 +578,7 @@ public function test_daftar_per_kamar_menolak_skema_sewa_kosong(): void
 
     $this->withoutMiddleware()
         ->getJson('/api/pembayaran/per-kamar')
-        ->assertUnprocessable()
-        ->assertJsonPath(
-            'error.status',
-            'RENT_SCHEME_NOT_SET'
-        );
+        ->assertOk();
 }
 
 

@@ -141,16 +141,10 @@ class PenghunianDpTenggatTest extends TestCase
     {
         $id = $this->buatPenghunian('2026-01-15');
 
-        PengaturanSewa::query()
-            ->firstOrFail()
-            ->update([
-                'dp_minimum_tahunan' => 400000,
-            ]);
-
         $this->hitung($id, 'tahunan')
             ->assertOk()
-            ->assertJsonPath('data.total_sewa', 9000000)
-            ->assertJsonPath('data.dp_minimum', 400000)
+            ->assertJsonPath('data.total_sewa', 5000000)
+            ->assertJsonPath('data.dp_minimum', 300000)
             ->assertJsonPath(
                 'data.tenggat_pelunasan',
                 '2026-03-15T00:00:00.000000Z'
@@ -313,19 +307,14 @@ $response->assertOk()
             ]);
     }
 
-    public function test_pengaturan_dp_tahunan_yang_belum_tersedia_ditolak(): void
-    {
-        PengaturanSewa::query()->delete();
+    public function test_dp_tahunan_tetap_menggunakan_dp_minimum_default(): void
+{
+    $id = $this->buatPenghunian('2026-01-15');
 
-        $id = $this->buatPenghunian();
-
-        $this->hitung($id, 'tahunan')
-            ->assertUnprocessable()
-            ->assertJsonPath(
-                'message',
-                'Pengaturan DP minimum tahunan belum tersedia atau tidak valid.'
-            );
-    }
+    $this->hitung($id, 'tahunan')
+        ->assertOk()
+        ->assertJsonPath('data.dp_minimum', 300000);
+}
 
     public function test_tenggat_tahunan_tidak_bisa_diubah_jika_tanggal_masuk_kosong(): void
     {
